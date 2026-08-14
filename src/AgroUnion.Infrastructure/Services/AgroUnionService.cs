@@ -32,7 +32,7 @@ public sealed class AgroUnionService(
         };
         db.InterestApplications.Add(item);
         await db.SaveChangesAsync(ct);
-        var adminEmail = configuration["Notifications:AdminEmail"] ?? "info@agrounion.gr";
+        var adminEmail = configuration["Notifications:AdminEmail"] ?? "info@agro-union.gr";
         await emailSender.SendAsync(adminEmail, "Νέα αίτηση συνεργασίας", $"Νέα αίτηση από <strong>{item.FullNameOrCompany}</strong> ({item.Email}).", ct);
         await emailSender.SendAsync(item.Email, "Λάβαμε την αίτησή σας", "Σας ευχαριστούμε. Η ομάδα της AGRO UNION θα επικοινωνήσει σύντομα μαζί σας.", ct);
         return item.Id;
@@ -44,7 +44,7 @@ public sealed class AgroUnionService(
         var item = new ContactMessage { FullName = request.FullName.Trim(), Email = request.Email.Trim().ToLowerInvariant(), Message = request.Message.Trim() };
         db.ContactMessages.Add(item);
         await db.SaveChangesAsync(ct);
-        await emailSender.SendAsync(configuration["Notifications:AdminEmail"] ?? "info@agrounion.gr", "Νέο μήνυμα επικοινωνίας", $"Μήνυμα από <strong>{item.FullName}</strong> ({item.Email}).", ct);
+        await emailSender.SendAsync(configuration["Notifications:AdminEmail"] ?? "info@agro-union.gr", "Νέο μήνυμα επικοινωνίας", $"Μήνυμα από <strong>{item.FullName}</strong> ({item.Email}).", ct);
         return item.Id;
     }
 

@@ -39,7 +39,7 @@ services:
       Smtp__Host: ${SMTP_HOST:-smtp.example.com}
       Smtp__Port: ${SMTP_PORT:-587}
       Smtp__UseTls: ${SMTP_TLS:-true}
-      Smtp__From: ${SMTP_FROM:-info@agrounion.gr}
+      Smtp__From: ${SMTP_FROM:-info@agro-union.gr}
       Smtp__Username: ${SMTP_USERNAME:-}
       Smtp__Password: ${SMTP_PASSWORD:-}
     ports:

@@ -141,38 +141,38 @@
     @if (!isAuthed)
     {
         <footer class="site-footer">
-            <div class="container footer-lead">
-                <div>
-                    <span class="footer-orbit"><i class="fa-solid fa-leaf"></i></span>
-                    <div>
+            <div class="footer-cta">
+                <div class="container footer-cta-inner">
+                    <div class="footer-cta-copy">
                         <small>ΜΙΑ ΟΡΓΑΝΩΜΕΝΗ ΑΛΥΣΙΔΑ ΑΞΙΑΣ</small>
                         <h3>Από τη γη, στην αγορά.<br />Με καθαρούς όρους.</h3>
+                        <p>Σταθερή εμπορική ροή, διαφανείς συμφωνίες και ουσιαστικός συντονισμός σε κάθε στάδιο.</p>
                     </div>
+                    <a class="btn btn-brass btn-lg" asp-controller="Home" asp-action="Apply">Γίνετε συνεργάτης <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
-                <a class="btn btn-brass" asp-controller="Home" asp-action="Apply">Γίνετε συνεργάτης <i class="fa-solid fa-arrow-right"></i></a>
             </div>
-            <div class="container footer-grid">
-                <div class="footer-brand">
+
+            <div class="container footer-main">
+                <div class="footer-identity">
                     <a class="brand" asp-controller="Home" asp-action="Index">
                         <span class="brand-mark"><img src="~/images/agro-union-logo.png" alt="" /></span>
                         <span class="brand-copy"><strong>AGRO UNION</strong><small>Δίκτυο συνεργασίας</small></span>
                     </a>
                     <p>Το σύγχρονο δίκτυο που ενώνει την αγροτική παραγωγή με αξιόπιστες αγορές.</p>
-                    <div class="social-row">
-                        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                        <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-                        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <div class="footer-contact-list">
+                        <a href="tel:+302631028971"><span><i class="fa-solid fa-phone"></i></span><span><small>ΤΗΛΕΦΩΝΟ</small><strong>26310 28971</strong></span></a>
+                        <a href="mailto:info@agro-union.gr"><span><i class="fa-solid fa-envelope"></i></span><span><small>EMAIL</small><strong>info@agro-union.gr</strong></span></a>
                     </div>
                 </div>
-                <div>
+                <nav class="footer-links" aria-label="Η εταιρεία">
                     <small>Η ΕΤΑΙΡΕΙΑ</small>
                     <a asp-controller="Home" asp-action="About">Ποιοι είμαστε</a>
                     <a asp-controller="Home" asp-action="History">Η ιστορία μας</a>
                     <a asp-controller="Home" asp-action="Team">Μέλη της εταιρείας</a>
                     <a asp-controller="Home" asp-action="Vision">Όραμα & αξίες</a>
                     <a asp-controller="Home" asp-action="Network">Το δίκτυό μας</a>
-                </div>
-                <div>
+                </nav>
+                <nav class="footer-links" aria-label="Υπηρεσίες">
                     <small>ΥΠΗΡΕΣΙΕΣ</small>
                     <a asp-controller="Home" asp-action="Services">Όλες οι υπηρεσίες</a>
                     <a asp-controller="Home" asp-action="Products">Προϊόντα δικτύου</a>
@@ -180,21 +180,44 @@
                     <a asp-controller="Home" asp-action="Sustainability">Βιωσιμότητα</a>
                     <a asp-controller="Home" asp-action="Faq">Συχνές ερωτήσεις</a>
                     <a asp-controller="Home" asp-action="Contracts">Συμβάσεις</a>
-                </div>
-                <div>
+                </nav>
+                <nav class="footer-links" aria-label="Συνεργασία">
                     <small>ΣΥΝΕΡΓΑΣΙΑ</small>
                     <a asp-controller="Home" asp-action="Partners">Για συνεργάτες</a>
                     <a asp-controller="Home" asp-action="Apply">Αίτηση ενδιαφέροντος</a>
                     <a asp-controller="Home" asp-action="Payments">Πληρωμές & εξοφλήσεις</a>
                     <a asp-controller="Account" asp-action="Login">Portal συνεργατών</a>
                     <a asp-controller="Home" asp-action="Contact">Επικοινωνία</a>
-                    <a href="tel:+302631000000"><i class="fa-solid fa-phone"></i> +30 26310 00000</a>
-                </div>
+                </nav>
             </div>
+
+            <div class="container footer-newsletter" id="newsletter">
+                <div class="footer-newsletter-copy">
+                    <span class="footer-newsletter-icon"><i class="fa-regular fa-paper-plane"></i></span>
+                    <div>
+                        <small>ΕΝΗΜΕΡΩΣΗ ΔΙΚΤΥΟΥ</small>
+                        <h3>Εγγραφείτε στο newsletter</h3>
+                        <p>Νέα από την παραγωγή, τις αγορές και τη λειτουργία του δικτύου, απευθείας στο email σας.</p>
+                    </div>
+                </div>
+                <form class="footer-newsletter-form" asp-controller="Home" asp-action="Newsletter" method="post">
+                    <input type="hidden" name="returnPath" value="@($"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}")" />
+                    <div class="honeypot" aria-hidden="true"><label for="newsletter-website">Website</label><input id="newsletter-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+                    <label class="sr-only" for="newsletter-email">Email</label>
+                    <div class="footer-newsletter-field">
+                        <i class="fa-regular fa-envelope"></i>
+                        <input id="newsletter-email" name="newsletterEmail" type="email" autocomplete="email" placeholder="Το email σας" required />
+                        <button type="submit">Εγγραφή <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                    <small>Με την εγγραφή αποδέχεστε την <a asp-controller="Home" asp-action="Privacy">πολιτική απορρήτου</a>. Μπορείτε να διαγραφείτε οποιαδήποτε στιγμή.</small>
+                </form>
+            </div>
+
             <div class="container footer-bottom">
                 <span>© @DateTime.Now.Year AGRO UNION. Όλα τα δικαιώματα διατηρούνται.</span>
                 <div>
                     <a asp-controller="Home" asp-action="Privacy">Πολιτική απορρήτου</a>
+                    <span><i class="fa-solid fa-location-dot"></i> Μεσολόγγι, Αιτωλοακαρνανία</span>
                     <span>Με υπευθυνότητα στον τόπο μας.</span>
                 </div>
             </div>

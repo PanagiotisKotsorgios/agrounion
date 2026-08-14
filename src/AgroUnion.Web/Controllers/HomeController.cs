@@ -1,3 +1,4 @@
+using AgroUnion.Application.Contracts;
 using AgroUnion.Application.Services;
 using AgroUnion.Web.Models;
 using AgroUnion.Web.ViewModels;
@@ -104,6 +105,42 @@ public sealed class HomeController(IAgroUnionService service, ILogger<HomeContro
             foreach (var error in ex.Errors) ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
             return View(form);
         }
+    }
+
+    [HttpPost("/newsletter"), EnableRateLimiting("public-forms")]
+    public async Task<IActionResult> Newsletter(string? newsletterEmail, string? returnPath, string? website, CancellationToken ct)
+    {
+        var destination = Url.IsLocalUrl(returnPath) ? returnPath! : Url.Action(nameof(Index))!;
+
+        if (!string.IsNullOrWhiteSpace(website))
+            return LocalRedirect($"{destination}#newsletter");
+
+        if (!System.Net.Mail.MailAddress.TryCreate(newsletterEmail?.Trim(), out var address))
+        {
+            TempData["Error"] = "Συμπληρώστε ένα έγκυρο email για την εγγραφή στο newsletter.";
+            return LocalRedirect($"{destination}#newsletter");
+        }
+
+        try
+        {
+            await service.SubmitContactAsync(new ContactRequest(
+                "Εγγραφή newsletter",
+                address.Address,
+                "Αίτημα εγγραφής στο newsletter της AGRO UNION."), ct);
+            TempData["Success"] = "Η εγγραφή σας στο newsletter ολοκληρώθηκε.";
+        }
+        catch (ValidationException ex)
+        {
+            logger.LogWarning(ex, "Μη έγκυρη εγγραφή newsletter για {Email}", address.Address);
+            TempData["Error"] = "Δεν ήταν δυνατή η εγγραφή. Ελέγξτε το email και δοκιμάστε ξανά.";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Αποτυχία εγγραφής newsletter για {Email}", address.Address);
+            TempData["Error"] = "Η εγγραφή δεν ολοκληρώθηκε αυτή τη στιγμή. Δοκιμάστε ξανά αργότερα.";
+        }
+
+        return LocalRedirect($"{destination}#newsletter");
     }
 
     [HttpGet("/privacy")]

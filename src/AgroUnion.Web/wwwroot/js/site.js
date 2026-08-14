@@ -103,14 +103,42 @@
     start();
   });
 
-  document.querySelectorAll('.password-toggle').forEach(button => button.addEventListener('click', () => {
-    const input = button.parentElement.querySelector('input');
-    if (!input) return;
-    const show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    button.setAttribute('aria-label', show ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού');
-    button.querySelector('i').className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
-  }));
+  let passwordFieldIndex = 0;
+  const enhancePasswordField = input => {
+    if (!(input instanceof HTMLInputElement) || input.dataset.passwordToggleReady === 'true') return;
+
+    input.dataset.passwordToggleReady = 'true';
+    if (!input.id) input.id = `password-field-${++passwordFieldIndex}`;
+
+    const wrapper = document.createElement('span');
+    wrapper.className = 'password-field-control';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'password-visibility-toggle';
+    button.setAttribute('aria-controls', input.id);
+    button.setAttribute('aria-pressed', 'false');
+    button.setAttribute('aria-label', 'Εμφάνιση κωδικού πρόσβασης');
+    button.title = 'Εμφάνιση κωδικού πρόσβασης';
+    button.innerHTML = '<i class="fa-regular fa-eye" aria-hidden="true"></i>';
+
+    button.addEventListener('click', () => {
+      const reveal = input.type === 'password';
+      const label = reveal ? 'Απόκρυψη κωδικού πρόσβασης' : 'Εμφάνιση κωδικού πρόσβασης';
+      input.type = reveal ? 'text' : 'password';
+      button.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+      button.setAttribute('aria-label', label);
+      button.title = label;
+      button.querySelector('i').className = reveal ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+      input.focus({ preventScroll: true });
+    });
+
+    wrapper.appendChild(button);
+  };
+
+  document.querySelectorAll('input[type="password"]').forEach(enhancePasswordField);
 
   document.querySelectorAll('[data-carousel]').forEach(carousel => {
     const slides = [...carousel.querySelectorAll('[data-carousel-slide]')];

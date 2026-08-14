@@ -212,6 +212,18 @@ em{font-style:normal;color:inherit}
   outline:0;border-color:var(--green-700);
   box-shadow:0 0 0 3px rgba(31,77,51,.14);
 }
+.password-field-control{position:relative;display:block;width:100%;min-width:0}
+.password-field-control>input{width:100%;padding-right:52px!important}
+.password-field-control>.password-visibility-toggle{
+  position:absolute;top:50%;right:8px;z-index:2;
+  display:grid;place-items:center;width:36px;height:36px;min-height:0;margin:0;padding:0;
+  transform:translateY(-50%);border:0;border-radius:8px;background:transparent;
+  color:var(--ink-500);font:inherit;font-size:15px;line-height:1;cursor:pointer;
+  transition:background-color .18s,color .18s,box-shadow .18s;
+}
+.password-field-control>.password-visibility-toggle:hover{background:var(--paper-100);color:var(--green-800)}
+.password-field-control>.password-visibility-toggle:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(31,77,51,.16);color:var(--green-800)}
+.password-field-control>.password-visibility-toggle[aria-pressed="true"]{background:var(--green-50);color:var(--green-800)}
 .form-textarea,.field textarea{resize:vertical;min-height:100px;font-family:inherit}
 .form-select,.field select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-500) 50%),linear-gradient(135deg,var(--ink-500) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:36px}
 .form-check,.consent{display:flex;gap:12px;align-items:flex-start;font-size:15px;color:var(--ink-700);line-height:1.5}

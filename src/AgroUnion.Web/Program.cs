@@ -105,6 +105,34 @@ app.UseRequestLocalization();
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
+var publicWebsitePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+    "/", "/about", "/history", "/team", "/vision", "/network", "/products", "/sustainability",
+    "/faq", "/services", "/how-it-works", "/partners", "/contracts", "/apply", "/account/register",
+    "/contact", "/privacy", "/payments", "/account/login", "/account/forgot-password", "/account/reset-password",
+    "/account/access-denied"
+};
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.TrimEnd('/') ?? "";
+    if (string.IsNullOrEmpty(path)) path = "/";
+    var isPublicWebsitePage = publicWebsitePaths.Contains(path);
+    var isPageRequest = HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method);
+
+    if (isPublicWebsitePage && isPageRequest)
+    {
+        context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        context.Response.Headers.Pragma = "no-cache";
+
+        if (context.User.Identity?.IsAuthenticated == true)
+        {
+            context.Response.Redirect("/portal");
+            return;
+        }
+    }
+
+    await next();
+});
 app.UseAuthorization();
 app.UseSwagger();
 app.UseSwaggerUI();

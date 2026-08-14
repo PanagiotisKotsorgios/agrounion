@@ -38,6 +38,7 @@
     var greeting = (hourNow < 12) ? "Καλημέρα" : "Καλησπέρα";
     var atIdx = name.IndexOf((char)64);
     var displayName = (atIdx > 0) ? name.Substring(0, atIdx) : name;
+    var returnPath = $"{Context.Request.Path}{Context.Request.QueryString}";
 }
 
 <div class="portal-mobile-topbar">
@@ -107,7 +108,7 @@
         <div class="portal-sidebar-foot">
             <a asp-controller="Account" asp-action="ChangePassword"><i class="fa-solid fa-shield-halved"></i> Ασφάλεια</a>
             <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0">
-                <button type="submit" style="width:100%;background:transparent;border:0;color:rgba(255,255,255,.75);display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='rgba(255,255,255,.75)'"><i class="fa-solid fa-arrow-right-from-bracket"></i> Αποσύνδεση</button>
+                <button class="portal-sidebar-logout" type="submit"><i class="fa-solid fa-arrow-right-from-bracket"></i> Αποσύνδεση</button>
             </form>
         </div>
     </aside>
@@ -116,8 +117,8 @@
         <div class="portal-toolbar">
             <span class="toolbar-date"><i class="fa-regular fa-calendar"></i> @DateTime.Now.ToString("dddd, dd MMMM yyyy")</span>
             <div class="toolbar-actions">
-                <a class="toolbar-btn" asp-controller="Home" asp-action="Faq"><i class="fa-regular fa-circle-question"></i> Βοήθεια</a>
-                <a class="toolbar-btn" asp-controller="Home" asp-action="Contact"><i class="fa-regular fa-envelope"></i> Επικοινωνία</a>
+                <button class="toolbar-btn" type="button" data-dashboard-modal-open="dashboard-help-modal"><i class="fa-regular fa-circle-question"></i> Βοήθεια</button>
+                <button class="toolbar-btn" type="button" data-dashboard-modal-open="dashboard-contact-modal"><i class="fa-regular fa-envelope"></i> Επικοινωνία</button>
                 <a class="toolbar-user" asp-controller="Account" asp-action="ChangePassword">
                     <span class="av">@userInitial</span>
                     <span>@displayName<span class="role">· @role</span></span>
@@ -153,5 +154,90 @@
         {
             @await Html.PartialAsync("_PartnerMarketplace", partnerMarketplace)
         }
+    </section>
+</div>
+
+<div class="dashboard-modal" id="dashboard-help-modal" data-dashboard-modal hidden aria-hidden="true">
+    <button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"></button>
+    <section class="dashboard-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboard-help-title" tabindex="-1">
+        <header class="dashboard-modal-head">
+            <span class="dashboard-modal-icon"><i class="fa-regular fa-circle-question"></i></span>
+            <div>
+                <small>ΥΠΟΣΤΗΡΙΞΗ ΣΥΝΕΡΓΑΤΩΝ</small>
+                <h2 id="dashboard-help-title">Πώς μπορούμε να βοηθήσουμε;</h2>
+                <p>Περιγράψτε το ζήτημα και η αρμόδια ομάδα θα αναλάβει το αίτημά σας.</p>
+            </div>
+            <button class="dashboard-modal-close" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <form class="dashboard-support-form" asp-controller="Portal" asp-action="SubmitDashboardSupport" method="post">
+            <input type="hidden" name="Kind" value="help" />
+            <input type="hidden" name="ReturnPath" value="@returnPath" />
+            <input class="hp" type="text" name="Website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+            <label>
+                <span>Κατηγορία αιτήματος</span>
+                <select name="Topic" required>
+                    <option value="">Επιλέξτε κατηγορία</option>
+                    <option>Πρόσβαση και λογαριασμός</option>
+                    <option>Τεχνικό ζήτημα</option>
+                    <option>Αγορά Δικτύου</option>
+                    <option>Παραγωγή και παραδόσεις</option>
+                    <option>Έγγραφα και πληρωμές</option>
+                    <option>Άλλο θέμα</option>
+                </select>
+            </label>
+            <label>
+                <span>Περιγραφή</span>
+                <textarea name="Message" rows="6" maxlength="2600" required placeholder="Δώστε μας τις απαραίτητες πληροφορίες για να σας εξυπηρετήσουμε σωστά."></textarea>
+            </label>
+            <div class="dashboard-modal-actions">
+                <span><i class="fa-solid fa-shield-halved"></i> Το αίτημα καταγράφεται με ασφάλεια στον λογαριασμό σας.</span>
+                <button type="submit">Αποστολή αιτήματος <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<div class="dashboard-modal" id="dashboard-contact-modal" data-dashboard-modal hidden aria-hidden="true">
+    <button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"></button>
+    <section class="dashboard-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboard-contact-title" tabindex="-1">
+        <header class="dashboard-modal-head">
+            <span class="dashboard-modal-icon"><i class="fa-regular fa-envelope"></i></span>
+            <div>
+                <small>ΑΜΕΣΗ ΕΠΙΚΟΙΝΩΝΙΑ</small>
+                <h2 id="dashboard-contact-title">Επικοινωνήστε με την ομάδα μας</h2>
+                <p>Το μήνυμα προωθείται εσωτερικά στην κατάλληλη ομάδα της AGRO UNION.</p>
+            </div>
+            <button class="dashboard-modal-close" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <form class="dashboard-support-form" asp-controller="Portal" asp-action="SubmitDashboardSupport" method="post">
+            <input type="hidden" name="Kind" value="contact" />
+            <input type="hidden" name="ReturnPath" value="@returnPath" />
+            <input class="hp" type="text" name="Website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+            <div class="dashboard-form-grid">
+                <label>
+                    <span>Θέμα επικοινωνίας</span>
+                    <select name="Topic" required>
+                        <option value="">Επιλέξτε θέμα</option>
+                        <option>Συνεργασία και σύμβαση</option>
+                        <option>Οικονομικά και πληρωμές</option>
+                        <option>Παραγωγή και παραλαβές</option>
+                        <option>Προσφορές και αγορά</option>
+                        <option>Γενική επικοινωνία</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Τηλέφωνο επικοινωνίας <em>προαιρετικό</em></span>
+                    <input type="tel" name="Phone" maxlength="30" inputmode="tel" placeholder="π.χ. 698 000 0000" />
+                </label>
+            </div>
+            <label>
+                <span>Μήνυμα</span>
+                <textarea name="Message" rows="6" maxlength="2600" required placeholder="Γράψτε το μήνυμά σας προς την ομάδα μας."></textarea>
+            </label>
+            <div class="dashboard-modal-actions">
+                <span><i class="fa-solid fa-lock"></i> Η ταυτότητά σας συνδέεται αυτόματα με το αίτημα.</span>
+                <button type="submit">Αποστολή μηνύματος <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </form>
     </section>
 </div>

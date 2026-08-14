@@ -1,6 +1,7 @@
 @model AgroUnion.Application.Contracts.ProducerDashboardDto
 @using AgroUnion.Domain.Entities
 @using System.Globalization
+@using System.Text.Json
 @{
     string CategoryName(ProducerCategory value) => value switch
     {
@@ -34,6 +35,17 @@
     var expiringDocs = Model.Documents.Count(x => x.ExpiryDate.HasValue && x.ExpiryDate.Value <= soonDo && x.ExpiryDate.Value >= todayDo);
     var deliveryPct = f.DeclaredProduction > 0 ? Math.Min(100, (int)((double)f.DeliveredProduction / (double)f.DeclaredProduction * 100)) : 0;
     var paidPct = logistics.NetPayable > 0 ? Math.Min(100, (int)((double)logistics.Paid / (double)logistics.NetPayable * 100)) : 0;
+    var chartMonths = Enumerable.Range(0, 6)
+        .Select(offset => new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(offset - 5))
+        .ToArray();
+    var chartLabels = chartMonths.Select(x => x.ToString("MMM", new CultureInfo("el-GR"))).ToArray();
+    var chartWeights = chartMonths.Select(month => Model.DeliveryRecords
+        .Where(x => x.ScheduledPickupAt.Year == month.Year && x.ScheduledPickupAt.Month == month.Month)
+        .Sum(x => x.AcceptedWeight)).ToArray();
+    var chartRevenue = chartMonths.Select(month => Model.DeliveryRecords
+        .Where(x => x.ScheduledPickupAt.Year == month.Year && x.ScheduledPickupAt.Month == month.Month)
+        .Sum(x => x.NetPayableAmount)).ToArray();
+    var deliveriesForTable = Model.DeliveryRecords.OrderByDescending(x => x.ScheduledPickupAt).ToList();
 }
 
 @* OVERVIEW — minimal, focused on 4 KPIs, recent deliveries, activity *@
@@ -80,7 +92,7 @@
     }
 
     @* 4 BIG KPI cards — the essentials only *@
-    <div class="kpi-pro-grid">
+    <div class="kpi-pro-grid producer-overview-kpis">
         <article class="kpi-pro hero-card">
             <div class="kpi-pro-head">
                 <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-coins"></i></span><span>Καθαρή αξία παραδόσεων</span></div>
@@ -117,6 +129,53 @@
         </article>
     </div>
 
+    <section class="producer-chart-grid" aria-label="Διαγράμματα απόδοσης συνεργασίας">
+        <article class="producer-chart-card producer-chart-card-wide">
+            <header>
+                <div>
+                    <small>ΕΞΑΜΗΝΙΑΙΑ ΕΙΚΟΝΑ</small>
+                    <h2>Παραδόσεις και καθαρή αξία</h2>
+                </div>
+                <span><i class="fa-solid fa-chart-line"></i> Ενημέρωση από το Portal</span>
+            </header>
+            <div class="producer-chart-canvas producer-chart-canvas-wide">
+                <canvas data-producer-chart="deliveries"
+                        role="img"
+                        aria-label="Διάγραμμα παραδοτέου όγκου και καθαρής αξίας εξαμήνου"
+                        data-labels="@JsonSerializer.Serialize(chartLabels)"
+                        data-weights="@JsonSerializer.Serialize(chartWeights)"
+                        data-revenue="@JsonSerializer.Serialize(chartRevenue)"></canvas>
+            </div>
+            <footer>
+                <span><i class="chart-key weight"></i> Παραδοτέος όγκος (kg)</span>
+                <span><i class="chart-key revenue"></i> Καθαρή αξία (€)</span>
+            </footer>
+        </article>
+
+        <article class="producer-chart-card producer-payment-chart">
+            <header>
+                <div>
+                    <small>ΟΙΚΟΝΟΜΙΚΗ ΡΟΗ</small>
+                    <h2>Κατάσταση πληρωμών</h2>
+                </div>
+            </header>
+            <div class="producer-doughnut-wrap">
+                <div class="producer-chart-canvas producer-chart-canvas-round">
+                    <canvas data-producer-chart="payments"
+                            role="img"
+                            aria-label="Διάγραμμα πληρωμένων ποσών και ανοιχτού υπολοίπου"
+                            data-paid="@logistics.Paid.ToString(CultureInfo.InvariantCulture)"
+                            data-outstanding="@logistics.Outstanding.ToString(CultureInfo.InvariantCulture)"></canvas>
+                    <div class="producer-chart-center"><strong>@paidPct%</strong><span>εξοφλημένο</span></div>
+                </div>
+                <dl>
+                    <div><dt>Πληρωμένα</dt><dd>@logistics.Paid.ToString("N0") €</dd></div>
+                    <div><dt>Υπόλοιπο</dt><dd>@logistics.Outstanding.ToString("N0") €</dd></div>
+                </dl>
+            </div>
+        </article>
+    </section>
+
     @* Recent deliveries — simple table, 5 latest *@
     @if (Model.DeliveryRecords.Any())
     {
@@ -125,7 +184,15 @@
             <div class="rule"></div>
             <a class="more" asp-action="ProducerPage" asp-route-page="logistics">Όλες <i class="fa-solid fa-arrow-right"></i></a>
         </div>
-        <div class="table-wrap">
+        <div class="delivery-table-panel" data-delivery-table data-page-size="5">
+            <div class="delivery-table-tools">
+                <label class="delivery-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="search" data-delivery-search placeholder="Αναζήτηση σε δρομολόγιο, προϊόν ή κατάσταση" autocomplete="off" />
+                </label>
+                <span data-delivery-count>@deliveriesForTable.Count παραδόσεις</span>
+            </div>
+            <div class="table-wrap">
             <table class="data-table pro">
                 <thead>
                     <tr>
@@ -137,9 +204,28 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var r in Model.DeliveryRecords.OrderByDescending(x => x.ScheduledPickupAt).Take(5))
+                    @foreach (var r in deliveriesForTable)
                     {
-                        <tr>
+                        <tr class="delivery-click-row"
+                            tabindex="0"
+                            role="button"
+                            aria-label="Προβολή λεπτομερειών για το δρομολόγιο @r.RouteNumber"
+                            data-delivery-row
+                            data-search="@($"{r.RouteNumber} {r.Product} {r.Variety} {LogisticsStatusName(r.Status)} {r.OriginAddress} {r.DestinationAddress}".ToLowerInvariant())"
+                            data-route="@r.RouteNumber"
+                            data-product="@r.Product"
+                            data-variety="@(string.IsNullOrWhiteSpace(r.Variety) ? "—" : r.Variety)"
+                            data-status="@LogisticsStatusName(r.Status)"
+                            data-scheduled="@r.ScheduledPickupAt.ToString("dd/MM/yyyy · HH:mm")"
+                            data-origin="@r.OriginAddress"
+                            data-destination="@r.DestinationAddress"
+                            data-weight="@($"{r.AcceptedWeight:N0} {r.WeightUnit}")"
+                            data-value="@($"{r.NetPayableAmount:N2} €")"
+                            data-paid="@($"{r.PaidAmount:N2} €")"
+                            data-outstanding="@($"{r.OutstandingAmount:N2} €")"
+                            data-carrier="@(string.IsNullOrWhiteSpace(r.CarrierName) ? "—" : r.CarrierName)"
+                            data-vehicle="@(string.IsNullOrWhiteSpace(r.VehiclePlate) ? "—" : r.VehiclePlate)"
+                            data-agreement="@(string.IsNullOrWhiteSpace(r.AgreementReference) ? "—" : r.AgreementReference)">
                             <td>
                                 <div class="cell-avatar">
                                     <div class="av"><i class="fa-solid fa-truck"></i></div>
@@ -157,6 +243,54 @@
                     }
                 </tbody>
             </table>
+            </div>
+            <div class="delivery-empty-search" data-delivery-empty hidden>
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>Δεν βρέθηκαν παραδόσεις με αυτά τα κριτήρια.</span>
+            </div>
+            <div class="delivery-pagination" data-delivery-pagination>
+                <button type="button" data-delivery-prev aria-label="Προηγούμενη σελίδα"><i class="fa-solid fa-chevron-left"></i></button>
+                <span data-delivery-page>Σελίδα 1 από 1</span>
+                <button type="button" data-delivery-next aria-label="Επόμενη σελίδα"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+        <div class="dashboard-modal" id="delivery-details-modal" data-dashboard-modal hidden aria-hidden="true">
+            <button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"></button>
+            <section class="dashboard-modal-dialog delivery-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="delivery-detail-title" tabindex="-1">
+                <header class="dashboard-modal-head delivery-detail-head">
+                    <span class="dashboard-modal-icon"><i class="fa-solid fa-truck-fast"></i></span>
+                    <div>
+                        <small>ΚΑΡΤΕΛΑ ΠΑΡΑΔΟΣΗΣ</small>
+                        <h2 id="delivery-detail-title" data-delivery-field="route">—</h2>
+                        <p><span data-delivery-field="product">—</span> · <span data-delivery-field="status">—</span></p>
+                    </div>
+                    <button class="dashboard-modal-close" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button>
+                </header>
+                <div class="delivery-detail-body">
+                    <section>
+                        <h3>Στοιχεία δρομολογίου</h3>
+                        <dl class="delivery-detail-grid">
+                            <div><dt>Ημερομηνία</dt><dd data-delivery-field="scheduled">—</dd></div>
+                            <div><dt>Ποικιλία</dt><dd data-delivery-field="variety">—</dd></div>
+                            <div><dt>Αφετηρία</dt><dd data-delivery-field="origin">—</dd></div>
+                            <div><dt>Προορισμός</dt><dd data-delivery-field="destination">—</dd></div>
+                            <div><dt>Μεταφορέας</dt><dd data-delivery-field="carrier">—</dd></div>
+                            <div><dt>Όχημα</dt><dd data-delivery-field="vehicle">—</dd></div>
+                        </dl>
+                    </section>
+                    <section>
+                        <h3>Ποσότητα και εκκαθάριση</h3>
+                        <dl class="delivery-detail-grid financial">
+                            <div><dt>Αποδεκτό βάρος</dt><dd data-delivery-field="weight">—</dd></div>
+                            <div><dt>Καθαρή αξία</dt><dd data-delivery-field="value">—</dd></div>
+                            <div><dt>Πληρωμένο</dt><dd data-delivery-field="paid">—</dd></div>
+                            <div><dt>Υπόλοιπο</dt><dd data-delivery-field="outstanding">—</dd></div>
+                            <div class="full"><dt>Συμφωνία</dt><dd data-delivery-field="agreement">—</dd></div>
+                        </dl>
+                    </section>
+                </div>
+            </section>
         </div>
     }
 

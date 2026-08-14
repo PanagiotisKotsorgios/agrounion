@@ -27,6 +27,16 @@ public sealed class ContactForm
     public ContactRequest ToRequest() => new(FullName, Email, Message, Website);
 }
 
+public sealed class DashboardSupportForm
+{
+    public string Kind { get; set; } = "";
+    public string Topic { get; set; } = "";
+    public string Message { get; set; } = "";
+    public string? Phone { get; set; }
+    public string? ReturnPath { get; set; }
+    public string? Website { get; set; }
+}
+
 public sealed class HomeViewModel
 {
     public InterestForm Interest { get; set; } = new();

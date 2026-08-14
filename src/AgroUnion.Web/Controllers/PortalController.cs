@@ -47,6 +47,40 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
         return View("Dashboard", await marketplace.GetMarketplaceAsync(UserId, role, region, product, search, ct));
     }
 
+    [HttpPost("support")]
+    public async Task<IActionResult> SubmitDashboardSupport(DashboardSupportForm form, CancellationToken ct)
+    {
+        var returnPath = Url.IsLocalUrl(form.ReturnPath) && form.ReturnPath!.StartsWith("/portal", StringComparison.OrdinalIgnoreCase)
+            ? form.ReturnPath
+            : "/portal";
+
+        try
+        {
+            var isHelpRequest = string.Equals(form.Kind, "help", StringComparison.OrdinalIgnoreCase);
+            var isContactRequest = string.Equals(form.Kind, "contact", StringComparison.OrdinalIgnoreCase);
+            if (!isHelpRequest && !isContactRequest) throw new InvalidOperationException("Το είδος αιτήματος δεν είναι έγκυρο.");
+            if (string.IsNullOrWhiteSpace(form.Topic)) throw new InvalidOperationException("Επιλέξτε θέμα αιτήματος.");
+            if (string.IsNullOrWhiteSpace(form.Message)) throw new InvalidOperationException("Συμπληρώστε το μήνυμα του αιτήματος.");
+
+            var email = User.Identity?.Name ?? throw new UnauthorizedAccessException();
+            var requestLabel = isHelpRequest ? "Αίτημα υποστήριξης Portal" : "Επικοινωνία συνεργάτη Portal";
+            var phoneLine = string.IsNullOrWhiteSpace(form.Phone) ? "" : $"\nΤηλέφωνο επικοινωνίας: {form.Phone.Trim()}";
+            var message = $"{requestLabel}\nΘέμα: {form.Topic.Trim()}{phoneLine}\n\n{form.Message?.Trim()}";
+
+            await service.SubmitContactAsync(new ContactRequest($"Portal · {email}", email, message, form.Website), ct);
+            TempData["Success"] = isHelpRequest
+                ? "Το αίτημα υποστήριξης καταχωρίστηκε. Η ομάδα μας θα επικοινωνήσει μαζί σας."
+                : "Το μήνυμά σας καταχωρίστηκε και προωθήθηκε στην ομάδα της AGRO UNION.";
+        }
+        catch (Exception ex) when (ex is ValidationException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Dashboard support request failed");
+            TempData["Error"] = ex.Message;
+        }
+
+        return LocalRedirect(returnPath);
+    }
+
     [Authorize(Policy = "FarmerOnly"), HttpPost("marketplace/production")]
     public async Task<IActionResult> SaveMarketplaceProduction(PartnerProductionListingForm form, CancellationToken ct) =>
         await RunMarketplace(async () => await marketplace.SaveProductionListingAsync(UserId, form.ToRequest(), ct), "Η μη δεσμευμένη παραγωγή δημοσιεύτηκε στο δίκτυο.");

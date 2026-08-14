@@ -151,4 +151,128 @@
   document.querySelectorAll('[data-confirm]').forEach(button => button.addEventListener('click', event => {
     if (!window.confirm(button.dataset.confirm)) event.preventDefault();
   }));
+
+  const dashboardModals = [...document.querySelectorAll('[data-dashboard-modal]')];
+  let activeDashboardModal = null;
+  let dashboardModalTrigger = null;
+  const closeDashboardModal = modal => {
+    if (!modal) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+    if (activeDashboardModal === modal) activeDashboardModal = null;
+    document.body.classList.remove('dashboard-modal-open');
+    dashboardModalTrigger?.focus();
+    dashboardModalTrigger = null;
+  };
+  const openDashboardModal = (modal, trigger) => {
+    if (!modal) return;
+    if (activeDashboardModal) closeDashboardModal(activeDashboardModal);
+    dashboardModalTrigger = trigger;
+    activeDashboardModal = modal;
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('dashboard-modal-open');
+    window.requestAnimationFrame(() => modal.querySelector('.dashboard-modal-dialog')?.focus());
+  };
+  document.querySelectorAll('[data-dashboard-modal-open]').forEach(button => button.addEventListener('click', () => {
+    openDashboardModal(document.getElementById(button.dataset.dashboardModalOpen), button);
+  }));
+  dashboardModals.forEach(modal => modal.querySelectorAll('[data-dashboard-modal-close]').forEach(button => {
+    button.addEventListener('click', () => closeDashboardModal(modal));
+  }));
+
+  document.querySelectorAll('[data-delivery-table]').forEach(tablePanel => {
+    const rows = [...tablePanel.querySelectorAll('[data-delivery-row]')];
+    const search = tablePanel.querySelector('[data-delivery-search]');
+    const count = tablePanel.querySelector('[data-delivery-count]');
+    const empty = tablePanel.querySelector('[data-delivery-empty]');
+    const pageLabel = tablePanel.querySelector('[data-delivery-page]');
+    const previous = tablePanel.querySelector('[data-delivery-prev]');
+    const next = tablePanel.querySelector('[data-delivery-next]');
+    const detailsModal = document.getElementById('delivery-details-modal');
+    const pageSize = Number(tablePanel.dataset.pageSize) || 5;
+    let currentPage = 1;
+
+    const visibleRows = () => {
+      const term = (search?.value || '').trim().toLocaleLowerCase('el-GR');
+      return term ? rows.filter(row => (row.dataset.search || '').includes(term)) : rows;
+    };
+    const renderRows = () => {
+      const filtered = visibleRows();
+      const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      currentPage = Math.min(currentPage, pages);
+      const start = (currentPage - 1) * pageSize;
+      rows.forEach(row => { row.hidden = true; });
+      filtered.slice(start, start + pageSize).forEach(row => { row.hidden = false; });
+      if (count) count.textContent = filtered.length + (filtered.length === 1 ? ' παράδοση' : ' παραδόσεις');
+      if (empty) empty.hidden = filtered.length > 0;
+      if (pageLabel) pageLabel.textContent = 'Σελίδα ' + currentPage + ' από ' + pages;
+      if (previous) previous.disabled = currentPage <= 1;
+      if (next) next.disabled = currentPage >= pages;
+    };
+    const showDetails = row => {
+      if (!detailsModal) return;
+      detailsModal.querySelectorAll('[data-delivery-field]').forEach(field => {
+        field.textContent = row.dataset[field.dataset.deliveryField] || '—';
+      });
+      openDashboardModal(detailsModal, row);
+    };
+
+    search?.addEventListener('input', () => { currentPage = 1; renderRows(); });
+    previous?.addEventListener('click', () => { currentPage -= 1; renderRows(); });
+    next?.addEventListener('click', () => { currentPage += 1; renderRows(); });
+    rows.forEach(row => {
+      row.addEventListener('click', () => showDetails(row));
+      row.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showDetails(row); }
+      });
+    });
+    renderRows();
+  });
+
+  if (window.Chart) {
+    const chartFont = getComputedStyle(document.documentElement).getPropertyValue('--sans').trim() || 'IBM Plex Sans';
+    const gridColor = 'rgba(45, 63, 52, .09)';
+    const tickColor = '#68736c';
+    const parseChartData = (element, key) => {
+      try { return JSON.parse(element.dataset[key] || '[]'); } catch { return []; }
+    };
+
+    document.querySelectorAll('[data-producer-chart="deliveries"]').forEach(canvas => {
+      const context = canvas.getContext('2d');
+      const gradient = context.createLinearGradient(0, 0, 0, 260);
+      gradient.addColorStop(0, 'rgba(31, 91, 57, .24)');
+      gradient.addColorStop(1, 'rgba(31, 91, 57, 0)');
+      new window.Chart(canvas, {
+        data: {
+          labels: parseChartData(canvas, 'labels'),
+          datasets: [
+            { type:'bar', label:'Παραδοτέος όγκος', data:parseChartData(canvas, 'weights'), yAxisID:'weight', backgroundColor:'rgba(181, 139, 69, .7)', borderRadius:5, maxBarThickness:28 },
+            { type:'line', label:'Καθαρή αξία', data:parseChartData(canvas, 'revenue'), yAxisID:'value', borderColor:'#1f5b39', backgroundColor:gradient, borderWidth:2.3, pointRadius:3, pointHoverRadius:5, pointBackgroundColor:'#fff', pointBorderWidth:2, tension:.35, fill:true }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+          animation:{duration:1100,easing:'easeOutQuart'},
+          plugins:{legend:{display:false},tooltip:{padding:12,bodyFont:{family:chartFont},titleFont:{family:chartFont,weight:'600'}}},
+          scales:{
+            x:{grid:{display:false},ticks:{color:tickColor,font:{family:chartFont,size:10}}},
+            weight:{position:'left',beginAtZero:true,grid:{color:gridColor},ticks:{color:tickColor,font:{family:chartFont,size:9},callback:value=>value + ' kg'}},
+            value:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:tickColor,font:{family:chartFont,size:9},callback:value=>value + ' €'}}
+          }
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-producer-chart="payments"]').forEach(canvas => {
+      new window.Chart(canvas, {
+        type:'doughnut',
+        data:{labels:['Πληρωμένα','Υπόλοιπο'],datasets:[{data:[Number(canvas.dataset.paid)||0,Number(canvas.dataset.outstanding)||0],backgroundColor:['#1f5b39','#d8c49c'],borderWidth:0,hoverOffset:4}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'76%',animation:{animateRotate:true,duration:1200,easing:'easeOutQuart'},plugins:{legend:{display:false},tooltip:{padding:11,bodyFont:{family:chartFont},callbacks:{label:item=>item.label + ': ' + Number(item.raw).toLocaleString('el-GR') + ' €'}}}}
+      });
+    });
+  }
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && activeDashboardModal) closeDashboardModal(activeDashboardModal);
+  });
 })();

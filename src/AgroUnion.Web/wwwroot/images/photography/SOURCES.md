@@ -7,6 +7,7 @@ The following locally stored images are used on the public website:
 - `hero-network-field.jpg` — [Unsplash image supplied for the homepage hero slideshow](https://images.unsplash.com/photo-1600747476236-76579658b1b1)
 - `hero-about-messolonghi.jpg` — [Gastronomy Tours image supplied for the About page hero](https://gastronomytours.com/wp-content/uploads/Messolonghi-TR53C.jpg)
 - `about-cooperation.jpg` — [Unsplash image supplied for the About page](https://images.unsplash.com/photo-1626906722163-bd4c03cb3b9b)
+- `hero-network-regions.jpg` — [Unsplash image supplied for the Network page hero](https://images.unsplash.com/photo-1672664214894-0ad13fc43643)
 - `gallery-production.jpg` — [İbrahim Yazgan / Pexels](https://www.pexels.com/photo/farmers-harvesting-olives-with-tractor-in-orchard-29505930/)
 - `gallery-coordination.jpg` — [Hakan Yalcin / Unsplash](https://unsplash.com/photos/green-leaf-0eaMn1aLfNs)
 - `gallery-market.jpg` — [Roberta Sorge / Unsplash](https://unsplash.com/photos/clear-glass-cruet-bottle-uOBApnN_K7w)

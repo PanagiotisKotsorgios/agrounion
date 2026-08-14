@@ -85,33 +85,33 @@
             </table>
         </article>
 
-        <article class="pay-reason">
-            <header>
-                <span class="reason-ic"><i class="fa-solid fa-pen-to-square"></i></span>
+        <section class="payment-guidance" aria-labelledby="payment-guidance-title">
+            <header class="payment-guidance-head">
                 <div>
-                    <div class="overline">Απαραίτητη οδηγία</div>
-                    <h3>Λόγος / αιτιολογία πληρωμής</h3>
+                    <div class="overline">Οδηγία κατάθεσης</div>
+                    <h3 id="payment-guidance-title">Αιτιολογία πληρωμής</h3>
                 </div>
+                <p>Για την άμεση αναγνώριση της πληρωμής, χρησιμοποιήστε το παρακάτω πρότυπο στην τραπεζική εντολή.</p>
             </header>
-            <p>Για να αναγνωριστεί άμεσα η πληρωμή σας, καταχωρίστε ως αιτιολογία της τραπεζικής εντολής το παρακάτω πρότυπο:</p>
-            <div class="reason-template">
+            <div class="payment-reference-template">
+                <span>Πρότυπο αιτιολογίας</span>
                 <code>Πληρωμή συνεργάτη &lt;ΟΝΟΜΑ ΕΤΑΙΡΕΙΑΣ&gt; προς AGRO UNION · &lt;Αιτιολογία&gt;</code>
                 <button type="button" class="copy-btn" data-copy="Πληρωμή συνεργάτη <ΟΝΟΜΑ ΕΤΑΙΡΕΙΑΣ> προς AGRO UNION · <Αιτιολογία>" aria-label="Αντιγραφή προτύπου"><i class="fa-regular fa-copy"></i> Αντιγραφή προτύπου</button>
             </div>
-            <ul class="reason-notes">
-                <li><i class="fa-solid fa-check"></i><span>Αντικαταστήστε το <strong>&lt;ΟΝΟΜΑ ΕΤΑΙΡΕΙΑΣ&gt;</strong> με την πλήρη επωνυμία της εταιρείας σας.</span></li>
-                <li><i class="fa-solid fa-check"></i><span>Στην <strong>&lt;Αιτιολογία&gt;</strong> αναφέρετε τον σκοπό (τιμολόγιο, εκκαθάριση, προκαταβολή κ.λπ.).</span></li>
-                <li><i class="fa-solid fa-check"></i><span>Στείλτε αποδεικτικό πληρωμής στο <a href="mailto:info@agro-union.gr">info@agro-union.gr</a>.</span></li>
-            </ul>
-        </article>
+            <ol class="payment-guidance-list">
+                <li><span>01</span><p>Αντικαταστήστε το <strong>&lt;ΟΝΟΜΑ ΕΤΑΙΡΕΙΑΣ&gt;</strong> με την πλήρη επωνυμία της εταιρείας σας.</p></li>
+                <li><span>02</span><p>Στην <strong>&lt;Αιτιολογία&gt;</strong> αναφέρετε τον σκοπό: τιμολόγιο, εκκαθάριση ή προκαταβολή.</p></li>
+                <li><span>03</span><p>Στείλτε το αποδεικτικό πληρωμής στο <a href="mailto:info@agro-union.gr">info@agro-union.gr</a>.</p></li>
+            </ol>
+        </section>
 
-        <div class="pay-help">
-            <i class="fa-solid fa-headset"></i>
+        <div class="payment-contact">
             <div>
-                <strong>Χρειάζεστε βοήθεια με την πληρωμή σας;</strong>
-                <span>Επικοινωνήστε μαζί μας για διευκρινίσεις πριν πραγματοποιήσετε την κατάθεση.</span>
+                <div class="overline plain">Υποστήριξη πληρωμών</div>
+                <strong>Χρειάζεστε διευκρίνιση πριν την κατάθεση;</strong>
+                <p>Η ομάδα μας μπορεί να επιβεβαιώσει τα στοιχεία και την αιτιολογία πριν πραγματοποιήσετε την πληρωμή.</p>
             </div>
-            <a class="btn" asp-controller="Home" asp-action="Contact"><i class="fa-solid fa-envelope"></i> Επικοινωνία</a>
+            <a class="btn" asp-controller="Home" asp-action="Contact">Επικοινωνία <i class="fa-solid fa-arrow-right"></i></a>
         </div>
     </div>
 </section>

@@ -8,6 +8,28 @@ public interface IEmailSender
     Task SendAsync(string to, string subject, string htmlBody, CancellationToken cancellationToken = default);
 }
 
+public interface IEmailAdministrationService
+{
+    Task SubscribeAsync(string email, string? displayName = null, string source = "Website", CancellationToken ct = default);
+    Task<bool> UnsubscribeAsync(Guid token, CancellationToken ct = default);
+    Task<EmailAdministrationDto> GetDashboardAsync(CancellationToken ct = default);
+    Task SaveSettingsAsync(BrevoSettingsRequest request, string adminUserId, CancellationToken ct = default);
+    Task SendTestAsync(string recipientEmail, CancellationToken ct = default);
+    Task AddSubscriberAsync(string email, string? displayName, CancellationToken ct = default);
+    Task SetSubscriberActiveAsync(Guid id, bool active, CancellationToken ct = default);
+    Task<EmailCampaignResult> SendCampaignAsync(EmailCampaignRequest request, string adminUserId, CancellationToken ct = default);
+}
+
+public interface IPartnerMarketplaceService
+{
+    Task<PartnerMarketplaceDto> GetMarketplaceAsync(string currentUserId, string? role, string? region, string? product, string? search, CancellationToken ct = default);
+    Task SaveProductionListingAsync(string producerUserId, PartnerProductionListingRequest request, CancellationToken ct = default);
+    Task SetProductionListingActiveAsync(string producerUserId, Guid id, bool active, CancellationToken ct = default);
+    Task<Guid> CreateBuyingRequestAsync(string buyerUserId, PartnerBuyingRequestRequest request, CancellationToken ct = default);
+    Task SetBuyingRequestActiveAsync(string buyerUserId, Guid id, bool active, CancellationToken ct = default);
+    Task<Guid> SendInquiryAsync(string senderUserId, PartnerMarketplaceInquiryRequest request, CancellationToken ct = default);
+}
+
 public interface IAgroUnionService
 {
     Task<Guid> SubmitInterestAsync(InterestApplicationRequest request, CancellationToken ct = default);

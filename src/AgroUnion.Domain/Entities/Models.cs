@@ -341,3 +341,84 @@ public sealed class PlatformReleaseAsset : Entity
     public long DownloadCount { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
+
+public sealed class EmailProviderSetting : Entity
+{
+    [MaxLength(40)] public string ProviderName { get; set; } = "Brevo";
+    [MaxLength(5000)] public string EncryptedApiKey { get; set; } = string.Empty;
+    [MaxLength(16)] public string ApiKeyHint { get; set; } = string.Empty;
+    [MaxLength(180)] public string SenderEmail { get; set; } = string.Empty;
+    [MaxLength(180)] public string SenderName { get; set; } = "AGRO UNION";
+    [MaxLength(180)] public string? ReplyToEmail { get; set; }
+    public bool IsEnabled { get; set; }
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    [MaxLength(450)] public string UpdatedByUserId { get; set; } = string.Empty;
+}
+
+public sealed class NewsletterSubscriber : Entity
+{
+    [MaxLength(180)] public string Email { get; set; } = string.Empty;
+    [MaxLength(180)] public string NormalizedEmail { get; set; } = string.Empty;
+    [MaxLength(180)] public string? DisplayName { get; set; }
+    [MaxLength(40)] public string Source { get; set; } = "Website";
+    public Guid UnsubscribeToken { get; set; } = Guid.NewGuid();
+    public bool IsActive { get; set; } = true;
+    public DateTime SubscribedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? UnsubscribedAtUtc { get; set; }
+    public DateTime? LastEmailAtUtc { get; set; }
+    public int EmailsSent { get; set; }
+}
+
+public sealed class EmailCampaign : Entity
+{
+    [MaxLength(220)] public string Subject { get; set; } = string.Empty;
+    [Column(TypeName = "text"), MaxLength(12000)] public string PlainTextBody { get; set; } = string.Empty;
+    [MaxLength(30)] public string Audience { get; set; } = "Newsletter";
+    [MaxLength(30)] public string Status { get; set; } = "Draft";
+    public int RecipientCount { get; set; }
+    public int SentCount { get; set; }
+    public int FailedCount { get; set; }
+    [Column(TypeName = "text"), MaxLength(3000)] public string? ErrorSummary { get; set; }
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? SentAtUtc { get; set; }
+    [MaxLength(450)] public string CreatedByUserId { get; set; } = string.Empty;
+}
+
+public sealed class PartnerProductionListing : Entity
+{
+    public Guid ProductionDeclarationId { get; set; }
+    [MaxLength(450)] public string ProducerUserId { get; set; } = string.Empty;
+    [Column(TypeName = "decimal(18,3)")] public decimal OfferedQuantity { get; set; }
+    [Column(TypeName = "decimal(18,4)")] public decimal AskingPricePerUnit { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class PartnerBuyingRequest : Entity
+{
+    [MaxLength(450)] public string BuyerUserId { get; set; } = string.Empty;
+    [MaxLength(120)] public string Product { get; set; } = string.Empty;
+    [Column(TypeName = "decimal(18,3)")] public decimal Quantity { get; set; }
+    [MaxLength(30)] public string Unit { get; set; } = "kg";
+    [Column(TypeName = "decimal(18,4)")] public decimal MaxPricePerUnit { get; set; }
+    [MaxLength(120)] public string Region { get; set; } = string.Empty;
+    [MaxLength(1000)] public string? QualityRequirements { get; set; }
+    public DateTime ValidUntilUtc { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class PartnerMarketplaceInquiry : Entity
+{
+    public Guid? ProductionListingId { get; set; }
+    public Guid? BuyingRequestId { get; set; }
+    [MaxLength(450)] public string SenderUserId { get; set; } = string.Empty;
+    [MaxLength(450)] public string RecipientUserId { get; set; } = string.Empty;
+    [Column(TypeName = "decimal(18,3)")] public decimal Quantity { get; set; }
+    [Column(TypeName = "decimal(18,4)")] public decimal OfferedPricePerUnit { get; set; }
+    [MaxLength(1500)] public string? Message { get; set; }
+    [MaxLength(30)] public string Status { get; set; } = "New";
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}

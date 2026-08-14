@@ -40,6 +40,7 @@
             @if (isAuthed)
             {
                 <a asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-grip"></i> Επισκόπηση</a>
+                <a asp-controller="Portal" asp-action="Marketplace"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου</a>
                 <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-code-branch"></i> Εκδόσεις</a>
                 <a asp-controller="Account" asp-action="ChangePassword"><i class="fa-solid fa-shield-halved"></i> Ασφάλεια</a>
                 <form asp-controller="Account" asp-action="Logout" method="post">

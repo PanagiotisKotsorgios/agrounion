@@ -1,0 +1,128 @@
+@model AgroUnion.Application.Contracts.EmailAdministrationDto
+@{
+    static string AudienceName(string audience) => audience switch
+    {
+        "Partners" => "Συνεργάτες portal",
+        "All" => "Όλοι οι παραλήπτες",
+        _ => "Newsletter"
+    };
+    static string CampaignStatus(string status) => status switch
+    {
+        "Completed" => "Ολοκληρώθηκε",
+        "Partial" => "Μερική αποστολή",
+        "Failed" => "Απέτυχε",
+        "Sending" => "Σε αποστολή",
+        _ => status
+    };
+}
+
+<div class="email-admin-status @(Model.Settings.IsEnabled && Model.Settings.IsConfigured ? "is-live" : "")">
+    <span class="email-provider-mark"><i class="fa-solid fa-paper-plane"></i></span>
+    <div>
+        <small>ΚΕΝΤΡΙΚΟΣ ΠΑΡΟΧΟΣ EMAIL</small>
+        <h2>Brevo API</h2>
+        <p>@(Model.Settings.IsEnabled && Model.Settings.IsConfigured ? "Η αποστολή είναι ενεργή για προσκλήσεις, επαναφορά κωδικού και ενημερώσεις." : "Οι αποστολές παραμένουν ανενεργές μέχρι να αποθηκευτεί και να ενεργοποιηθεί έγκυρο API key.")</p>
+    </div>
+    <span class="provider-state"><i class="fa-solid @(Model.Settings.IsEnabled && Model.Settings.IsConfigured ? "fa-circle-check" : "fa-circle-pause")"></i> @(Model.Settings.IsEnabled && Model.Settings.IsConfigured ? "Ενεργό" : "Ανενεργό")</span>
+</div>
+
+<div class="email-kpi-grid">
+    <article><span>Ενεργοί συνδρομητές</span><strong>@Model.ActiveSubscriberCount</strong><small>Λίστα newsletter</small></article>
+    <article><span>Ενεργοί συνεργάτες</span><strong>@Model.ActivePartnerCount</strong><small>Λογαριασμοί portal</small></article>
+    <article><span>Καμπάνιες</span><strong>@Model.Campaigns.Count</strong><small>Πρόσφατο ιστορικό</small></article>
+    <article><span>API key</span><strong class="key-state">@(Model.Settings.IsConfigured ? $"•••• {Model.Settings.ApiKeyHint}" : "Δεν ορίστηκε")</strong><small>Κρυπτογραφημένο στη βάση</small></article>
+</div>
+
+<div class="email-admin-grid">
+    <section class="panel email-settings-panel">
+        <header class="panel-head">
+            <div class="title"><small>ΡΥΘΜΙΣΕΙΣ ΠΑΡΟΧΟΥ</small><h2>Σύνδεση & ταυτότητα αποστολέα</h2></div>
+            <i class="fa-solid fa-shield-halved"></i>
+        </header>
+        <div class="panel-body">
+            <form class="portal-form email-settings-form" asp-controller="Portal" asp-action="SaveEmailSettings" method="post" autocomplete="off">
+                <label class="field full"><span>Brevo API key</span><input name="ApiKey" type="password" placeholder="@(Model.Settings.IsConfigured ? "Αφήστε κενό για να διατηρηθεί το υπάρχον" : "xkeysib-…")" /><small>Το κλειδί κρυπτογραφείται και δεν εμφανίζεται ξανά.</small></label>
+                <label class="field"><span>Email αποστολέα</span><input name="SenderEmail" type="email" value="@Model.Settings.SenderEmail" required /></label>
+                <label class="field"><span>Όνομα αποστολέα</span><input name="SenderName" value="@Model.Settings.SenderName" required /></label>
+                <label class="field full"><span>Reply-to</span><input name="ReplyToEmail" type="email" value="@Model.Settings.ReplyToEmail" placeholder="info@agro-union.gr" /></label>
+                <label class="email-enable full"><input name="IsEnabled" type="checkbox" value="true" checked="@Model.Settings.IsEnabled" /><input name="IsEnabled" type="hidden" value="false" /><span><strong>Ενεργοποίηση αποστολών</strong><small>Χρήση της Brevo σε όλα τα αυτοματοποιημένα email της πλατφόρμας.</small></span></label>
+                <button type="submit"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση ρυθμίσεων</button>
+            </form>
+        </div>
+        @if (Model.Settings.UpdatedAtUtc is { } updated)
+        {
+            <footer class="panel-footer">Τελευταία ενημέρωση @updated.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</footer>
+        }
+    </section>
+
+    <section class="panel email-test-panel">
+        <header class="panel-head"><div class="title"><small>ΕΛΕΓΧΟΣ ΣΥΝΔΕΣΗΣ</small><h2>Δοκιμαστική αποστολή</h2></div></header>
+        <div class="panel-body">
+            <p>Επιβεβαιώστε το API key, τον εγκεκριμένο αποστολέα και την παράδοση πριν από μαζική αποστολή.</p>
+            <form class="email-inline-form" asp-controller="Portal" asp-action="SendTestEmail" method="post">
+                <label><span>Email παραλήπτη</span><input name="recipientEmail" type="email" value="info@agro-union.gr" required /></label>
+                <button type="submit"><i class="fa-solid fa-vial-circle-check"></i> Αποστολή δοκιμής</button>
+            </form>
+        </div>
+    </section>
+</div>
+
+<section class="panel email-campaign-panel">
+    <header class="panel-head">
+        <div class="title"><small>ΜΑΖΙΚΗ ΕΝΗΜΕΡΩΣΗ</small><h2>Νέα αποστολή</h2></div>
+        <span class="controlled-send"><i class="fa-solid fa-user-shield"></i> Μόνο διαχειριστές</span>
+    </header>
+    <div class="panel-body">
+        <form class="email-campaign-form" asp-controller="Portal" asp-action="SendEmailCampaign" method="post">
+            <div class="field"><label for="campaign-audience">Κοινό</label><select id="campaign-audience" name="Audience"><option value="Newsletter">Newsletter · @Model.ActiveSubscriberCount</option><option value="Partners">Συνεργάτες portal · @Model.ActivePartnerCount</option><option value="All">Όλοι · αυτόματη αφαίρεση διπλοεγγραφών</option></select></div>
+            <div class="field"><label for="campaign-subject">Θέμα</label><input id="campaign-subject" name="Subject" maxlength="220" required placeholder="Σύντομο και σαφές θέμα" /></div>
+            <div class="field full"><label for="campaign-body">Μήνυμα</label><textarea id="campaign-body" name="Body" rows="8" maxlength="12000" required placeholder="Γράψτε το μήνυμα που θα λάβουν οι παραλήπτες…"></textarea><small>Η εταιρική κεφαλίδα, τα στοιχεία επικοινωνίας και ο σύνδεσμος διαγραφής newsletter προστίθενται αυτόματα.</small></div>
+            <div class="campaign-submit-row"><span><i class="fa-solid fa-circle-info"></i> Κάθε διεύθυνση λαμβάνει ξεχωριστό email και δεν αποκαλύπτονται άλλοι παραλήπτες.</span><button type="submit" data-confirm="Η αποστολή θα ξεκινήσει άμεσα προς το επιλεγμένο κοινό. Να συνεχίσουμε;"><i class="fa-solid fa-paper-plane"></i> Έναρξη αποστολής</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel email-subscribers-panel" id="subscribers">
+    <header class="panel-head">
+        <div class="title"><small>ΜΗΤΡΩΟ NEWSLETTER</small><h2>Συνδρομητές</h2></div>
+        <form class="subscriber-add-form" asp-controller="Portal" asp-action="AddNewsletterSubscriber" method="post">
+            <input name="DisplayName" placeholder="Όνομα / εταιρεία" />
+            <input name="Email" type="email" placeholder="email@example.gr" required />
+            <button type="submit"><i class="fa-solid fa-plus"></i> Προσθήκη</button>
+        </form>
+    </header>
+    <div class="panel-body-tight">
+        @if (Model.Subscribers.Count == 0)
+        {
+            <div class="email-empty"><i class="fa-regular fa-address-book"></i><strong>Η λίστα είναι έτοιμη</strong><p>Οι εγγραφές από το footer ή τη διαχείριση θα εμφανιστούν εδώ.</p></div>
+        }
+        else
+        {
+            <div class="table-wrap email-table-wrap"><table class="data-table email-table"><thead><tr><th>Συνδρομητής</th><th>Πηγή</th><th>Εγγραφή</th><th>Τελευταίο email</th><th>Αποστολές</th><th>Κατάσταση</th><th></th></tr></thead><tbody>
+            @foreach (var subscriber in Model.Subscribers)
+            {
+                <tr><td><strong>@(subscriber.DisplayName ?? "—")</strong><small>@subscriber.Email</small></td><td>@subscriber.Source</td><td>@subscriber.SubscribedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</td><td>@(subscriber.LastEmailAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</td><td>@subscriber.EmailsSent</td><td><span class="subscriber-status @(subscriber.IsActive ? "active" : "inactive")">@(subscriber.IsActive ? "Ενεργός" : "Ανενεργός")</span></td><td><form asp-controller="Portal" asp-action="SetNewsletterSubscriberStatus" asp-route-id="@subscriber.Id" asp-route-active="@(!subscriber.IsActive)" method="post"><button class="subscriber-action" type="submit">@(subscriber.IsActive ? "Απενεργοποίηση" : "Ενεργοποίηση")</button></form></td></tr>
+            }
+            </tbody></table></div>
+        }
+    </div>
+</section>
+
+<section class="panel email-history-panel">
+    <header class="panel-head"><div class="title"><small>ΑΡΧΕΙΟ ΑΠΟΣΤΟΛΩΝ</small><h2>Ιστορικό καμπανιών</h2></div></header>
+    <div class="panel-body-tight">
+        @if (Model.Campaigns.Count == 0)
+        {
+            <div class="email-empty"><i class="fa-regular fa-clock"></i><strong>Δεν έχει πραγματοποιηθεί αποστολή</strong><p>Οι καμπάνιες και τα αποτελέσματά τους θα καταγράφονται εδώ.</p></div>
+        }
+        else
+        {
+            <div class="table-wrap email-table-wrap"><table class="data-table"><thead><tr><th>Ημερομηνία</th><th>Θέμα</th><th>Κοινό</th><th>Παραλήπτες</th><th>Επιτυχίες</th><th>Αποτυχίες</th><th>Κατάσταση</th></tr></thead><tbody>
+            @foreach (var campaign in Model.Campaigns)
+            {
+                <tr><td>@campaign.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td><strong>@campaign.Subject</strong></td><td>@AudienceName(campaign.Audience)</td><td>@campaign.RecipientCount</td><td>@campaign.SentCount</td><td>@campaign.FailedCount</td><td><span class="campaign-status @campaign.Status.ToLowerInvariant()">@CampaignStatus(campaign.Status)</span></td></tr>
+            }
+            </tbody></table></div>
+        }
+    </div>
+</section>

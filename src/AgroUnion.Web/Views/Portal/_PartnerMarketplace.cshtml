@@ -1,0 +1,151 @@
+@model AgroUnion.Application.Contracts.PartnerMarketplaceDto
+@using AgroUnion.Domain.Entities
+@{
+    static string RoleName(string role) => role switch { RoleNames.Producer => "Παραγωγός", RoleNames.Trader => "Έμπορος", RoleNames.Company => "Επιχείρηση", RoleNames.Admin => "Διαχείριση", _ => role };
+    static string InquiryStatus(string status) => status switch { "New" => "Νέο", "Accepted" => "Αποδεκτό", "Declined" => "Απορρίφθηκε", "Closed" => "Έκλεισε", _ => status };
+}
+
+<section class="network-market-intro">
+    <div class="network-market-shield"><i class="fa-solid fa-shield-halved"></i></div>
+    <div>
+        <small>ΠΡΟΣΤΑΤΕΥΜΕΝΗ ΕΜΠΟΡΙΚΗ ΠΕΡΙΟΧΗ</small>
+        <h2>Συνεργασίες μόνο μέσα στο δίκτυο.</h2>
+        <p>Εμφανίζονται αποκλειστικά ενεργοί συνεργάτες. Για κάθε δήλωση παραγωγής αφαιρείται αυτόματα η ποσότητα που έχει ήδη δεσμευτεί σε ενεργή ή ολοκληρωμένη συμφωνία με την AGRO UNION.</p>
+    </div>
+    <span><i class="fa-solid fa-lock"></i> Ιδιωτική πρόσβαση</span>
+</section>
+
+<form class="market-filter-bar" asp-controller="Portal" asp-action="Marketplace" method="get">
+    <label><span>Αναζήτηση</span><div class="market-search"><i class="fa-solid fa-magnifying-glass"></i><input name="search" value="@Model.Search" placeholder="Επωνυμία, προϊόν ή περιοχή" /></div></label>
+    <label><span>Ρόλος</span><select name="role"><option value="">Όλοι οι συνεργάτες</option><option value="Producer" selected="@(Model.SelectedRole == RoleNames.Producer)">Παραγωγοί</option><option value="Trader" selected="@(Model.SelectedRole == RoleNames.Trader)">Έμποροι</option><option value="Company" selected="@(Model.SelectedRole == RoleNames.Company)">Επιχειρήσεις</option></select></label>
+    <label><span>Περιοχή</span><select name="region"><option value="">Όλες οι περιοχές</option>@foreach (var option in Model.Regions){<option value="@option" selected="@(Model.SelectedRegion == option)">@option</option>}</select></label>
+    <label><span>Προϊόν</span><select name="product"><option value="">Όλα τα προϊόντα</option>@foreach (var option in Model.Products){<option value="@option" selected="@(Model.SelectedProduct == option)">@option</option>}</select></label>
+    <button type="submit"><i class="fa-solid fa-sliders"></i> Εφαρμογή</button>
+    @if (Model.SelectedRole is not null || Model.SelectedRegion is not null || Model.SelectedProduct is not null || Model.Search is not null){<a asp-controller="Portal" asp-action="Marketplace">Καθαρισμός</a>}
+</form>
+
+@if (Model.CurrentRole == RoleNames.Producer)
+{
+    <section class="panel market-publish-panel">
+        <header class="panel-head"><div class="title"><small>ΔΗΜΟΣΙΕΥΣΗ ΠΑΡΑΓΩΓΗΣ</small><h2>Διαθέστε μόνο τη μη δεσμευμένη ποσότητα</h2></div><span class="market-role-chip"><i class="fa-solid fa-wheat-awn"></i> Παραγωγός</span></header>
+        <div class="panel-body">
+        @if (Model.OwnProductionOptions.Count == 0)
+        {
+            <div class="market-inline-empty"><i class="fa-solid fa-circle-info"></i><span><strong>Δεν υπάρχει διαθέσιμη μη δεσμευμένη παραγωγή.</strong><small>Προσθέστε δήλωση παραγωγής ή ολοκληρώστε/ακυρώστε τις σχετικές δεσμεύσεις.</small></span></div>
+        }
+        else
+        {
+            <form class="market-publish-form" asp-controller="Portal" asp-action="SaveMarketplaceProduction" method="post">
+                <label class="wide"><span>Δήλωση παραγωγής</span><select name="ProductionDeclarationId" required>@foreach(var option in Model.OwnProductionOptions){<option value="@option.ProductionDeclarationId">@option.Product · @option.QualityGrade · @option.Region · έως @option.UncommittedQuantity.ToString("N3") @option.Unit ελεύθερα</option>}</select></label>
+                <label><span>Ποσότητα προς διάθεση</span><input name="OfferedQuantity" type="number" min="0.001" step="0.001" required /></label>
+                <label><span>Ζητούμενη τιμή / μονάδα</span><input name="AskingPricePerUnit" type="number" min="0.0001" step="0.0001" required /></label>
+                <button type="submit"><i class="fa-solid fa-arrow-up-from-bracket"></i> Δημοσίευση στο δίκτυο</button>
+            </form>
+        }
+        </div>
+    </section>
+}
+else if (Model.CurrentRole is RoleNames.Trader or RoleNames.Company)
+{
+    <section class="panel market-publish-panel">
+        <header class="panel-head"><div class="title"><small>ΖΗΤΗΣΗ ΑΓΟΡΑΣ</small><h2>Δηλώστε τι θέλετε να αγοράσετε</h2></div><span class="market-role-chip"><i class="fa-solid fa-scale-balanced"></i> @RoleName(Model.CurrentRole)</span></header>
+        <div class="panel-body">
+            <form class="market-demand-form" asp-controller="Portal" asp-action="CreateMarketplaceDemand" method="post">
+                <label><span>Προϊόν</span><input name="Product" required placeholder="π.χ. Ελαιόλαδο" /></label>
+                <label><span>Ποσότητα</span><input name="Quantity" type="number" min="0.001" step="0.001" required /></label>
+                <label><span>Μονάδα</span><select name="Unit"><option value="kg">kg</option><option value="tn">tn</option><option value="lt">lt</option></select></label>
+                <label><span>Μέγιστη τιμή / μονάδα</span><input name="MaxPricePerUnit" type="number" min="0.0001" step="0.0001" required /></label>
+                <label><span>Περιοχή παραλαβής</span><input name="Region" required placeholder="π.χ. Μεσολόγγι" /></label>
+                <label><span>Ισχύει έως</span><input name="ValidUntilUtc" type="date" value="@DateTime.Today.AddDays(30).ToString("yyyy-MM-dd")" required /></label>
+                <label class="full"><span>Ποιοτικές απαιτήσεις</span><textarea name="QualityRequirements" rows="3" maxlength="1000" placeholder="Προαιρετικές προδιαγραφές, ποικιλία, πιστοποιήσεις…"></textarea></label>
+                <button type="submit"><i class="fa-solid fa-bullhorn"></i> Δημοσίευση ζήτησης</button>
+            </form>
+        </div>
+    </section>
+}
+
+<section class="market-section" id="production-market">
+    <header class="market-section-head"><div><small>ΔΙΑΘΕΣΙΜΗ ΠΑΡΑΓΩΓΗ</small><h2>Ελεύθερες ποσότητες δικτύου</h2><p>Η χαμηλότερη ζητούμενη τιμή εμφανίζεται πρώτη.</p></div><span>@Model.ProductionListings.Count καταχωρίσεις</span></header>
+    @if (Model.ProductionListings.Count == 0)
+    {
+        <div class="market-empty"><i class="fa-solid fa-box-open"></i><strong>Δεν βρέθηκε διαθέσιμη παραγωγή</strong><p>Δοκιμάστε διαφορετικά φίλτρα ή επιστρέψτε όταν δημοσιευτούν νέες ελεύθερες ποσότητες.</p></div>
+    }
+    else
+    {
+        <div class="market-offer-grid">
+        @foreach (var listing in Model.ProductionListings)
+        {
+            <article class="market-offer-card @(listing.IsMine ? "is-mine" : "")">
+                <header><span class="market-product-icon"><i class="fa-solid fa-seedling"></i></span><div><small>@listing.Region</small><h3>@listing.Product</h3></div>@if(listing.IsMine){<em>Δική σας</em>}</header>
+                <dl><div><dt>Ελεύθερη ποσότητα</dt><dd>@listing.AvailableQuantity.ToString("N3") @listing.Unit</dd></div><div><dt>Ζητούμενη τιμή</dt><dd>@listing.AskingPricePerUnit.ToString("N4") € / @listing.Unit</dd></div><div><dt>Ποιότητα</dt><dd>@listing.QualityGrade</dd></div><div><dt>Παραγωγός</dt><dd>@listing.ProducerName</dd></div></dl>
+                @if (listing.IsMine)
+                {
+                    <form asp-controller="Portal" asp-action="SetMarketplaceProductionStatus" asp-route-id="@listing.Id" asp-route-active="false" method="post"><button class="market-withdraw" type="submit" data-confirm="Να αποσυρθεί η προσφορά από το δίκτυο;"><i class="fa-solid fa-eye-slash"></i> Απόσυρση</button></form>
+                }
+                else if (Model.CurrentRole != RoleNames.Admin)
+                {
+                    <details class="market-inquiry"><summary><i class="fa-solid fa-handshake"></i> Υποβολή πρότασης</summary><form asp-controller="Portal" asp-action="SendMarketplaceInquiry" method="post"><input type="hidden" name="ProductionListingId" value="@listing.Id" /><label><span>Ποσότητα (@listing.Unit)</span><input name="Quantity" type="number" min="0.001" max="@listing.AvailableQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="0.001" required /></label><label><span>Τιμή / @listing.Unit</span><input name="OfferedPricePerUnit" type="number" min="0.0001" step="0.0001" value="@listing.AskingPricePerUnit.ToString(System.Globalization.CultureInfo.InvariantCulture)" required /></label><label class="full"><span>Μήνυμα</span><textarea name="Message" rows="2" maxlength="1500"></textarea></label><button type="submit"><i class="fa-solid fa-paper-plane"></i> Αποστολή ενδιαφέροντος</button></form></details>
+                }
+            </article>
+        }
+        </div>
+    }
+</section>
+
+<section class="market-section" id="buying-demand">
+    <header class="market-section-head"><div><small>ΕΝΕΡΓΗ ΖΗΤΗΣΗ</small><h2>Έμποροι & επιχειρήσεις που αγοράζουν</h2><p>Η υψηλότερη διαθέσιμη τιμή εμφανίζεται πρώτη για καλύτερη σύγκριση.</p></div><span>@Model.BuyingRequests.Count ζητήσεις</span></header>
+    @if (Model.BuyingRequests.Count == 0)
+    {
+        <div class="market-empty"><i class="fa-solid fa-chart-line"></i><strong>Δεν βρέθηκε ενεργή ζήτηση</strong><p>Οι νέες ανάγκες εμπόρων και επιχειρήσεων θα εμφανιστούν εδώ.</p></div>
+    }
+    else
+    {
+        <div class="market-demand-list">
+        @foreach (var demand in Model.BuyingRequests)
+        {
+            <article class="market-demand-row @(demand.IsMine ? "is-mine" : "")">
+                <div class="demand-rank"><small>έως</small><strong>@demand.MaxPricePerUnit.ToString("N4") €</strong><span>/ @demand.Unit</span></div>
+                <div class="demand-main"><span>@RoleName(demand.BuyerRole) · @demand.Region</span><h3>@demand.Product</h3><p>@demand.BuyerName</p></div>
+                <div class="demand-terms"><span><small>Ποσότητα</small><strong>@demand.Quantity.ToString("N3") @demand.Unit</strong></span><span><small>Ισχύς</small><strong>@demand.ValidUntilUtc.ToLocalTime().ToString("dd/MM/yyyy")</strong></span>@if(!string.IsNullOrWhiteSpace(demand.QualityRequirements)){<span class="quality"><small>Απαιτήσεις</small><strong>@demand.QualityRequirements</strong></span>}</div>
+                @if (demand.IsMine)
+                {
+                    <form asp-controller="Portal" asp-action="SetMarketplaceDemandStatus" asp-route-id="@demand.Id" asp-route-active="false" method="post"><button class="market-withdraw" type="submit" data-confirm="Να κλείσει η ζήτηση αγοράς;"><i class="fa-solid fa-circle-xmark"></i> Κλείσιμο</button></form>
+                }
+                else if (Model.CurrentRole != RoleNames.Admin)
+                {
+                    <details class="market-inquiry demand-inquiry"><summary><i class="fa-solid fa-reply"></i> Πρόταση παραγωγού</summary><form asp-controller="Portal" asp-action="SendMarketplaceInquiry" method="post"><input type="hidden" name="BuyingRequestId" value="@demand.Id" /><label><span>Ποσότητα (@demand.Unit)</span><input name="Quantity" type="number" min="0.001" max="@demand.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="0.001" required /></label><label><span>Προτεινόμενη τιμή</span><input name="OfferedPricePerUnit" type="number" min="0.0001" step="0.0001" value="@demand.MaxPricePerUnit.ToString(System.Globalization.CultureInfo.InvariantCulture)" required /></label><label class="full"><span>Μήνυμα</span><textarea name="Message" rows="2" maxlength="1500"></textarea></label><button type="submit"><i class="fa-solid fa-paper-plane"></i> Αποστολή πρότασης</button></form></details>
+                }
+            </article>
+        }
+        </div>
+    }
+</section>
+
+<div class="market-lower-grid">
+    <section class="panel market-directory-panel">
+        <header class="panel-head"><div class="title"><small>ΜΗΤΡΩΟ ΣΥΝΕΡΓΑΤΩΝ</small><h2>Άνθρωποι & επιχειρήσεις</h2></div><span class="panel-count">@Model.Partners.Count</span></header>
+        <div class="market-directory-list">
+        @if(Model.Partners.Count == 0){<div class="market-inline-empty"><i class="fa-solid fa-users-slash"></i><span><strong>Δεν βρέθηκαν συνεργάτες</strong><small>Αλλάξτε τα φίλτρα αναζήτησης.</small></span></div>}
+        @foreach(var partner in Model.Partners)
+        {
+            <article>
+                <span class="partner-avatar">@partner.Name.Substring(0,1).ToUpperInvariant()</span>
+                <div><small>@RoleName(partner.Role) · @partner.Region</small><strong>@partner.Name</strong><p>@(partner.Products.Count == 0 ? "Χωρίς καταχωρισμένο προϊόν" : string.Join(" · ", partner.Products))</p></div>
+                @if(Model.CurrentRole != RoleNames.Admin)
+                {
+                    <details class="partner-connect"><summary title="Νέα εμπορική επαφή"><i class="fa-solid fa-message"></i></summary><form asp-controller="Portal" asp-action="SendMarketplaceInquiry" method="post"><input type="hidden" name="PartnerUserId" value="@partner.UserId" /><label><span>Ενδεικτική ποσότητα</span><input name="Quantity" type="number" min="0.001" step="0.001" required /></label><label><span>Ενδεικτική τιμή / μονάδα</span><input name="OfferedPricePerUnit" type="number" min="0.0001" step="0.0001" required /></label><label class="full"><span>Μήνυμα προς @partner.Name</span><textarea name="Message" rows="3" maxlength="1500" required></textarea></label><button type="submit"><i class="fa-solid fa-paper-plane"></i> Αποστολή επαφής</button></form></details>
+                }
+                <i class="fa-solid fa-circle-check" title="Ενεργός συνεργάτης"></i>
+            </article>
+        }
+        </div>
+    </section>
+
+    <section class="panel market-inquiries-panel">
+        <header class="panel-head"><div class="title"><small>ΕΜΠΟΡΙΚΕΣ ΕΠΑΦΕΣ</small><h2>Πρόσφατο ενδιαφέρον</h2></div><span class="panel-count">@Model.Inquiries.Count</span></header>
+        <div class="market-inquiry-list">
+        @if(Model.Inquiries.Count == 0){<div class="market-inline-empty"><i class="fa-regular fa-message"></i><span><strong>Δεν υπάρχουν ακόμη επαφές</strong><small>Οι προτάσεις που στέλνετε ή λαμβάνετε καταγράφονται εδώ.</small></span></div>}
+        @foreach(var inquiry in Model.Inquiries){<article><span class="inquiry-direction @(inquiry.Direction == "Received" ? "received" : "sent")"><i class="fa-solid @(inquiry.Direction == "Received" ? "fa-arrow-down" : "fa-arrow-up")"></i></span><div><small>@(inquiry.Direction == "Received" ? "Ελήφθη" : "Εστάλη") · @inquiry.CreatedAtUtc.ToLocalTime().ToString("dd/MM HH:mm")</small><strong>@inquiry.CounterpartyName</strong><p>@inquiry.Context · @inquiry.Quantity.ToString("N3") · @inquiry.OfferedPricePerUnit.ToString("N4") €</p></div><span class="inquiry-status">@InquiryStatus(inquiry.Status)</span></article>}
+        </div>
+    </section>
+</div>

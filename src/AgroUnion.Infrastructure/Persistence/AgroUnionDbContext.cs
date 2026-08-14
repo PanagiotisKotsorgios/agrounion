@@ -28,6 +28,12 @@ public sealed class AgroUnionDbContext(DbContextOptions<AgroUnionDbContext> opti
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<PlatformRelease> PlatformReleases => Set<PlatformRelease>();
     public DbSet<PlatformReleaseAsset> PlatformReleaseAssets => Set<PlatformReleaseAsset>();
+    public DbSet<EmailProviderSetting> EmailProviderSettings => Set<EmailProviderSetting>();
+    public DbSet<NewsletterSubscriber> NewsletterSubscribers => Set<NewsletterSubscriber>();
+    public DbSet<EmailCampaign> EmailCampaigns => Set<EmailCampaign>();
+    public DbSet<PartnerProductionListing> PartnerProductionListings => Set<PartnerProductionListing>();
+    public DbSet<PartnerBuyingRequest> PartnerBuyingRequests => Set<PartnerBuyingRequest>();
+    public DbSet<PartnerMarketplaceInquiry> PartnerMarketplaceInquiries => Set<PartnerMarketplaceInquiry>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -62,5 +68,23 @@ public sealed class AgroUnionDbContext(DbContextOptions<AgroUnionDbContext> opti
             .HasOne(x => x.PlatformRelease).WithMany(x => x.Assets)
             .HasForeignKey(x => x.PlatformReleaseId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<PlatformReleaseAsset>().HasIndex(x => x.PlatformReleaseId);
+        builder.Entity<EmailProviderSetting>().HasIndex(x => x.ProviderName).IsUnique();
+        builder.Entity<NewsletterSubscriber>().HasIndex(x => x.NormalizedEmail).IsUnique();
+        builder.Entity<NewsletterSubscriber>().HasIndex(x => x.UnsubscribeToken).IsUnique();
+        builder.Entity<NewsletterSubscriber>().HasIndex(x => new { x.IsActive, x.SubscribedAtUtc });
+        builder.Entity<EmailCampaign>().HasIndex(x => x.CreatedAtUtc);
+        builder.Entity<PartnerProductionListing>().HasIndex(x => x.ProductionDeclarationId).IsUnique();
+        builder.Entity<PartnerProductionListing>().HasIndex(x => new { x.IsActive, x.UpdatedAtUtc });
+        builder.Entity<PartnerProductionListing>().HasOne<ProductionDeclaration>().WithMany().HasForeignKey(x => x.ProductionDeclarationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<PartnerProductionListing>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.ProducerUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<PartnerBuyingRequest>().HasIndex(x => new { x.IsActive, x.ValidUntilUtc });
+        builder.Entity<PartnerBuyingRequest>().HasIndex(x => new { x.Product, x.Region });
+        builder.Entity<PartnerBuyingRequest>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.BuyerUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<PartnerMarketplaceInquiry>().HasIndex(x => new { x.RecipientUserId, x.Status, x.CreatedAtUtc });
+        builder.Entity<PartnerMarketplaceInquiry>().HasIndex(x => x.SenderUserId);
+        builder.Entity<PartnerMarketplaceInquiry>().HasOne<PartnerProductionListing>().WithMany().HasForeignKey(x => x.ProductionListingId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<PartnerMarketplaceInquiry>().HasOne<PartnerBuyingRequest>().WithMany().HasForeignKey(x => x.BuyingRequestId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<PartnerMarketplaceInquiry>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.SenderUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<PartnerMarketplaceInquiry>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.RecipientUserId).OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -89,10 +89,13 @@ dotnet ef migrations add MigrationName --project src/AgroUnion.Infrastructure --
 - Price lists, contract/history views, CSV transaction export και admin margin CSV.
 - Contact form → persistence + email notification.
 - Account activation, role change, reset password και GDPR anonymization.
+- Ιδιωτική **Αγορά Δικτύου** για ενεργούς συνεργάτες: φίλτρα ρόλου/περιοχής/προϊόντος, δημοσίευση μόνο της μη δεσμευμένης παραγωγής, ταξινομημένη ζήτηση εμπόρων βάσει καλύτερης τιμής και καταγεγραμμένες εμπορικές επαφές με ειδοποίηση email.
 
 ## Email
 
-Στο development χρησιμοποιείται `DevelopmentEmailSender` και τα emails καταγράφονται στα logs. Με `Smtp__Enabled=true` ενεργοποιείται ο SMTP sender. Όλες οι ρυθμίσεις SMTP παρέχονται από environment variables/configuration.
+Όλα τα email της πλατφόρμας αποστέλλονται μέσω του Brevo API: προσκλήσεις, επαναφορά κωδικού, δοκιμαστικές αποστολές και ενημερώσεις newsletter/συνεργατών. Ο διαχειριστής ορίζει το API key, τον αποστολέα και το reply-to από **Portal → Email & Newsletter**. Το API key αποθηκεύεται κρυπτογραφημένο με ASP.NET Core Data Protection και δεν εμφανίζεται ξανά μετά την αποθήκευση.
+
+Οι εγγραφές newsletter τηρούνται στη βάση, αφαιρούνται αυτόματα οι διπλοεγγραφές και κάθε μαζικό μήνυμα προς newsletter περιλαμβάνει προσωπικό σύνδεσμο διαγραφής. Το ιστορικό αποστολών και τα επιμέρους αποτελέσματα διατηρούνται στο admin portal.
 
 ## Tests
 
@@ -100,7 +103,7 @@ dotnet ef migrations add MigrationName --project src/AgroUnion.Infrastructure --
 dotnet test
 ```
 
-Υπάρχουν 16 xUnit tests για margin, ελάχιστη ποσότητα δύο σκελών, facilitation, transitions επιβεβαίωσης, role mapping, GDPR consent, honeypot και validation παραγωγής/αντιπροσφοράς.
+Υπάρχουν 25 xUnit tests για margin, δεσμεύσεις παραγωγής, ιδιωτική αγορά συνεργατών, facilitation, transitions επιβεβαίωσης, role mapping, seeding, κρυπτογράφηση και request contract της Brevo, newsletter deduplication και validation παραγωγής/αντιπροσφοράς.
 
 ## Production checklist
 

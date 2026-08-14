@@ -4,6 +4,9 @@
 @{
     var role = User.IsInRole(RoleNames.Admin) ? "Διαχείριση" : User.IsInRole(RoleNames.Producer) ? "Παραγωγός" : User.IsInRole(RoleNames.Trader) ? "Έμπορος" : "Εταιρεία";
     var producerPage = (ViewData["ProducerPage"] as string ?? "overview").ToLowerInvariant();
+    var adminPage = (ViewData["AdminPage"] as string ?? "overview").ToLowerInvariant();
+    var portalPage = (ViewData["PortalPage"] as string ?? "overview").ToLowerInvariant();
+    var isMarketplace = portalPage == "marketplace";
     var pageTitle = producerPage switch
     {
         "collaboration" => "Η συνεργασία μου",
@@ -26,7 +29,7 @@
         "offers" => "Ενεργές προτάσεις και προμήθειες.",
         _ => "Η συνολική εικόνα της συνεργασίας σας."
     };
-    ViewData["Title"] = User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
+    ViewData["Title"] = isMarketplace ? "Αγορά Δικτύου" : adminPage == "email" ? "Email & Newsletter" : User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
 
     var mobileCrumb = User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
     var name = User.Identity?.Name ?? "";
@@ -67,6 +70,7 @@
                 <a class="@(producerPage == "logistics" ? "active" : "")" asp-action="ProducerPage" asp-route-page="logistics"><i class="fa-solid fa-truck-fast"></i> Δρομολόγια</a>
                 <a class="@(producerPage == "invoices" ? "active" : "")" asp-action="ProducerPage" asp-route-page="invoices"><i class="fa-solid fa-file-invoice-dollar"></i> Τιμολόγια</a>
                 <a class="@(producerPage == "offers" ? "active" : "")" asp-action="ProducerPage" asp-route-page="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
+                <a class="@(isMarketplace ? "active" : "")" asp-controller="Portal" asp-action="Marketplace"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου</a>
                 <a class="@(producerPage == "documents" ? "active" : "")" asp-action="ProducerPage" asp-route-page="documents"><i class="fa-solid fa-folder-open"></i> Έγγραφα</a>
                 <div class="portal-nav-section">Πλατφόρμα</div>
                 <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-code-branch"></i> Εκδόσεις</a>
@@ -74,15 +78,17 @@
             else if (User.IsInRole(RoleNames.Admin))
             {
                 <div class="portal-nav-section">Επισκόπηση</div>
-                <a class="active" asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-gauge-high"></i> Αρχική</a>
+                <a class="@(adminPage == "overview" ? "active" : "")" asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-gauge-high"></i> Αρχική</a>
                 <div class="portal-nav-section">Διαχείριση</div>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="applications"><i class="fa-solid fa-user-plus"></i> Αιτήσεις</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="users"><i class="fa-solid fa-users-gear"></i> Συνεργάτες</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="producer-workspace"><i class="fa-solid fa-folder-open"></i> Φάκελος παραγωγού</a>
                 <div class="portal-nav-section">Εμπορικά</div>
+                <a class="@(isMarketplace ? "active" : "")" asp-controller="Portal" asp-action="Marketplace"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="deals"><i class="fa-solid fa-handshake"></i> Συμφωνίες</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="messages"><i class="fa-solid fa-envelope"></i> Μηνύματα</a>
                 <div class="portal-nav-section">Πλατφόρμα</div>
+                <a class="@(adminPage == "email" ? "active" : "")" asp-controller="Portal" asp-action="EmailAdministration"><i class="fa-solid fa-paper-plane"></i> Email & Newsletter</a>
                 <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-box-archive"></i> Εκδόσεις</a>
             }
             else
@@ -90,6 +96,7 @@
                 <div class="portal-nav-section">Επισκόπηση</div>
                 <a class="active" asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-house"></i> Αρχική</a>
                 <div class="portal-nav-section">Αγορές</div>
+                <a class="@(isMarketplace ? "active" : "")" asp-controller="Portal" asp-action="Marketplace"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="pickups"><i class="fa-solid fa-truck-fast"></i> Παραλαβές</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="contracts"><i class="fa-solid fa-file-signature"></i> Σύμβαση</a>
@@ -120,9 +127,9 @@
 
         <header class="exec-header" id="overview">
             <div class="exec-copy">
-                <small>@(User.IsInRole(RoleNames.Producer) ? "Λογαριασμός παραγωγού" : User.IsInRole(RoleNames.Admin) ? "Διαχείριση" : "Portal συνεργατών")</small>
-                <h1>@greeting, @displayName.</h1>
-                <p>@(User.IsInRole(RoleNames.Producer) ? pageDescription : "Η συγκεντρωτική εικόνα του δικτύου σας.")</p>
+                <small>@(isMarketplace ? "Ιδιωτικό δίκτυο συνεργατών" : adminPage == "email" ? "Κεντρική επικοινωνία" : User.IsInRole(RoleNames.Producer) ? "Λογαριασμός παραγωγού" : User.IsInRole(RoleNames.Admin) ? "Διαχείριση" : "Portal συνεργατών")</small>
+                <h1>@(isMarketplace ? "Αγορά Δικτύου" : adminPage == "email" ? "Email & Newsletter" : $"{greeting}, {displayName}.")</h1>
+                <p>@(isMarketplace ? "Παραγωγή, ζήτηση και επαφές αποκλειστικά μεταξύ ενεργών συνεργατών της AGRO UNION." : adminPage == "email" ? "Ρυθμίσεις Brevo, συνδρομητές και ελεγχόμενες μαζικές αποστολές από ένα σημείο." : User.IsInRole(RoleNames.Producer) ? pageDescription : "Η συγκεντρωτική εικόνα του δικτύου σας.")</p>
             </div>
         </header>
 
@@ -137,6 +144,14 @@
         else if (Model is BuyerDashboardDto buyer)
         {
             @await Html.PartialAsync("_BuyerDashboard", buyer)
+        }
+        else if (Model is EmailAdministrationDto emailAdmin)
+        {
+            @await Html.PartialAsync("_EmailAdministration", emailAdmin)
+        }
+        else if (Model is PartnerMarketplaceDto partnerMarketplace)
+        {
+            @await Html.PartialAsync("_PartnerMarketplace", partnerMarketplace)
         }
     </section>
 </div>

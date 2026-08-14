@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace AgroUnion.Web.Controllers;
 
-public sealed class HomeController(IAgroUnionService service, ILogger<HomeController> logger) : Controller
+public sealed class HomeController(IAgroUnionService service, IEmailAdministrationService emailAdministration, ILogger<HomeController> logger) : Controller
 {
     [HttpGet("/")]
     public IActionResult Index() => View();
@@ -123,10 +123,7 @@ public sealed class HomeController(IAgroUnionService service, ILogger<HomeContro
 
         try
         {
-            await service.SubmitContactAsync(new ContactRequest(
-                "Εγγραφή newsletter",
-                address.Address,
-                "Αίτημα εγγραφής στο newsletter της AGRO UNION."), ct);
+            await emailAdministration.SubscribeAsync(address.Address, source: "Website", ct: ct);
             TempData["Success"] = "Η εγγραφή σας στο newsletter ολοκληρώθηκε.";
         }
         catch (ValidationException ex)
@@ -141,6 +138,16 @@ public sealed class HomeController(IAgroUnionService service, ILogger<HomeContro
         }
 
         return LocalRedirect($"{destination}#newsletter");
+    }
+
+    [HttpGet("/newsletter/unsubscribe/{token:guid}")]
+    public async Task<IActionResult> UnsubscribeNewsletter(Guid token, CancellationToken ct)
+    {
+        var removed = await emailAdministration.UnsubscribeAsync(token, ct);
+        TempData[removed ? "Success" : "Error"] = removed
+            ? "Η διεύθυνσή σας αφαιρέθηκε από τις ενημερώσεις της AGRO UNION."
+            : "Ο σύνδεσμος διαγραφής δεν είναι έγκυρος.";
+        return RedirectToAction(nameof(Index), "Home", null, "newsletter");
     }
 
     [HttpGet("/privacy")]

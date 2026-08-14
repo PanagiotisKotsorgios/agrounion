@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AgroUnion.Web.Controllers;
 
 [Authorize, Route("portal")]
-public sealed class PortalController(IAgroUnionService service, ILogger<PortalController> logger) : Controller
+public sealed class PortalController(IAgroUnionService service, IEmailAdministrationService emailAdministration, IPartnerMarketplaceService marketplace, ILogger<PortalController> logger) : Controller
 {
     private static readonly HashSet<string> ProducerPages = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -31,6 +31,72 @@ public sealed class PortalController(IAgroUnionService service, ILogger<PortalCo
         if (User.IsInRole(RoleNames.Trader)) return View("Dashboard", await service.GetBuyerDashboardAsync(UserId, false, ct));
         if (User.IsInRole(RoleNames.Company)) return View("Dashboard", await service.GetBuyerDashboardAsync(UserId, true, ct));
         return Forbid();
+    }
+
+    [Authorize(Policy = "AdminOnly"), HttpGet("email")]
+    public async Task<IActionResult> EmailAdministration(CancellationToken ct)
+    {
+        ViewData["AdminPage"] = "email";
+        return View("Dashboard", await emailAdministration.GetDashboardAsync(ct));
+    }
+
+    [HttpGet("marketplace")]
+    public async Task<IActionResult> Marketplace(string? role, string? region, string? product, string? search, CancellationToken ct)
+    {
+        ViewData["PortalPage"] = "marketplace";
+        return View("Dashboard", await marketplace.GetMarketplaceAsync(UserId, role, region, product, search, ct));
+    }
+
+    [Authorize(Policy = "FarmerOnly"), HttpPost("marketplace/production")]
+    public async Task<IActionResult> SaveMarketplaceProduction(PartnerProductionListingForm form, CancellationToken ct) =>
+        await RunMarketplace(async () => await marketplace.SaveProductionListingAsync(UserId, form.ToRequest(), ct), "Η μη δεσμευμένη παραγωγή δημοσιεύτηκε στο δίκτυο.");
+
+    [Authorize(Policy = "FarmerOnly"), HttpPost("marketplace/production/{id:guid}/status")]
+    public async Task<IActionResult> SetMarketplaceProductionStatus(Guid id, bool active, CancellationToken ct) =>
+        await RunMarketplace(async () => await marketplace.SetProductionListingActiveAsync(UserId, id, active, ct), active ? "Η προσφορά παραγωγής ενεργοποιήθηκε." : "Η προσφορά παραγωγής αποσύρθηκε.");
+
+    [Authorize(Policy = "BuyerOnly"), HttpPost("marketplace/demand")]
+    public async Task<IActionResult> CreateMarketplaceDemand(PartnerBuyingRequestForm form, CancellationToken ct) =>
+        await RunMarketplace(async () => await marketplace.CreateBuyingRequestAsync(UserId, form.ToRequest(), ct), "Η ζήτηση αγοράς δημοσιεύτηκε στο δίκτυο.");
+
+    [Authorize(Policy = "BuyerOnly"), HttpPost("marketplace/demand/{id:guid}/status")]
+    public async Task<IActionResult> SetMarketplaceDemandStatus(Guid id, bool active, CancellationToken ct) =>
+        await RunMarketplace(async () => await marketplace.SetBuyingRequestActiveAsync(UserId, id, active, ct), active ? "Η ζήτηση ενεργοποιήθηκε." : "Η ζήτηση έκλεισε.");
+
+    [HttpPost("marketplace/inquiries")]
+    public async Task<IActionResult> SendMarketplaceInquiry(PartnerMarketplaceInquiryForm form, CancellationToken ct) =>
+        await RunMarketplace(async () => await marketplace.SendInquiryAsync(UserId, form.ToRequest(), ct), "Το ενδιαφέρον στάλθηκε στον συνεργάτη και καταγράφηκε στην πλατφόρμα.");
+
+    [Authorize(Policy = "AdminOnly"), HttpPost("email/settings")]
+    public async Task<IActionResult> SaveEmailSettings(BrevoSettingsForm form, CancellationToken ct) =>
+        await RunEmail(async () => await emailAdministration.SaveSettingsAsync(form.ToRequest(), UserId, ct), "Οι ρυθμίσεις Brevo αποθηκεύτηκαν.");
+
+    [Authorize(Policy = "AdminOnly"), HttpPost("email/test")]
+    public async Task<IActionResult> SendTestEmail(string recipientEmail, CancellationToken ct) =>
+        await RunEmail(async () => await emailAdministration.SendTestAsync(recipientEmail, ct), "Το δοκιμαστικό email παραδόθηκε στη Brevo.");
+
+    [Authorize(Policy = "AdminOnly"), HttpPost("email/subscribers")]
+    public async Task<IActionResult> AddNewsletterSubscriber(NewsletterSubscriberForm form, CancellationToken ct) =>
+        await RunEmail(async () => await emailAdministration.AddSubscriberAsync(form.Email, form.DisplayName, ct), "Ο συνδρομητής προστέθηκε στη λίστα.");
+
+    [Authorize(Policy = "AdminOnly"), HttpPost("email/subscribers/{id:guid}/status")]
+    public async Task<IActionResult> SetNewsletterSubscriberStatus(Guid id, bool active, CancellationToken ct) =>
+        await RunEmail(async () => await emailAdministration.SetSubscriberActiveAsync(id, active, ct), active ? "Ο συνδρομητής ενεργοποιήθηκε." : "Ο συνδρομητής απενεργοποιήθηκε.");
+
+    [Authorize(Policy = "AdminOnly"), HttpPost("email/campaigns")]
+    public async Task<IActionResult> SendEmailCampaign(EmailCampaignForm form, CancellationToken ct)
+    {
+        try
+        {
+            var result = await emailAdministration.SendCampaignAsync(form.ToRequest(), UserId, ct);
+            TempData["Success"] = $"Η αποστολή ολοκληρώθηκε: {result.SentCount} επιτυχίες, {result.FailedCount} αποτυχίες, {result.RecipientCount} παραλήπτες.";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+        {
+            logger.LogWarning(ex, "Email campaign failed");
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(EmailAdministration));
     }
 
     [Authorize(Policy = "FarmerOnly"), HttpGet("farmer/{page}")]
@@ -163,5 +229,21 @@ public sealed class PortalController(IAgroUnionService service, ILogger<PortalCo
         { logger.LogWarning(ex, "Portal action failed"); TempData["Error"] = ex.Message; }
         if (producerPage is not null) return RedirectToAction(nameof(ProducerPage), new { page = producerPage });
         return RedirectToAction(nameof(Index), producerUserId is null ? null : new { producerId = producerUserId });
+    }
+
+    private async Task<IActionResult> RunEmail(Func<Task> action, string success)
+    {
+        try { await action(); TempData["Success"] = success; }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+        { logger.LogWarning(ex, "Email administration action failed"); TempData["Error"] = ex.Message; }
+        return RedirectToAction(nameof(EmailAdministration));
+    }
+
+    private async Task<IActionResult> RunMarketplace(Func<Task> action, string success)
+    {
+        try { await action(); TempData["Success"] = success; }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or UnauthorizedAccessException)
+        { logger.LogWarning(ex, "Partner marketplace action failed"); TempData["Error"] = ex.Message; }
+        return RedirectToAction(nameof(Marketplace));
     }
 }

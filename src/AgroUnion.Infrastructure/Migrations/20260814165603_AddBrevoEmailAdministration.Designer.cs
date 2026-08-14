@@ -4,6 +4,7 @@ using AgroUnion.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AgroUnion.Infrastructure.Migrations
 {
     [DbContext(typeof(AgroUnionDbContext))]
-    partial class AgroUnionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814165603_AddBrevoEmailAdministration")]
+    partial class AddBrevoEmailAdministration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -467,65 +470,6 @@ namespace AgroUnion.Infrastructure.Migrations
                     b.ToTable("Notifications");
                 });
 
-            modelBuilder.Entity("AgroUnion.Domain.Entities.PartnerBuyingRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("BuyerUserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("varchar(450)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<decimal>("MaxPricePerUnit")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<string>("Product")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("varchar(120)");
-
-                    b.Property<string>("QualityRequirements")
-                        .HasMaxLength(1000)
-                        .HasColumnType("varchar(1000)");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,3)");
-
-                    b.Property<string>("Region")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("varchar(120)");
-
-                    b.Property<string>("Unit")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("varchar(30)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<DateTime>("ValidUntilUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuyerUserId");
-
-                    b.HasIndex("IsActive", "ValidUntilUtc");
-
-                    b.HasIndex("Product", "Region");
-
-                    b.ToTable("PartnerBuyingRequests");
-                });
-
             modelBuilder.Entity("AgroUnion.Domain.Entities.PartnerDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -687,100 +631,6 @@ namespace AgroUnion.Infrastructure.Migrations
                     b.HasIndex("UserId", "IssueDate", "Direction");
 
                     b.ToTable("PartnerInvoices");
-                });
-
-            modelBuilder.Entity("AgroUnion.Domain.Entities.PartnerMarketplaceInquiry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<Guid?>("BuyingRequestId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(1500)
-                        .HasColumnType("varchar(1500)");
-
-                    b.Property<decimal>("OfferedPricePerUnit")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<Guid?>("ProductionListingId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,3)");
-
-                    b.Property<string>("RecipientUserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("varchar(450)");
-
-                    b.Property<string>("SenderUserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("varchar(450)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("varchar(30)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuyingRequestId");
-
-                    b.HasIndex("ProductionListingId");
-
-                    b.HasIndex("SenderUserId");
-
-                    b.HasIndex("RecipientUserId", "Status", "CreatedAtUtc");
-
-                    b.ToTable("PartnerMarketplaceInquiries");
-                });
-
-            modelBuilder.Entity("AgroUnion.Domain.Entities.PartnerProductionListing", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<decimal>("AskingPricePerUnit")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<decimal>("OfferedQuantity")
-                        .HasColumnType("decimal(18,3)");
-
-                    b.Property<string>("ProducerUserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("varchar(450)");
-
-                    b.Property<Guid>("ProductionDeclarationId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProducerUserId");
-
-                    b.HasIndex("ProductionDeclarationId")
-                        .IsUnique();
-
-                    b.HasIndex("IsActive", "UpdatedAtUtc");
-
-                    b.ToTable("PartnerProductionListings");
                 });
 
             modelBuilder.Entity("AgroUnion.Domain.Entities.PickupSchedule", b =>
@@ -1722,55 +1572,6 @@ namespace AgroUnion.Infrastructure.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("AgroUnion.Domain.Entities.PartnerBuyingRequest", b =>
-                {
-                    b.HasOne("AgroUnion.Infrastructure.Persistence.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("BuyerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("AgroUnion.Domain.Entities.PartnerMarketplaceInquiry", b =>
-                {
-                    b.HasOne("AgroUnion.Domain.Entities.PartnerBuyingRequest", null)
-                        .WithMany()
-                        .HasForeignKey("BuyingRequestId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AgroUnion.Domain.Entities.PartnerProductionListing", null)
-                        .WithMany()
-                        .HasForeignKey("ProductionListingId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AgroUnion.Infrastructure.Persistence.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("RecipientUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AgroUnion.Infrastructure.Persistence.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("SenderUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("AgroUnion.Domain.Entities.PartnerProductionListing", b =>
-                {
-                    b.HasOne("AgroUnion.Infrastructure.Persistence.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("ProducerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AgroUnion.Domain.Entities.ProductionDeclaration", null)
-                        .WithMany()
-                        .HasForeignKey("ProductionDeclarationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("AgroUnion.Domain.Entities.PlatformReleaseAsset", b =>

@@ -35,9 +35,17 @@ public static class DependencyInjection
         }).AddEntityFrameworkStores<AgroUnionDbContext>().AddDefaultTokenProviders();
 
         services.AddScoped<IAgroUnionService, AgroUnionService>();
+        services.AddScoped<IEmailAdministrationService, EmailAdministrationService>();
+        services.AddScoped<IPartnerMarketplaceService, PartnerMarketplaceService>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
-        if (configuration.GetValue("Smtp:Enabled", false)) services.AddScoped<IEmailSender, SmtpEmailSender>();
-        else services.AddScoped<IEmailSender, DevelopmentEmailSender>();
+        services.AddScoped<IEmailSender, BrevoEmailSender>();
+        services.AddDataProtection();
+        services.AddHttpContextAccessor();
+        services.AddHttpClient("Brevo", client =>
+        {
+            client.BaseAddress = new Uri("https://api.brevo.com/v3/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
         services.AddScoped<DatabaseSeeder>();
         return services;
     }

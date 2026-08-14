@@ -1,0 +1,138 @@
+@model object
+@using AgroUnion.Application.Contracts
+@using AgroUnion.Domain.Entities
+@{
+    var role = User.IsInRole(RoleNames.Admin) ? "Διαχείριση" : User.IsInRole(RoleNames.Producer) ? "Παραγωγός" : User.IsInRole(RoleNames.Trader) ? "Έμπορος" : "Εταιρεία";
+    var producerPage = (ViewData["ProducerPage"] as string ?? "overview").ToLowerInvariant();
+    var pageTitle = producerPage switch
+    {
+        "collaboration" => "Η συνεργασία μου",
+        "finances" => "Οικονομική εικόνα",
+        "production" => "Παραγωγή & παραδόσεις",
+        "logistics" => "Δρομολόγια",
+        "invoices" => "Τιμολόγια",
+        "documents" => "Έγγραφα",
+        "offers" => "Προσφορές",
+        _ => "Επισκόπηση"
+    };
+    var pageDescription = producerPage switch
+    {
+        "collaboration" => "Κατηγορία, όροι, προμήθεια και bonus.",
+        "finances" => "Έσοδα, έξοδα και όλες οι κινήσεις.",
+        "production" => "Δηλωμένη παραγωγή και παραδόσεις.",
+        "logistics" => "Δρομολόγια, ζυγίσεις και διακανονισμοί.",
+        "invoices" => "Παραστατικά και εξοφλήσεις.",
+        "documents" => "Σύμβαση και προσωπικός φάκελος.",
+        "offers" => "Ενεργές προτάσεις και προμήθειες.",
+        _ => "Η συνολική εικόνα της συνεργασίας σας."
+    };
+    ViewData["Title"] = User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
+
+    var mobileCrumb = User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
+    var name = User.Identity?.Name ?? "";
+    var userInitial = string.IsNullOrEmpty(name) ? "?" : name.Substring(0, 1).ToUpperInvariant();
+    var hourNow = DateTime.Now.Hour;
+    var greeting = (hourNow < 12) ? "Καλημέρα" : "Καλησπέρα";
+    var atIdx = name.IndexOf((char)64);
+    var displayName = (atIdx > 0) ? name.Substring(0, atIdx) : name;
+}
+
+<div class="portal-mobile-topbar">
+    <button type="button" data-sidebar-toggle aria-label="Άνοιγμα πλευρικού μενού"><i class="fa-solid fa-bars"></i></button>
+    <div class="crumb">
+        <small>@role</small>
+        <strong>@mobileCrumb</strong>
+    </div>
+</div>
+<div class="portal-sidebar-backdrop"></div>
+
+<div class="portal-shell">
+    <aside class="portal-sidebar" aria-label="Πλοήγηση portal">
+        <div class="portal-user">
+            <span>@userInitial</span>
+            <div>
+                <strong>@displayName</strong>
+                <small>@role</small>
+            </div>
+        </div>
+        <nav class="portal-nav">
+            @if (User.IsInRole(RoleNames.Producer))
+            {
+                <div class="portal-nav-section">Επισκόπηση</div>
+                <a class="@(producerPage == "overview" ? "active" : "")" asp-action="ProducerPage" asp-route-page="overview"><i class="fa-solid fa-house"></i> Αρχική</a>
+                <a class="@(producerPage == "collaboration" ? "active" : "")" asp-action="ProducerPage" asp-route-page="collaboration"><i class="fa-solid fa-medal"></i> Συνεργασία</a>
+                <a class="@(producerPage == "finances" ? "active" : "")" asp-action="ProducerPage" asp-route-page="finances"><i class="fa-solid fa-chart-pie"></i> Οικονομικά</a>
+                <div class="portal-nav-section">Δραστηριότητα</div>
+                <a class="@(producerPage == "production" ? "active" : "")" asp-action="ProducerPage" asp-route-page="production"><i class="fa-solid fa-wheat-awn"></i> Παραγωγή</a>
+                <a class="@(producerPage == "logistics" ? "active" : "")" asp-action="ProducerPage" asp-route-page="logistics"><i class="fa-solid fa-truck-fast"></i> Δρομολόγια</a>
+                <a class="@(producerPage == "invoices" ? "active" : "")" asp-action="ProducerPage" asp-route-page="invoices"><i class="fa-solid fa-file-invoice-dollar"></i> Τιμολόγια</a>
+                <a class="@(producerPage == "offers" ? "active" : "")" asp-action="ProducerPage" asp-route-page="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
+                <a class="@(producerPage == "documents" ? "active" : "")" asp-action="ProducerPage" asp-route-page="documents"><i class="fa-solid fa-folder-open"></i> Έγγραφα</a>
+            }
+            else if (User.IsInRole(RoleNames.Admin))
+            {
+                <div class="portal-nav-section">Επισκόπηση</div>
+                <a class="active" asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-gauge-high"></i> Αρχική</a>
+                <div class="portal-nav-section">Διαχείριση</div>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="applications"><i class="fa-solid fa-user-plus"></i> Αιτήσεις</a>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="users"><i class="fa-solid fa-users-gear"></i> Συνεργάτες</a>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="producer-workspace"><i class="fa-solid fa-folder-open"></i> Φάκελος παραγωγού</a>
+                <div class="portal-nav-section">Εμπορικά</div>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="deals"><i class="fa-solid fa-handshake"></i> Συμφωνίες</a>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="messages"><i class="fa-solid fa-envelope"></i> Μηνύματα</a>
+                <div class="portal-nav-section">Πλατφόρμα</div>
+                <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-box-archive"></i> Εκδόσεις</a>
+            }
+            else
+            {
+                <div class="portal-nav-section">Επισκόπηση</div>
+                <a class="active" asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-house"></i> Αρχική</a>
+                <div class="portal-nav-section">Αγορές</div>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="pickups"><i class="fa-solid fa-truck-fast"></i> Παραλαβές</a>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="contracts"><i class="fa-solid fa-file-signature"></i> Σύμβαση</a>
+            }
+        </nav>
+        <div class="portal-sidebar-foot">
+            <a asp-controller="Account" asp-action="ChangePassword"><i class="fa-solid fa-shield-halved"></i> Ασφάλεια</a>
+            <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0">
+                <button type="submit" style="width:100%;background:transparent;border:0;color:rgba(255,255,255,.75);display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='rgba(255,255,255,.75)'"><i class="fa-solid fa-arrow-right-from-bracket"></i> Αποσύνδεση</button>
+            </form>
+        </div>
+    </aside>
+
+    <section class="portal-content" style="padding:0 clamp(20px,3vw,56px) 96px">
+        <div class="portal-toolbar">
+            <span class="toolbar-date"><i class="fa-regular fa-calendar"></i> @DateTime.Now.ToString("dddd, dd MMMM yyyy")</span>
+            <div class="toolbar-actions">
+                <a class="toolbar-btn" asp-controller="Home" asp-action="Faq"><i class="fa-regular fa-circle-question"></i> Βοήθεια</a>
+                <a class="toolbar-btn" asp-controller="Home" asp-action="Contact"><i class="fa-regular fa-envelope"></i> Επικοινωνία</a>
+                <a class="toolbar-user" asp-controller="Account" asp-action="ChangePassword">
+                    <span class="av">@userInitial</span>
+                    <span>@displayName<span class="role">· @role</span></span>
+                </a>
+            </div>
+        </div>
+
+        <header class="exec-header" id="overview">
+            <div class="exec-copy">
+                <small>@(User.IsInRole(RoleNames.Producer) ? "Λογαριασμός παραγωγού" : User.IsInRole(RoleNames.Admin) ? "Διαχείριση" : "Portal συνεργατών")</small>
+                <h1>@greeting, @displayName.</h1>
+                <p>@(User.IsInRole(RoleNames.Producer) ? pageDescription : "Η συγκεντρωτική εικόνα του δικτύου σας.")</p>
+            </div>
+        </header>
+
+        @if (Model is AdminDashboardDto admin)
+        {
+            @await Html.PartialAsync("_AdminDashboard", admin)
+        }
+        else if (Model is ProducerDashboardDto producer)
+        {
+            @await Html.PartialAsync("_ProducerDashboard", producer)
+        }
+        else if (Model is BuyerDashboardDto buyer)
+        {
+            @await Html.PartialAsync("_BuyerDashboard", buyer)
+        }
+    </section>
+</div>

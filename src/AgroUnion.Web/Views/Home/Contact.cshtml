@@ -1,0 +1,87 @@
+@model AgroUnion.Web.ViewModels.ContactForm
+@{ ViewData["Title"] = "Επικοινωνία"; }
+
+<section class="hero-photo" style="--hero-img:url(/images/photography/hero-office.jpg);min-height:min(620px,72vh);padding:96px 0 88px">
+    <div class="container-wide">
+        <div class="overline">Είμαστε εδώ</div>
+        <h1>Ας ξεκινήσουμε<br />μια συζήτηση.</h1>
+        <p class="lead">Ερώτηση, ιδέα ή συγκεκριμένη ανάγκη; Μιλήστε απευθείας με την ομάδα της AGRO UNION.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="split">
+            <aside class="aside">
+                <div class="overline">Άμεση επικοινωνία</div>
+                <h2 style="margin-top:12px">Διαλέξτε τον τρόπο που σας εξυπηρετεί.</h2>
+                <p class="text-muted">Για αίτηση ένταξης στο δίκτυο, χρησιμοποιήστε την ειδική φόρμα συνεργασίας.</p>
+
+                <div class="stack-lg mt-6">
+                    <a class="card" href="tel:+302631000000" style="display:block">
+                        <div class="card-body" style="display:flex;gap:16px;align-items:center">
+                            <div class="feature-icon"><i class="fa-solid fa-phone-volume"></i></div>
+                            <div>
+                                <div class="overline">Τηλέφωνο</div>
+                                <strong style="display:block;margin-top:4px;font-size:var(--fs-md)">+30 26310 00000</strong>
+                                <span class="text-muted" style="font-size:12px">Κλήση τώρα</span>
+                            </div>
+                        </div>
+                    </a>
+                    <a class="card" href="mailto:info@agrounion.gr" style="display:block">
+                        <div class="card-body" style="display:flex;gap:16px;align-items:center">
+                            <div class="feature-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+                            <div>
+                                <div class="overline">Email</div>
+                                <strong style="display:block;margin-top:4px;font-size:var(--fs-md)">info@agrounion.gr</strong>
+                                <span class="text-muted" style="font-size:12px">Αποστολή μηνύματος</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="card">
+                        <div class="card-body" style="display:flex;gap:16px;align-items:center">
+                            <div class="feature-icon"><i class="fa-solid fa-location-dot"></i></div>
+                            <div>
+                                <div class="overline">Έδρα</div>
+                                <strong style="display:block;margin-top:4px;font-size:var(--fs-md)">Μεσολόγγι</strong>
+                                <span class="text-muted" style="font-size:12px">Αιτωλοακαρνανία, Ελλάδα</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a class="btn mt-6" asp-action="Apply"><i class="fa-solid fa-handshake"></i> Αίτηση συνεργασίας <i class="fa-solid fa-arrow-right"></i></a>
+            </aside>
+
+            <div>
+                <div class="form-card" style="grid-template-columns:1fr">
+                    <div>
+                        <div class="overline">Στείλτε μήνυμα</div>
+                        <h2 style="margin-top:8px">Πώς μπορούμε να βοηθήσουμε;</h2>
+                        <p class="text-muted">Θα απαντήσουμε το συντομότερο δυνατό.</p>
+                    </div>
+                    <form asp-action="Contact" method="post" style="display:contents">
+                        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                        <div class="field" style="grid-column:1/-1">
+                            <label asp-for="FullName" class="field-label">Ονοματεπώνυμο *</label>
+                            <input asp-for="FullName" class="form-input" placeholder="Το όνομά σας" />
+                            <span asp-validation-for="FullName" class="field-error"></span>
+                        </div>
+                        <div class="field" style="grid-column:1/-1">
+                            <label asp-for="Email" class="field-label">Email *</label>
+                            <input asp-for="Email" class="form-input" type="email" placeholder="name@example.gr" />
+                            <span asp-validation-for="Email" class="field-error"></span>
+                        </div>
+                        <div class="field" style="grid-column:1/-1">
+                            <label asp-for="Message" class="field-label">Μήνυμα *</label>
+                            <textarea asp-for="Message" class="form-textarea" rows="7" placeholder="Γράψτε το μήνυμά σας..."></textarea>
+                            <span asp-validation-for="Message" class="field-error"></span>
+                        </div>
+                        <div class="honeypot"><input asp-for="Website" tabindex="-1" autocomplete="off" /></div>
+                        <button class="btn btn-lg" type="submit" style="grid-column:1/-1;justify-self:start"><i class="fa-solid fa-paper-plane"></i> Αποστολή μηνύματος <i class="fa-solid fa-arrow-right"></i></button>
+                        <div class="text-muted" style="font-size:12px;grid-column:1/-1;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-lock"></i> Τα δεδομένα μεταδίδονται και αποθηκεύονται με ασφάλεια.</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

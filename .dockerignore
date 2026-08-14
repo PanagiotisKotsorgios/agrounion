@@ -1,0 +1,7 @@
+**/bin
+**/obj
+.git
+.gitignore
+logs
+.env
+AGRO_UNION_Prompt_gia_GPT.md

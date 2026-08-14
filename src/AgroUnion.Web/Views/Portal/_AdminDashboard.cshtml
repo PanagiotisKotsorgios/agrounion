@@ -1,0 +1,341 @@
+@model AgroUnion.Application.Contracts.AdminDashboardDto
+@using AgroUnion.Domain.Entities
+@{
+    string DealStatusName(DealStatus s) => s switch
+    {
+        DealStatus.Proposed => "Προς επιβεβαίωση",
+        DealStatus.BuySideConfirmed => "Επιβ. από παραγωγό",
+        DealStatus.SellSideConfirmed => "Επιβ. από αγοραστή",
+        DealStatus.Completed => "Ολοκληρώθηκε",
+        DealStatus.Cancelled => "Ακυρώθηκε",
+        _ => s.ToString()
+    };
+    string ContractStatusName(ContractStatus s) => s switch { ContractStatus.Draft => "Προσχέδιο", ContractStatus.Active => "Ενεργή", ContractStatus.Terminated => "Ολοκληρωμένη", _ => s.ToString() };
+
+    var totalDealValue = Model.Deals.Sum(x => x.BuyPricePerUnit * x.Quantity);
+    var completedDeals = Model.Deals.Count(x => x.Status == DealStatus.Completed);
+    var pendingDeals = Model.Deals.Count(x => x.Status == DealStatus.Proposed);
+    var unreadMessages = Model.Messages.Count(x => !x.IsRead);
+    var draftContracts = Model.Contracts.Count(x => x.Status == ContractStatus.Draft);
+    var newApps = Model.Applications.Count(x => x.Status == ApplicationStatus.New);
+}
+
+@* Alerts — only when items exist *@
+@if (newApps > 0 || draftContracts > 0 || pendingDeals > 0 || unreadMessages > 0)
+{
+    <div class="alerts-strip">
+        @if (newApps > 0)
+        {
+            <a class="alert-tile warning" href="#applications">
+                <div class="at-ic"><i class="fa-solid fa-user-plus"></i></div>
+                <div class="at-body"><div class="at-title">Νέες αιτήσεις</div><div class="at-desc">Χρειάζονται αξιολόγηση</div></div>
+                <div class="at-count">@newApps</div>
+            </a>
+        }
+        @if (draftContracts > 0)
+        {
+            <a class="alert-tile info" href="#contracts">
+                <div class="at-ic"><i class="fa-solid fa-file-signature"></i></div>
+                <div class="at-body"><div class="at-title">Προσχέδια συμβάσεων</div><div class="at-desc">Προς ενεργοποίηση</div></div>
+                <div class="at-count">@draftContracts</div>
+            </a>
+        }
+        @if (pendingDeals > 0)
+        {
+            <a class="alert-tile warning" href="#deals">
+                <div class="at-ic"><i class="fa-solid fa-hourglass-half"></i></div>
+                <div class="at-body"><div class="at-title">Deals σε εκκρεμότητα</div><div class="at-desc">Προς επιβεβαίωση</div></div>
+                <div class="at-count">@pendingDeals</div>
+            </a>
+        }
+        @if (unreadMessages > 0)
+        {
+            <a class="alert-tile danger" href="#messages">
+                <div class="at-ic"><i class="fa-solid fa-envelope"></i></div>
+                <div class="at-body"><div class="at-title">Αδιάβαστα μηνύματα</div><div class="at-desc">Επικοινωνία πελατών</div></div>
+                <div class="at-count">@unreadMessages</div>
+            </a>
+        }
+    </div>
+}
+
+@* 4 BIG KPIs *@
+<div class="kpi-pro-grid">
+    <article class="kpi-pro hero-card">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-scale-balanced"></i></span><span>Συνολικό margin</span></div>
+        <div class="kpi-pro-value">@Model.TotalMargin.ToString("N0") <span class="unit">€</span></div>
+        <div class="kpi-pro-sub"><strong>@completedDeals</strong> ολοκληρωμένα deals</div>
+    </article>
+
+    <article class="kpi-pro">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-users"></i></span><span>Ενεργοί συνεργάτες</span></div>
+        <div class="kpi-pro-value">@Model.ActivePartners</div>
+        <div class="kpi-pro-sub"><strong>@Model.Users.Count(x => x.Role == RoleNames.Producer)</strong> παραγωγοί</div>
+    </article>
+
+    <article class="kpi-pro">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-user-plus"></i></span><span>Αιτήσεις</span></div>
+        <div class="kpi-pro-value">@Model.Applications.Count</div>
+        <div class="kpi-pro-sub"><strong>@Model.PendingApplications</strong> εκκρεμείς</div>
+    </article>
+
+    <article class="kpi-pro">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-chart-column"></i></span><span>Διαθέσιμος όγκος</span></div>
+        <div class="kpi-pro-value">@Model.AvailableVolume.ToString("N0") <span class="unit">kg</span></div>
+        <div class="kpi-pro-sub"><strong>@Model.Production.Count</strong> δηλώσεις</div>
+    </article>
+</div>
+
+@* Applications *@
+<div class="section-title" id="applications">
+    <h2>Αιτήσεις συνεργασίας</h2>
+    <div class="rule"></div>
+    @if (newApps > 0){<span class="pill-metric warning"><strong>@newApps</strong> νέες</span>}
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead><tr><th>Αιτών</th><th>Ρόλος</th><th>Περιοχή</th><th>Επικοινωνία</th><th>Ενέργεια</th></tr></thead>
+        <tbody>
+            @foreach (var item in Model.Applications.OrderByDescending(x => x.CreatedAt))
+            {
+                <tr>
+                    <td><strong>@item.FullNameOrCompany</strong><br /><small style="color:var(--ink-500)">@item.ProductInterest · @item.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                    <td>@item.Role</td>
+                    <td>@item.Region</td>
+                    <td><small>@item.Email<br />@item.Phone</small></td>
+                    <td>@if (item.Status != ApplicationStatus.Approved && item.Role != PartnerRole.Other){<form asp-action="ApproveApplication" asp-route-id="@item.Id" method="post" style="margin:0"><button class="btn btn-sm btn-brass" data-confirm="Έγκριση και δημιουργία λογαριασμού;"><i class="fa-solid fa-check"></i> Έγκριση</button></form>}else{<span class="status-pill @item.Status.ToString().ToLowerInvariant()">@item.Status</span>}</td>
+                </tr>
+            }
+            @if (Model.Applications.Count == 0)
+            {
+                <tr><td colspan="5"><div class="portal-empty compact"><i class="fa-solid fa-inbox"></i><span>Καμία αίτηση.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* Producer workspace *@
+@await Html.PartialAsync("_AdminProducerWorkspace", Model.ProducerWorkspace)
+
+@* All deals *@
+<div class="section-title" id="deals">
+    <h2>Όλες οι συμφωνίες</h2>
+    <div class="rule"></div>
+    <a class="more" asp-action="MarginCsv"><i class="fa-solid fa-file-csv"></i> CSV margin</a>
+</div>
+<div class="pill-row">
+    <span class="pill-metric"><i class="fa-solid fa-handshake"></i> <strong>@Model.Deals.Count</strong> σύνολο</span>
+    <span class="pill-metric success"><i class="fa-solid fa-check"></i> <strong>@completedDeals</strong> ολοκληρωμένα</span>
+    @if (pendingDeals > 0){<span class="pill-metric warning"><i class="fa-solid fa-hourglass"></i> <strong>@pendingDeals</strong> εκκρεμή</span>}
+    <span class="pill-metric"><i class="fa-solid fa-scale-balanced"></i> Margin <strong>@Model.TotalMargin.ToString("N2") €</strong></span>
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead>
+            <tr>
+                <th>Ημερομηνία</th>
+                <th>Προϊόν</th>
+                <th>Τύπος</th>
+                <th class="right">Αγορά</th>
+                <th class="right">Πώληση</th>
+                <th class="right">Ποσότητα</th>
+                <th class="right">Margin</th>
+                <th>Κατάσταση</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Deals.OrderByDescending(x => x.CreatedAt))
+            {
+                <tr>
+                    <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
+                    <td><strong>@item.Product</strong></td>
+                    <td><small style="color:var(--ink-500)">@item.DealType</small></td>
+                    <td class="right num sensitive">@item.BuyPricePerUnit.ToString("N2") €</td>
+                    <td class="right num sensitive">@item.SellPricePerUnit.ToString("N2") €</td>
+                    <td class="right num">@item.Quantity.ToString("N0")</td>
+                    <td class="right num pos">@item.TotalMargin.ToString("N2") €</td>
+                    <td><span class="status-pill @(item.Status == DealStatus.Proposed ? "proposed" : item.Status.ToString().ToLowerInvariant())">@DealStatusName(item.Status)</span></td>
+                </tr>
+            }
+            @if (Model.Deals.Count == 0)
+            {
+                <tr><td colspan="8"><div class="portal-empty compact"><i class="fa-solid fa-handshake"></i><span>Καμία συμφωνία.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* New deal form *@
+<details class="disclosure" style="margin-top:16px" id="deals-new">
+    <summary><i class="fa-solid fa-plus"></i> Νέα συμφωνία (δύο σκέλη)</summary>
+    <div class="privacy-note" style="margin:0 20px 12px 20px"><i class="fa-solid fa-eye"></i><span>Μόνο διαχειριστές βλέπουν αγορά + πώληση + margin μαζί.</span></div>
+    <form class="workspace-form" asp-action="CreateDeal" method="post">
+        <div class="field"><label>Τύπος</label><select name="DealType"><option value="Brokerage">Brokerage</option><option value="Facilitation">Facilitation</option></select></div>
+        <div class="field"><label>Δήλωση (GUID)</label><input name="ProductionDeclarationId" placeholder="προαιρετικό" /></div>
+        <div class="field"><label>Παραγωγός</label><select name="FarmerUserId">@foreach (var u in Model.Users.Where(x => x.Role == RoleNames.Producer)){<option value="@u.Id">@u.Name</option>}</select></div>
+        <div class="field"><label>Αγοραστής</label><select name="BuyerUserId">@foreach (var u in Model.Users.Where(x => x.Role == RoleNames.Trader || x.Role == RoleNames.Company)){<option value="@u.Id">@u.Name</option>}</select></div>
+        <div class="field"><label>Τιμή αγοράς</label><input name="BuyPricePerUnit" type="number" step="0.0001" /></div>
+        <div class="field"><label>Ποσότητα αγοράς</label><input name="BuyQuantity" type="number" step="0.001" /></div>
+        <div class="field"><label>Τιμή πώλησης</label><input name="SellPricePerUnit" type="number" step="0.0001" /></div>
+        <div class="field"><label>Ποσότητα πώλησης</label><input name="SellQuantity" type="number" step="0.001" /></div>
+        <button class="workspace-save" type="submit"><i class="fa-solid fa-plus"></i> Δημιουργία συμφωνίας</button>
+    </form>
+</details>
+
+@* Users *@
+<div class="section-title" id="users">
+    <h2>Λογαριασμοί συνεργατών</h2>
+    <div class="rule"></div>
+    <span class="pill-metric"><strong>@Model.Users.Count</strong></span>
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead><tr><th>Συνεργάτης</th><th>Ρόλος</th><th>Περιοχή</th><th>Κατάσταση</th><th>Διαχείριση</th></tr></thead>
+        <tbody>
+            @foreach (var user in Model.Users)
+            {
+                <tr>
+                    <td>
+                        <div class="cell-avatar">
+                            <div class="av">@(string.IsNullOrEmpty(user.Name) ? "?" : user.Name.Substring(0, 1).ToUpperInvariant())</div>
+                            <div class="info"><strong>@user.Name</strong><small>@user.Email</small></div>
+                        </div>
+                    </td>
+                    <td>
+                        @if (user.Role != RoleNames.Admin)
+                        {
+                            <form class="mini-form" asp-action="ChangeUserRole" method="post" style="margin:0">
+                                <input type="hidden" name="UserId" value="@user.Id" />
+                                <select name="Role">
+                                    <option selected="@(user.Role == RoleNames.Producer)" value="Producer">Producer</option>
+                                    <option selected="@(user.Role == RoleNames.Trader)" value="Trader">Trader</option>
+                                    <option selected="@(user.Role == RoleNames.Company)" value="Company">Company</option>
+                                </select>
+                                <button title="Αλλαγή ρόλου"><i class="fa-solid fa-check"></i></button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="status-pill">@user.Role</span>
+                        }
+                    </td>
+                    <td>@user.Region</td>
+                    <td><span class="status-pill @(user.IsActive ? "active" : "closed")">@(user.IsActive ? "Ενεργός" : "Ανενεργός")</span></td>
+                    <td>
+                        <div class="mini-form" style="margin:0">
+                            <form asp-action="SetUserActive" method="post" style="margin:0">
+                                <input type="hidden" name="UserId" value="@user.Id" />
+                                <input type="hidden" name="Active" value="@(!user.IsActive)" />
+                                <button class="btn btn-sm btn-ghost" title="@(user.IsActive ? "Παύση" : "Ενεργοποίηση")"><i class="fa-solid @(user.IsActive ? "fa-pause" : "fa-play")"></i></button>
+                            </form>
+                            <form asp-action="ResetPassword" asp-route-userId="@user.Id" method="post" style="margin:0">
+                                <button class="btn btn-sm btn-ghost" title="Reset κωδικού"><i class="fa-solid fa-key"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* Contracts *@
+<div class="section-title" id="contracts">
+    <h2>Συμβάσεις</h2>
+    <div class="rule"></div>
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead><tr><th>Αριθμός</th><th>Συνεργάτης</th><th>Κατάσταση</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var c in Model.Contracts)
+            {
+                <tr>
+                    <td><strong>@c.ContractNumber</strong></td>
+                    <td>@c.Partner</td>
+                    <td><span class="status-pill @(c.Status == ContractStatus.Draft ? "proposed" : c.Status.ToString().ToLowerInvariant())">@ContractStatusName(c.Status)</span></td>
+                    <td>@if (c.Status == ContractStatus.Draft){<form asp-action="ActivateContract" asp-route-id="@c.Id" method="post" style="margin:0"><button class="btn btn-sm btn-brass"><i class="fa-solid fa-play"></i> Ενεργοποίηση</button></form>}</td>
+                </tr>
+            }
+            @if (Model.Contracts.Count == 0)
+            {
+                <tr><td colspan="4"><div class="portal-empty compact"><i class="fa-solid fa-file-signature"></i><span>Καμία σύμβαση.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* Prices *@
+<div class="section-title">
+    <h2>Τιμοκατάλογος</h2>
+    <div class="rule"></div>
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead><tr><th>Προϊόν</th><th>Κατηγορία</th><th class="right">Τιμή</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var pr in Model.PriceList)
+            {
+                <tr>
+                    <td><strong>@pr.ProductName</strong></td>
+                    <td><small style="color:var(--ink-500)">@pr.Category</small></td>
+                    <td class="right num">@pr.Price.ToString("N2") € / @pr.Unit</td>
+                    <td><form asp-action="DeletePrice" asp-route-id="@pr.Id" method="post" style="margin:0"><button class="icon-delete" data-confirm="Διαγραφή;"><i class="fa-solid fa-trash"></i></button></form></td>
+                </tr>
+            }
+            @if (Model.PriceList.Count == 0)
+            {
+                <tr><td colspan="4"><div class="portal-empty compact"><i class="fa-solid fa-tags"></i><span>Καμία δημοσιευμένη τιμή.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+<details class="disclosure" style="margin-top:16px">
+    <summary><i class="fa-solid fa-plus"></i> Νέα τιμή</summary>
+    <form class="workspace-form" asp-action="CreatePrice" method="post">
+        <div class="field"><label>Κατηγορία</label><select name="Category"><option value="Product">Προϊόν</option><option value="Supply">Εφόδιο</option></select></div>
+        <div class="field"><label>Προϊόν</label><input name="ProductName" required /></div>
+        <div class="field"><label>Τιμή</label><input name="Price" type="number" step=".0001" required /></div>
+        <div class="field"><label>Μονάδα</label><input name="Unit" value="kg" /></div>
+        <div class="field"><label>Από</label><input name="EffectiveFrom" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+        <div class="field"><label>Ορατό σε</label><input name="VisibleToRoles" value="Producer,Trader,Company" /></div>
+        <button class="workspace-save"><i class="fa-solid fa-upload"></i> Δημοσίευση</button>
+    </form>
+</details>
+
+@* Messages *@
+<div class="section-title" id="messages">
+    <h2>Μηνύματα από επισκέπτες</h2>
+    <div class="rule"></div>
+    @if (unreadMessages > 0){<span class="pill-metric danger"><strong>@unreadMessages</strong> αδιάβαστα</span>}
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead><tr><th>Ημερομηνία</th><th>Αποστολέας</th><th>Μήνυμα</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var m in Model.Messages.OrderByDescending(x => x.CreatedAt))
+            {
+                <tr style="@(!m.IsRead ? "background:var(--warning-bg)" : "")">
+                    <td>@m.CreatedAt.ToString("dd/MM/yy · HH:mm")</td>
+                    <td><strong>@m.FullName</strong><br /><small style="color:var(--ink-500)">@m.Email</small></td>
+                    <td style="font-size:14px">@m.Message</td>
+                    <td>@if (!m.IsRead){<form asp-action="MarkContactRead" asp-route-id="@m.Id" method="post" style="margin:0"><button class="btn btn-sm"><i class="fa-solid fa-check"></i> Ανάγνωση</button></form>}else{<span class="status-pill">Αναγνωσμένο</span>}</td>
+                </tr>
+            }
+            @if (Model.Messages.Count == 0)
+            {
+                <tr><td colspan="4"><div class="portal-empty compact"><i class="fa-solid fa-envelope-open"></i><span>Καμία επικοινωνία.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* Versions link at bottom *@
+<a class="alert-tile info" asp-controller="Versions" asp-action="Index" style="margin-top:36px">
+    <div class="at-ic"><i class="fa-solid fa-box-archive"></i></div>
+    <div class="at-body">
+        <div class="at-title">Διαχείριση εκδόσεων πλατφόρμας</div>
+        <div class="at-desc">Δημοσιεύστε πακέτα, συνδέστε GitHub assets, δείτε το ιστορικό</div>
+    </div>
+    <div class="at-count"><i class="fa-solid fa-arrow-right"></i></div>
+</a>

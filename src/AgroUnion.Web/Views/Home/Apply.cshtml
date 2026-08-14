@@ -1,0 +1,112 @@
+@model AgroUnion.Web.ViewModels.InterestForm
+@using AgroUnion.Domain.Entities
+@{ ViewData["Title"] = "Αίτηση συνεργασίας"; }
+
+<section class="hero-photo" style="--hero-img:url(/images/photography/hero-modern-office.jpg);min-height:min(620px,72vh);padding:96px 0 88px">
+    <div class="container-wide">
+        <div class="overline">Γίνετε μέρος του δικτύου</div>
+        <h1>Η επόμενη συνεργασία<br />ξεκινά εδώ.</h1>
+        <p class="lead">Πείτε μας ποιοι είστε και τι αναζητάτε. Θα επικοινωνήσουμε προσωπικά μαζί σας.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="split">
+            <aside class="aside">
+                <div class="overline">Τι ακολουθεί</div>
+                <h2 style="margin-top:12px">Απλά βήματα. Ανθρώπινη επαφή.</h2>
+                <div class="stack-lg mt-6">
+                    <div class="alert" style="align-items:flex-start"><i class="fa-solid fa-paper-plane"></i><span><strong>01 · Υποβάλλετε την αίτηση</strong><br /><span class="text-muted">Τα στοιχεία φτάνουν άμεσα στην ομάδα μας.</span></span></div>
+                    <div class="alert" style="align-items:flex-start"><i class="fa-solid fa-phone-volume"></i><span><strong>02 · Επικοινωνούμε μαζί σας</strong><br /><span class="text-muted">Συζητάμε προσωπικά την ανάγκη και τις δυνατότητες.</span></span></div>
+                    <div class="alert" style="align-items:flex-start"><i class="fa-solid fa-file-signature"></i><span><strong>03 · Ορίζουμε τη συνεργασία</strong><br /><span class="text-muted">Δημιουργούμε λογαριασμό και καθαρή σύμβαση.</span></span></div>
+                </div>
+                <div class="alert info mt-8">
+                    <i class="fa-solid fa-lock"></i>
+                    <span><strong>Τα στοιχεία σας προστατεύονται.</strong><br />Χρησιμοποιούνται αποκλειστικά για την αξιολόγηση του αιτήματός σας.</span>
+                </div>
+            </aside>
+
+            <div>
+                <div class="form-card" style="grid-template-columns:1fr">
+                    <div>
+                        <div class="overline">Νέα αίτηση</div>
+                        <h2 style="margin-top:8px">Στοιχεία συνεργασίας</h2>
+                        <p class="text-muted">Όλα τα πεδία με αστερίσκο είναι απαραίτητα.</p>
+                    </div>
+                    <form asp-action="Apply" method="post" novalidate style="display:contents">
+                        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+                        <div class="field" style="grid-column:1/-1">
+                            <label class="field-label">Ενδιαφέρομαι ως *</label>
+                            <div class="radio-picker">
+                                <label><input asp-for="Role" type="radio" value="Producer" checked /><span><i class="fa-solid fa-tractor"></i> Παραγωγός</span></label>
+                                <label><input asp-for="Role" type="radio" value="Trader" /><span><i class="fa-solid fa-chart-line"></i> Έμπορος</span></label>
+                                <label><input asp-for="Role" type="radio" value="Company" /><span><i class="fa-solid fa-industry"></i> Εταιρεία</span></label>
+                                <label><input asp-for="Role" type="radio" value="Other" /><span><i class="fa-solid fa-shapes"></i> Άλλο</span></label>
+                            </div>
+                        </div>
+
+                        <div class="field" style="grid-column:1/-1">
+                            <label asp-for="FullNameOrCompany" class="field-label">Ονοματεπώνυμο / Επωνυμία *</label>
+                            <input asp-for="FullNameOrCompany" class="form-input" placeholder="π.χ. Γεώργιος Παπαδάκης" />
+                            <span asp-validation-for="FullNameOrCompany" class="field-error"></span>
+                        </div>
+
+                        <div class="field">
+                            <label asp-for="Region" class="field-label">Περιοχή *</label>
+                            <input asp-for="Region" class="form-input" placeholder="π.χ. Αιτωλικό" />
+                            <span asp-validation-for="Region" class="field-error"></span>
+                        </div>
+
+                        <div class="field">
+                            <label asp-for="Phone" class="field-label">Τηλέφωνο *</label>
+                            <input asp-for="Phone" class="form-input" placeholder="+30 69..." />
+                            <span asp-validation-for="Phone" class="field-error"></span>
+                        </div>
+
+                        <div class="field" style="grid-column:1/-1">
+                            <label asp-for="ProductInterest" class="field-label">Προϊόν / Αντικείμενο ενδιαφέροντος *</label>
+                            <select asp-for="ProductInterest" class="form-select">
+                                <option value="">Επιλέξτε αντικείμενο</option>
+                                <optgroup label="Αγροτική παραγωγή">
+                                    <option>Ελαιόλαδο</option><option>Επιτραπέζια ελιά</option><option>Εσπεριδοειδή</option>
+                                    <option>Πορτοκάλια</option><option>Λεμόνια</option><option>Μανταρίνια</option>
+                                    <option>Ακτινίδια</option><option>Σταφύλια</option><option>Κηπευτικά</option>
+                                    <option>Δημητριακά</option><option>Όσπρια</option>
+                                    <option>Αρωματικά & φαρμακευτικά φυτά</option><option>Άλλος καρπός</option>
+                                </optgroup>
+                                <optgroup label="Άλλα προϊόντα & υπηρεσίες">
+                                    <option>Μέλι & μελισσοκομικά προϊόντα</option>
+                                    <option>Λιπάσματα & αγροτικά εφόδια</option>
+                                    <option>Σπόροι & φυτωριακό υλικό</option>
+                                    <option>Ζωοτροφές</option><option>Αγροτικός εξοπλισμός</option>
+                                    <option>Τυποποίηση & μεταποίηση</option><option>Μεταφορές & logistics</option>
+                                    <option>Γενική εμπορική συνεργασία</option>
+                                </optgroup>
+                            </select>
+                            <span asp-validation-for="ProductInterest" class="field-error"></span>
+                        </div>
+
+                        <div class="field" style="grid-column:1/-1">
+                            <label asp-for="Email" class="field-label">Email *</label>
+                            <input asp-for="Email" class="form-input" type="email" placeholder="name@example.gr" />
+                            <span asp-validation-for="Email" class="field-error"></span>
+                        </div>
+
+                        <div class="field" style="grid-column:1/-1">
+                            <label asp-for="Message" class="field-label">Σύντομο μήνυμα <small>Προαιρετικό</small></label>
+                            <textarea asp-for="Message" class="form-textarea" rows="4" placeholder="Πείτε μας λίγα λόγια για τη συνεργασία που αναζητάτε."></textarea>
+                        </div>
+
+                        <div class="honeypot" aria-hidden="true"><input asp-for="Website" tabindex="-1" autocomplete="off" /></div>
+
+                        <label class="form-check" style="grid-column:1/-1"><input asp-for="Consent" /><span><i class="fa-solid fa-shield-halved"></i> Αποδέχομαι την επεξεργασία των στοιχείων μου σύμφωνα με την <a asp-action="Privacy">πολιτική απορρήτου</a>.</span></label>
+
+                        <button class="btn btn-lg" type="submit" style="grid-column:1/-1;justify-self:start"><i class="fa-solid fa-paper-plane"></i> Υποβολή αίτησης <i class="fa-solid fa-arrow-right"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

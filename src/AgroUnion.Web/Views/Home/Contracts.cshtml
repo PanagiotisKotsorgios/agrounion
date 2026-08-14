@@ -1,0 +1,101 @@
+@{ ViewData["Title"] = "Συμβάσεις και διαφάνεια"; }
+
+<section class="hero-photo" style="--hero-img:url(/images/photography/hero-contract.jpg)">
+    <div class="container-wide">
+        <div class="overline">Διαφάνεια</div>
+        <h1>Οι καλές συνεργασίες<br />γράφονται καθαρά.</h1>
+        <p class="lead">Σαφές αντικείμενο, ορισμένοι ρόλοι, συμφωνημένοι όροι και ασφαλής πρόσβαση στο ιστορικό.</p>
+        <div class="hero-actions">
+            <a class="btn btn-lg btn-brass" asp-action="Apply">Ζητήστε ενημέρωση <i class="fa-solid fa-arrow-right"></i></a>
+            <a class="btn btn-lg btn-outline-light" asp-action="HowItWorks">Η διαδικασία</a>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="split">
+            <div class="aside">
+                <div class="doc-mockup">
+                    <div class="doc-head">
+                        <div class="doc-logo">
+                            <img src="~/images/agro-union-logo.png" alt="" />
+                            <span><strong>AGRO UNION</strong><small>Δίκτυο συνεργασίας</small></span>
+                        </div>
+                        <small>AU / 2026 / 0101</small>
+                    </div>
+                    <div class="doc-title">
+                        <small>Σύμβαση συνεργασίας</small>
+                        <strong>Οργανωμένη εμπορική συνεργασία</strong>
+                    </div>
+                    <div class="doc-lines"><i></i><i></i><i></i><i></i></div>
+                    <div class="doc-details">
+                        <div><small>Διάρκεια</small><strong>Ορισμένου ή αορίστου</strong></div>
+                        <div><small>Τιμολόγηση</small><strong>Ανά επιβεβαιωμένη πράξη</strong></div>
+                        <div><small>Ποσότητα</small><strong>Σαφώς συμφωνημένη</strong></div>
+                        <div><small>Πρόσβαση</small><strong>Μόνο συνεργάτης & admin</strong></div>
+                    </div>
+                    <div class="doc-seal">AU<span>2026</span></div>
+                </div>
+            </div>
+            <div>
+                <div class="overline">Τι περιλαμβάνει</div>
+                <h2>Η εμπιστοσύνη χρειάζεται μία σταθερή βάση.</h2>
+                <p class="lead">Η σύμβαση δεν είναι ένα τυπικό εμπόδιο. Είναι το κοινό σημείο αναφοράς που προστατεύει και τις δύο πλευρές.</p>
+
+                <div class="stack-lg mt-6">
+                    <article class="card"><div class="card-body" style="display:flex;gap:16px;align-items:flex-start"><div class="feature-icon"><i class="fa-solid fa-bullseye"></i></div><div><h3 style="margin:0 0 6px">Σαφές αντικείμενο</h3><p style="margin:0" class="text-muted">Τι ακριβώς αφορά η συνεργασία και ποιος είναι ο ρόλος κάθε μέρους.</p></div></div></article>
+                    <article class="card"><div class="card-body" style="display:flex;gap:16px;align-items:flex-start"><div class="feature-icon"><i class="fa-solid fa-coins"></i></div><div><h3 style="margin:0 0 6px">Τιμή & ποσότητα</h3><p style="margin:0" class="text-muted">Ο τρόπος με τον οποίο συμφωνούνται και επιβεβαιώνονται οι όροι.</p></div></div></article>
+                    <article class="card"><div class="card-body" style="display:flex;gap:16px;align-items:flex-start"><div class="feature-icon"><i class="fa-solid fa-calendar-xmark"></i></div><div><h3 style="margin:0 0 6px">Διάρκεια & λύση</h3><p style="margin:0" class="text-muted">Καθαρό χρονικό πλαίσιο και προβλεπόμενη διαδικασία τερματισμού.</p></div></div></article>
+                    <article class="card"><div class="card-body" style="display:flex;gap:16px;align-items:flex-start"><div class="feature-icon"><i class="fa-solid fa-lock"></i></div><div><h3 style="margin:0 0 6px">Ασφαλής πρόσβαση</h3><p style="margin:0" class="text-muted">Η ενεργή σύμβαση είναι διαθέσιμη μόνο στον συνεργάτη και στον admin.</p></div></div></article>
+                </div>
+
+                <a class="btn mt-8" asp-action="Apply"><i class="fa-solid fa-file-circle-plus"></i> Ζητήστε ενημέρωση <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-paper">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">Ασφάλεια δεδομένων</div>
+                <h2>Η διαφάνεια δεν σημαίνει έκθεση πληροφοριών.</h2>
+            </div>
+            <p class="head-side">Το σύστημα επιβάλλει τη σωστή ορατότητα σε επίπεδο query και API, όχι μόνο στην οθόνη.</p>
+        </div>
+        <div class="grid grid-3">
+            <article class="card">
+                <div class="card-body" style="display:flex;gap:16px;align-items:center">
+                    <div class="feature-icon"><i class="fa-solid fa-tractor"></i></div>
+                    <div style="flex:1">
+                        <strong style="display:block">Παραγωγός</strong>
+                        <span class="text-muted" style="font-size:12px">Βλέπει μόνο buy-side τιμές</span>
+                    </div>
+                    <i class="fa-solid fa-lock" style="color:var(--ink-300);font-size:18px"></i>
+                </div>
+            </article>
+            <article class="card">
+                <div class="card-body" style="display:flex;gap:16px;align-items:center">
+                    <div class="feature-icon"><i class="fa-solid fa-store"></i></div>
+                    <div style="flex:1">
+                        <strong style="display:block">Έμπορος / Εταιρεία</strong>
+                        <span class="text-muted" style="font-size:12px">Βλέπει μόνο sell-side τιμές</span>
+                    </div>
+                    <i class="fa-solid fa-lock" style="color:var(--ink-300);font-size:18px"></i>
+                </div>
+            </article>
+            <article class="card" style="border-color:var(--brass-500);background:rgba(198,164,91,.06)">
+                <div class="card-body" style="display:flex;gap:16px;align-items:center">
+                    <div class="feature-icon" style="background:rgba(198,164,91,.15);color:var(--brass-700)"><i class="fa-solid fa-user-shield"></i></div>
+                    <div style="flex:1">
+                        <strong style="display:block">Platform Admin</strong>
+                        <span class="text-muted" style="font-size:12px">Πλήρης εικόνα και margin</span>
+                    </div>
+                    <i class="fa-solid fa-key" style="color:var(--brass-700);font-size:18px"></i>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,288 @@
+@model AgroUnion.Application.Contracts.BuyerDashboardDto
+@using AgroUnion.Domain.Entities
+@{
+    string PickupStatusName(PickupStatus s) => s switch
+    {
+        PickupStatus.Scheduled => "Προγραμματισμένη",
+        PickupStatus.Completed => "Ολοκληρώθηκε",
+        PickupStatus.Cancelled => "Ακυρώθηκε",
+        _ => s.ToString()
+    };
+    string DealStatusName(DealStatus s) => s switch
+    {
+        DealStatus.Proposed => "Προς επιβεβαίωση",
+        DealStatus.BuySideConfirmed => "Επιβεβαιώθηκε από παραγωγό",
+        DealStatus.SellSideConfirmed => "Επιβεβαιώθηκε από εσάς",
+        DealStatus.Completed => "Ολοκληρώθηκε",
+        DealStatus.Cancelled => "Ακυρώθηκε",
+        _ => s.ToString()
+    };
+    string ContractStatusName(ContractStatus s) => s switch { ContractStatus.Draft => "Προσχέδιο", ContractStatus.Active => "Ενεργή", ContractStatus.Terminated => "Ολοκληρωμένη", _ => s.ToString() };
+
+    var totalVolume = Model.AvailableVolume.Sum(x => x.Quantity);
+    var pendingScheduled = Model.Pickups.Count(x => x.Status == PickupStatus.Scheduled);
+    var delivered = Model.Pickups.Count(x => x.Status == PickupStatus.Completed);
+    var totalTx = Model.Transactions.Count;
+    var totalTxValue = Model.Transactions.Sum(x => x.TotalValue);
+    var pendingDeals = Model.Deals.Count(x => x.Status == DealStatus.Proposed || x.Status == DealStatus.BuySideConfirmed);
+    var completedDeals = Model.Deals.Count(x => x.Status == DealStatus.Completed);
+}
+
+@* Alerts — only when relevant *@
+@if (pendingDeals > 0 || pendingScheduled > 0)
+{
+    <div class="alerts-strip">
+        @if (pendingDeals > 0)
+        {
+            <a class="alert-tile warning" href="#offers">
+                <div class="at-ic"><i class="fa-solid fa-hourglass-half"></i></div>
+                <div class="at-body">
+                    <div class="at-title">Συμφωνίες προς επιβεβαίωση</div>
+                    <div class="at-desc">Δείτε τις εκκρεμείς προσφορές</div>
+                </div>
+                <div class="at-count">@pendingDeals</div>
+            </a>
+        }
+        @if (pendingScheduled > 0)
+        {
+            <a class="alert-tile info" href="#pickups">
+                <div class="at-ic"><i class="fa-solid fa-calendar-check"></i></div>
+                <div class="at-body">
+                    <div class="at-title">Επόμενες παραλαβές</div>
+                    <div class="at-desc">Προγραμματισμένα δρομολόγια</div>
+                </div>
+                <div class="at-count">@pendingScheduled</div>
+            </a>
+        }
+    </div>
+}
+
+@* 4 BIG KPIs *@
+<div class="kpi-pro-grid">
+    <article class="kpi-pro hero-card">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-chart-column"></i></span><span>Διαθέσιμος όγκος δικτύου</span></div>
+        <div class="kpi-pro-value">@totalVolume.ToString("N0") <span class="unit">kg</span></div>
+        <div class="kpi-pro-sub"><strong>@Model.AvailableVolume.Select(x => x.Product).Distinct().Count()</strong> προϊόντα · <strong>@Model.AvailableVolume.Select(x => x.Region).Distinct().Count()</strong> περιοχές</div>
+    </article>
+
+    <article class="kpi-pro">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-tag"></i></span><span>Ενεργές προσφορές</span></div>
+        <div class="kpi-pro-value">@Model.Offers.Count</div>
+        <div class="kpi-pro-sub">Μέση τιμή <strong>@(Model.Offers.Any() ? Model.Offers.Average(x => x.SellPricePerUnit).ToString("N2") : "0") €/kg</strong></div>
+    </article>
+
+    <article class="kpi-pro">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-truck-fast"></i></span><span>Παραλαβές</span></div>
+        <div class="kpi-pro-value">@Model.Pickups.Count</div>
+        <div class="kpi-pro-sub"><strong>@delivered</strong> ολοκληρωμένες</div>
+    </article>
+
+    <article class="kpi-pro">
+        <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-receipt"></i></span><span>Ιστορικό συναλλαγών</span></div>
+        <div class="kpi-pro-value">@totalTx</div>
+        <div class="kpi-pro-sub">Αξία <strong>@totalTxValue.ToString("N0") €</strong></div>
+    </article>
+</div>
+
+@* Active offers — the primary action *@
+<div class="section-title" id="offers">
+    <h2>Ενεργές προσφορές πώλησης</h2>
+    <div class="rule"></div>
+    <span class="pill-metric"><strong>@Model.Offers.Count</strong></span>
+</div>
+
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead>
+            <tr>
+                <th>Προϊόν</th>
+                <th>Περιοχή</th>
+                <th class="right">Ποσότητα</th>
+                <th class="right">Τιμή πώλησης</th>
+                <th>Ισχύει έως</th>
+                <th>Αντιπροσφορά</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model.Offers)
+            {
+                <tr>
+                    <td>
+                        <div class="cell-avatar">
+                            <div class="av"><i class="fa-solid fa-wheat-awn"></i></div>
+                            <div class="info"><strong>@o.Product</strong><small>Στόχος @o.TargetQuantity.ToString("N0") kg</small></div>
+                        </div>
+                    </td>
+                    <td>@o.Region</td>
+                    <td class="right num">@o.TargetQuantity.ToString("N0") kg</td>
+                    <td class="right num sensitive">@o.SellPricePerUnit.ToString("N2") €</td>
+                    <td>@o.ValidUntil.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <form class="mini-form" asp-action="CounterOffer" method="post" style="margin:0">
+                            <input type="hidden" name="OfferId" value="@o.Id" />
+                            <input name="PricePerUnit" type="number" step=".0001" value="@o.CounterPricePerUnit" placeholder="€/kg" />
+                            <input name="Quantity" type="number" step=".001" value="@o.RequestedQuantity" placeholder="kg" />
+                            <button class="btn btn-sm"><i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            @if (Model.Offers.Count == 0)
+            {
+                <tr><td colspan="6"><div class="portal-empty compact"><i class="fa-solid fa-tag"></i><span>Δεν υπάρχουν ενεργές προσφορές.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* Deal confirmations — only when there are any *@
+@if (Model.Deals.Any(x => x.Status == DealStatus.Proposed || x.Status == DealStatus.BuySideConfirmed))
+{
+    <div class="section-title">
+        <h2>Επιβεβαίωση σκέλους πώλησης</h2>
+        <div class="rule"></div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table pro">
+            <thead><tr><th>Προϊόν</th><th class="right">Τιμή πώλησης</th><th class="right">Ποσότητα</th><th>Κατάσταση</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var d in Model.Deals.Where(x => x.Status == DealStatus.Proposed || x.Status == DealStatus.BuySideConfirmed))
+                {
+                    <tr>
+                        <td><strong>@d.Product</strong><br /><small style="color:var(--ink-500)">@d.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                        <td class="right num sensitive">@d.SellPricePerUnit.ToString("N2") €</td>
+                        <td class="right num">@d.Quantity.ToString("N0") kg</td>
+                        <td><span class="status-pill @d.Status.ToString().ToLowerInvariant()">@DealStatusName(d.Status)</span></td>
+                        <td><form asp-action="ConfirmSell" asp-route-id="@d.Id" method="post" style="margin:0"><button class="btn btn-sm btn-brass"><i class="fa-solid fa-check"></i> Επιβεβαίωση</button></form></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@* Pickups *@
+<div class="section-title" id="pickups">
+    <h2>Παραλαβές</h2>
+    <div class="rule"></div>
+    <span class="pill-metric info"><strong>@pendingScheduled</strong> προγραμμ.</span>
+    <span class="pill-metric success"><strong>@delivered</strong> έγιναν</span>
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead><tr><th>Ημερομηνία</th><th>Λεπτομέρειες</th><th>Κατάσταση</th></tr></thead>
+        <tbody>
+            @foreach (var p in Model.Pickups.OrderByDescending(x => x.ScheduledDate))
+            {
+                <tr>
+                    <td>@p.ScheduledDate.ToString("dd/MM/yy · HH:mm")</td>
+                    <td>@p.TransportDetails</td>
+                    <td><span class="status-pill @p.Status.ToString().ToLowerInvariant()">@PickupStatusName(p.Status)</span></td>
+                </tr>
+            }
+            @if (Model.Pickups.Count == 0)
+            {
+                <tr><td colspan="3"><div class="portal-empty compact"><i class="fa-solid fa-truck-ramp-box"></i><span>Δεν έχουν προγραμματιστεί παραλαβές.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.Deals.Any(x => x.Status == DealStatus.Completed))
+{
+    <details class="disclosure" style="margin-top:16px">
+        <summary><i class="fa-solid fa-calendar-plus"></i> Νέα προγραμματισμένη παραλαβή</summary>
+        <form class="workspace-form" asp-action="SchedulePickup" method="post">
+            <div class="field"><label>Συμφωνία</label><select name="DealId">@foreach (var d in Model.Deals.Where(x => x.Status == DealStatus.Completed)){<option value="@d.Id">@d.Product · @d.Quantity.ToString("N0") kg</option>}</select></div>
+            <div class="field"><label>Ημερομηνία</label><input name="ScheduledDate" type="datetime-local" value="@DateTime.Today.AddDays(7).AddHours(9).ToString("yyyy-MM-ddTHH:mm")" /></div>
+            <div class="field full"><label>Μεταφορικά στοιχεία</label><input name="TransportDetails" /></div>
+            <button class="workspace-save"><i class="fa-solid fa-plus"></i> Προγραμματισμός</button>
+        </form>
+    </details>
+}
+
+@* Contract *@
+@if (Model.Contracts.Any())
+{
+    <div class="section-title" id="contracts">
+        <h2>Σύμβαση</h2>
+        <div class="rule"></div>
+    </div>
+    <div class="document-grid" style="grid-template-columns:1fr">
+        @foreach (var c in Model.Contracts)
+        {
+            <article class="document-tile contract-tile">
+                <span><i class="fa-solid fa-file-signature"></i></span>
+                <div>
+                    <small>Σύμβαση · @ContractStatusName(c.Status)</small>
+                    <h3>@c.ContractNumber</h3>
+                    <p>@c.PricingTerms</p>
+                    <footer>
+                        <span><i class="fa-solid fa-calendar"></i> Έναρξη @c.StartDate.ToString("dd/MM/yyyy")</span>
+                        <span>Λήξη @(c.EndDate?.ToString("dd/MM/yyyy") ?? "Αόριστη")</span>
+                    </footer>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@* Transactions *@
+<div class="section-title">
+    <h2>Ιστορικό συναλλαγών</h2>
+    <div class="rule"></div>
+    <a class="more" asp-action="TransactionsCsv"><i class="fa-solid fa-file-csv"></i> CSV</a>
+</div>
+<div class="table-wrap">
+    <table class="data-table pro">
+        <thead>
+            <tr>
+                <th>Ημερομηνία</th>
+                <th>Προϊόν</th>
+                <th>Περιοχή</th>
+                <th class="right">Ποσότητα</th>
+                <th class="right">Τιμή πώλησης</th>
+                <th class="right">Σύνολο</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model.Transactions.OrderByDescending(x => x.Date))
+            {
+                <tr>
+                    <td>@t.Date.ToString("dd/MM/yyyy")</td>
+                    <td><strong>@t.Product</strong></td>
+                    <td>@t.Region</td>
+                    <td class="right num">@t.Quantity.ToString("N0")</td>
+                    <td class="right num sensitive">@t.UnitPrice.ToString("N2") €</td>
+                    <td class="right num pos">@t.TotalValue.ToString("N2") €</td>
+                </tr>
+            }
+            @if (Model.Transactions.Count == 0)
+            {
+                <tr><td colspan="6"><div class="portal-empty compact"><i class="fa-solid fa-file-invoice"></i><span>Καμία καταχώριση.</span></div></td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* Company only — publish supply price *@
+@if (Model.IsCompany)
+{
+    <div class="section-title">
+        <h2>Χονδρική εφοδίων</h2>
+        <div class="rule"></div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <form class="workspace-form compact" asp-action="CreatePrice" method="post">
+                <input type="hidden" name="Category" value="Supply" />
+                <input type="hidden" name="VisibleToRoles" value="Producer,Trader" />
+                <div class="field"><label>Εφόδιο</label><input name="ProductName" required /></div>
+                <div class="field"><label>Τιμή</label><input name="Price" type="number" step=".0001" required /></div>
+                <div class="field"><label>Μονάδα</label><input name="Unit" value="kg" /></div>
+                <div class="field"><label>Ισχύει από</label><input name="EffectiveFrom" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                <button class="workspace-save"><i class="fa-solid fa-upload"></i> Δημοσίευση τιμής</button>
+            </form>
+        </div>
+    </div>
+}

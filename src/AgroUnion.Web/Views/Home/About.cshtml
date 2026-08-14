@@ -1,0 +1,119 @@
+@{ ViewData["Title"] = "Η εταιρεία"; }
+
+<section class="hero-photo" style="--hero-img:url(/images/photography/hero-vineyard.jpg)">
+    <div class="container-wide">
+        <div class="overline">Ποιοι είμαστε</div>
+        <h1>Ρίζες στον τόπο.<br />Σύγχρονη εμπορική σκέψη.</h1>
+        <p class="lead">Ένας νέος, οργανωμένος κρίκος στην αγροτική αλυσίδα της Αιτωλοακαρνανίας.</p>
+        <div class="hero-actions">
+            <a class="btn btn-lg btn-brass" asp-action="Apply">Γίνετε συνεργάτης <i class="fa-solid fa-arrow-right"></i></a>
+            <a class="btn btn-lg btn-outline-light" asp-action="History">Η ιστορία μας</a>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="photo-showcase">
+            <div class="photo reveal">
+                <img src="/images/photography/hero-vineyard.jpg" alt="Μεσογειακό τοπίο" />
+                <span class="caption">Η βάση μας · Μεσολόγγι</span>
+            </div>
+            <div class="content reveal delay-1">
+                <div class="overline">Η ιδέα</div>
+                <h2>Μόνοι παράγουμε. Μαζί διαπραγματευόμαστε.</h2>
+                <p class="lead">Η AGRO UNION δημιουργήθηκε για να μετατρέψει τον κατακερματισμό σε συλλογική εμπορική δύναμη.</p>
+                <p>Λειτουργούμε ως trading και coordination house. Αγοράζουμε την παραγωγή σε συμφωνημένη τιμή, τη διαθέτουμε σε οργανωμένες αγορές και αναλαμβάνουμε τον συντονισμό από άκρη σε άκρη.</p>
+                <p>Παράλληλα, ενώνουμε ανάγκες για εφόδια και διαμορφώνουμε συλλογικές παραγγελίες που μειώνουν κόστος και αβεβαιότητα.</p>
+                <a class="btn-link" asp-action="Services">Οι υπηρεσίες μας <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-paper">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">Οι αρχές μας</div>
+                <h2>Τέσσερις αξίες. Ένας τρόπος δουλειάς.</h2>
+            </div>
+            <p class="head-side">Η τεχνολογία μάς βοηθά να κινούμαστε γρήγορα. Οι αρχές μας εξασφαλίζουν ότι κινούμαστε σωστά.</p>
+        </div>
+        <div class="value-grid">
+            <article class="value-card">
+                <span class="number">01</span>
+                <div class="icon"><i class="fa-solid fa-eye"></i></div>
+                <h3>Διαφάνεια</h3>
+                <p>Κάθε συνεργάτης γνωρίζει τους όρους, την κατάσταση και τα δεδομένα που τον αφορούν.</p>
+            </article>
+            <article class="value-card">
+                <span class="number">02</span>
+                <div class="icon"><i class="fa-solid fa-handshake-angle"></i></div>
+                <h3>Συνέπεια</h3>
+                <p>Παραμένουμε παρόντες από την πρώτη συζήτηση μέχρι την ολοκλήρωση της παραλαβής.</p>
+            </article>
+            <article class="value-card">
+                <span class="number">03</span>
+                <div class="icon"><i class="fa-solid fa-people-group"></i></div>
+                <h3>Συλλογικότητα</h3>
+                <p>Η δύναμη του δικτύου επιστρέφει ως καλύτερη διαπραγματευτική θέση για όλους.</p>
+            </article>
+            <article class="value-card">
+                <span class="number">04</span>
+                <div class="icon"><i class="fa-solid fa-chart-line"></i></div>
+                <h3>Αποτέλεσμα</h3>
+                <p>Μετράμε όγκο, αξία και απόδοση. Κάθε συνεργασία πρέπει να δημιουργεί πραγματικό όφελος.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section section-dark">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">Τοπική γνώση</div>
+                <h2>Γνωρίζουμε τον τόπο. Ανοίγουμε την αγορά.</h2>
+            </div>
+            <p class="head-side">Μεσολόγγι, Αιτωλικό, Αμφιλοχία, Πεντάλοφος και ολόκληρη η παραγωγική Αιτωλοακαρνανία συνδέονται μέσα από ένα ενιαίο εμπορικό δίκτυο.</p>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px">
+            <span class="badge brass"><i class="fa-solid fa-location-dot"></i> Μεσολόγγι</span>
+            <span class="badge brass"><i class="fa-solid fa-location-dot"></i> Αιτωλικό</span>
+            <span class="badge brass"><i class="fa-solid fa-location-dot"></i> Αμφιλοχία</span>
+            <span class="badge brass"><i class="fa-solid fa-location-dot"></i> Πεντάλοφος</span>
+            <span class="badge brass"><i class="fa-solid fa-location-dot"></i> Αγρίνιο</span>
+        </div>
+        <a class="btn btn-brass" asp-action="Partners">Δείτε ποιοι συμμετέχουν <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-header center">
+            <div class="overline plain">Ανακαλύψτε περισσότερα</div>
+            <h2>Γνωρίστε καλύτερα την AGRO UNION.</h2>
+        </div>
+        <div class="grid grid-3">
+            <a class="feature-card" asp-action="History">
+                <div class="feature-icon"><i class="fa-solid fa-timeline"></i></div>
+                <h3>Η ιστορία μας</h3>
+                <p>Η διαδρομή μέχρι σήμερα και το επόμενο κεφάλαιο.</p>
+                <span class="btn-link">Διαβάστε <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+            <a class="feature-card" asp-action="Team">
+                <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
+                <h3>Μέλη της εταιρείας</h3>
+                <p>Οι λειτουργικές ομάδες που στηρίζουν κάθε συνεργασία.</p>
+                <span class="btn-link">Γνωρίστε τους <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+            <a class="feature-card" asp-action="Vision">
+                <div class="feature-icon"><i class="fa-solid fa-binoculars"></i></div>
+                <h3>Όραμα & αξίες</h3>
+                <p>Οι αρχές λειτουργίας μας και η κατεύθυνση.</p>
+                <span class="btn-link">Δείτε <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+        </div>
+    </div>
+</section>

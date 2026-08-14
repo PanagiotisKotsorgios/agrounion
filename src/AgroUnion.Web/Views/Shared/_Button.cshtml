@@ -1,0 +1,2 @@
+@model (string Label, string Href, bool Primary)
+<a class="button @(Model.Primary ? "button-primary" : "button-ghost")" href="@Model.Href">@Model.Label <span>→</span></a>

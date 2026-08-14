@@ -1,0 +1,207 @@
+@{
+    var isAuthed = User.Identity?.IsAuthenticated == true;
+    var isAdmin = isAuthed && User.IsInRole("Admin");
+}
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="AGRO UNION — Το σύγχρονο δίκτυο που ενώνει την παραγωγή με την αγορά." />
+    <title>@ViewData["Title"] · AGRO UNION</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="@(isAuthed ? "portal-body" : "marketing-body")">
+    <a class="skip-link" href="#main-content">Μετάβαση στο περιεχόμενο</a>
+
+    <header class="site-header">
+        <a class="brand" asp-controller="Home" asp-action="Index" aria-label="AGRO UNION — Αρχική">
+            <span class="brand-mark"><img src="~/images/agro-union-logo.png" alt="AGRO UNION" /></span>
+            <span class="brand-copy">
+                <strong>AGRO UNION</strong>
+                <small>Δίκτυο συνεργασίας</small>
+            </span>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-label="Άνοιγμα μενού" aria-expanded="false" aria-controls="primary-nav">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="nav-backdrop" data-nav-backdrop></div>
+
+        <nav id="primary-nav" class="main-nav" aria-label="Κύρια πλοήγηση">
+            <div class="mobile-nav-heading">
+                <span>AGRO UNION</span>
+                <strong>Κύριο μενού</strong>
+            </div>
+
+            @if (isAuthed)
+            {
+                <a asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-grip"></i> Επισκόπηση</a>
+                @if (isAdmin)
+                {
+                    <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-box-archive"></i> Εκδόσεις</a>
+                }
+                <a asp-controller="Account" asp-action="ChangePassword"><i class="fa-solid fa-shield-halved"></i> Ασφάλεια</a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button class="nav-login" type="submit"><i class="fa-solid fa-arrow-right-from-bracket"></i> Αποσύνδεση</button>
+                </form>
+            }
+            else
+            {
+                <div class="nav-item">
+                    <button class="nav-link dropdown-toggle" type="button" aria-expanded="false" aria-haspopup="true">
+                        Η AGRO UNION <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="nav-dropdown">
+                        <div class="dropdown-heading">
+                            <span><small>Η AGRO UNION</small><strong>Εταιρεία & δίκτυο</strong></span>
+                            <em>6 ενότητες</em>
+                        </div>
+                        <div class="professional-dropdown-grid">
+                            <a asp-controller="Home" asp-action="About"><span class="menu-icon"><i class="fa-solid fa-building-columns"></i></span><span><strong>Η εταιρεία</strong><small>Αποστολή και εταιρική ταυτότητα</small></span></a>
+                            <a asp-controller="Home" asp-action="History"><span class="menu-icon"><i class="fa-solid fa-timeline"></i></span><span><strong>Η ιστορία μας</strong><small>Η διαδρομή μέχρι σήμερα</small></span></a>
+                            <a asp-controller="Home" asp-action="Team"><span class="menu-icon"><i class="fa-solid fa-users"></i></span><span><strong>Μέλη της εταιρείας</strong><small>Οι άνθρωποι του δικτύου</small></span></a>
+                            <a asp-controller="Home" asp-action="Vision"><span class="menu-icon"><i class="fa-solid fa-compass"></i></span><span><strong>Όραμα & αξίες</strong><small>Οι αρχές λειτουργίας μας</small></span></a>
+                            <a asp-controller="Home" asp-action="Network"><span class="menu-icon"><i class="fa-solid fa-map-location-dot"></i></span><span><strong>Το δίκτυό μας</strong><small>Περιοχές και παραγωγική βάση</small></span></a>
+                            <a asp-controller="Home" asp-action="Contracts"><span class="menu-icon"><i class="fa-solid fa-file-signature"></i></span><span><strong>Διαφάνεια & συμβάσεις</strong><small>Όροι και πλαίσιο συνεργασίας</small></span></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-item">
+                    <button class="nav-link dropdown-toggle" type="button" aria-expanded="false" aria-haspopup="true">
+                        Υπηρεσίες <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="nav-dropdown">
+                        <div class="dropdown-heading">
+                            <span><small>ΤΙ ΠΡΟΣΦΕΡΟΥΜΕ</small><strong>Υπηρεσίες & προϊόντα</strong></span>
+                            <em>7 ενότητες</em>
+                        </div>
+                        <div class="professional-dropdown-grid">
+                            <a asp-controller="Home" asp-action="Services"><span class="menu-icon"><i class="fa-solid fa-briefcase"></i></span><span><strong>Όλες οι υπηρεσίες</strong><small>Η πλήρης εμπορική ροή</small></span></a>
+                            <a asp-controller="Home" asp-action="Products"><span class="menu-icon"><i class="fa-solid fa-basket-shopping"></i></span><span><strong>Προϊόντα δικτύου</strong><small>Παραγωγή και κατηγορίες προϊόντων</small></span></a>
+                            <a asp-controller="Home" asp-action="Services" asp-fragment="trade"><span class="menu-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span><span><strong>Εμπορία παραγωγής</strong><small>Αγορά και οργανωμένη διάθεση</small></span></a>
+                            <a asp-controller="Home" asp-action="Services" asp-fragment="supplies"><span class="menu-icon"><i class="fa-solid fa-boxes-stacked"></i></span><span><strong>Συλλογικές προμήθειες</strong><small>Οργανωμένες αγορές εφοδίων</small></span></a>
+                            <a asp-controller="Home" asp-action="Sustainability"><span class="menu-icon"><i class="fa-solid fa-leaf"></i></span><span><strong>Βιωσιμότητα</strong><small>Υπεύθυνη ανάπτυξη του τόπου</small></span></a>
+                            <a asp-controller="Home" asp-action="Faq"><span class="menu-icon"><i class="fa-solid fa-circle-question"></i></span><span><strong>Συχνές ερωτήσεις</strong><small>Απαντήσεις και υποστήριξη</small></span></a>
+                            <a asp-controller="Versions" asp-action="Index"><span class="menu-icon"><i class="fa-solid fa-box-archive"></i></span><span><strong>Εκδόσεις πλατφόρμας</strong><small>Ιστορικό και ασφαλείς λήψεις</small></span></a>
+                            <a asp-controller="Home" asp-action="Payments"><span class="menu-icon"><i class="fa-solid fa-credit-card"></i></span><span><strong>Πληρωμές & εξοφλήσεις</strong><small>Τραπεζικοί λογαριασμοί και IRIS</small></span></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-item">
+                    <button class="nav-link dropdown-toggle" type="button" aria-expanded="false" aria-haspopup="true">
+                        Για συνεργάτες <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="nav-dropdown">
+                        <div class="dropdown-heading">
+                            <span><small>ΣΥΝΕΡΓΑΤΕΣ</small><strong>Επιλέξτε τον ρόλο σας</strong></span>
+                            <em>4 κατηγορίες</em>
+                        </div>
+                        <div class="professional-dropdown-grid">
+                            <a asp-controller="Home" asp-action="Partners" asp-fragment="producers"><span class="menu-icon"><i class="fa-solid fa-tractor"></i></span><span><strong>Παραγωγοί</strong><small>Δηλώσεις και προσφορές αγοράς</small></span></a>
+                            <a asp-controller="Home" asp-action="Partners" asp-fragment="traders"><span class="menu-icon"><i class="fa-solid fa-chart-line"></i></span><span><strong>Έμποροι</strong><small>Όγκος δικτύου και προσφορές</small></span></a>
+                            <a asp-controller="Home" asp-action="Partners" asp-fragment="companies"><span class="menu-icon"><i class="fa-solid fa-industry"></i></span><span><strong>Επιχειρήσεις</strong><small>Προμήθεια και προγραμματισμός</small></span></a>
+                            <a asp-controller="Home" asp-action="Network"><span class="menu-icon"><i class="fa-solid fa-circle-nodes"></i></span><span><strong>Τοπικό δίκτυο</strong><small>Οι περιοχές που συνδέουμε</small></span></a>
+                        </div>
+                    </div>
+                </div>
+
+                <a class="nav-link" asp-controller="Home" asp-action="HowItWorks">Πώς λειτουργεί</a>
+                <a class="nav-link" asp-controller="Home" asp-action="Payments"><i class="fa-solid fa-credit-card"></i> Πληρωμές</a>
+
+                <div class="nav-actions">
+                    <a class="nav-apply" asp-controller="Home" asp-action="Apply"><i class="fa-solid fa-handshake"></i> Αίτηση συνεργασίας</a>
+                    <a class="nav-login" asp-controller="Account" asp-action="Login"><i class="fa-solid fa-user-shield"></i> Ψηφιακή Πύλη</a>
+                </div>
+            }
+        </nav>
+    </header>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="toast success" role="status"><span><i class="fa-solid fa-check"></i></span>@success<button type="button" aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button></div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="toast error" role="alert"><span><i class="fa-solid fa-exclamation"></i></span>@error<button type="button" aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button></div>
+    }
+    @if (TempData["Invite"] is string invite)
+    {
+        <div class="toast invite" role="status"><span><i class="fa-solid fa-wand-magic-sparkles"></i></span>@invite<button type="button" aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button></div>
+    }
+
+    <main id="main-content">@RenderBody()</main>
+
+    @if (!isAuthed)
+    {
+        <footer class="site-footer">
+            <div class="container footer-lead">
+                <div>
+                    <span class="footer-orbit"><i class="fa-solid fa-leaf"></i></span>
+                    <div>
+                        <small>ΜΙΑ ΟΡΓΑΝΩΜΕΝΗ ΑΛΥΣΙΔΑ ΑΞΙΑΣ</small>
+                        <h3>Από τη γη, στην αγορά.<br />Με καθαρούς όρους.</h3>
+                    </div>
+                </div>
+                <a class="btn btn-brass" asp-controller="Home" asp-action="Apply">Γίνετε συνεργάτης <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="container footer-grid">
+                <div class="footer-brand">
+                    <a class="brand" asp-controller="Home" asp-action="Index">
+                        <span class="brand-mark"><img src="~/images/agro-union-logo.png" alt="" /></span>
+                        <span class="brand-copy"><strong>AGRO UNION</strong><small>Δίκτυο συνεργασίας</small></span>
+                    </a>
+                    <p>Το σύγχρονο δίκτυο που ενώνει την αγροτική παραγωγή με αξιόπιστες αγορές.</p>
+                    <div class="social-row">
+                        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <small>Η ΕΤΑΙΡΕΙΑ</small>
+                    <a asp-controller="Home" asp-action="About">Ποιοι είμαστε</a>
+                    <a asp-controller="Home" asp-action="History">Η ιστορία μας</a>
+                    <a asp-controller="Home" asp-action="Team">Μέλη της εταιρείας</a>
+                    <a asp-controller="Home" asp-action="Vision">Όραμα & αξίες</a>
+                    <a asp-controller="Home" asp-action="Network">Το δίκτυό μας</a>
+                </div>
+                <div>
+                    <small>ΥΠΗΡΕΣΙΕΣ</small>
+                    <a asp-controller="Home" asp-action="Services">Όλες οι υπηρεσίες</a>
+                    <a asp-controller="Home" asp-action="Products">Προϊόντα δικτύου</a>
+                    <a asp-controller="Versions" asp-action="Index">Όλες οι εκδόσεις</a>
+                    <a asp-controller="Home" asp-action="Sustainability">Βιωσιμότητα</a>
+                    <a asp-controller="Home" asp-action="Faq">Συχνές ερωτήσεις</a>
+                    <a asp-controller="Home" asp-action="Contracts">Συμβάσεις</a>
+                </div>
+                <div>
+                    <small>ΣΥΝΕΡΓΑΣΙΑ</small>
+                    <a asp-controller="Home" asp-action="Partners">Για συνεργάτες</a>
+                    <a asp-controller="Home" asp-action="Apply">Αίτηση ενδιαφέροντος</a>
+                    <a asp-controller="Home" asp-action="Payments">Πληρωμές & εξοφλήσεις</a>
+                    <a asp-controller="Account" asp-action="Login">Portal συνεργατών</a>
+                    <a asp-controller="Home" asp-action="Contact">Επικοινωνία</a>
+                    <a href="tel:+302631000000"><i class="fa-solid fa-phone"></i> +30 26310 00000</a>
+                </div>
+            </div>
+            <div class="container footer-bottom">
+                <span>© @DateTime.Now.Year AGRO UNION. Όλα τα δικαιώματα διατηρούνται.</span>
+                <div>
+                    <a asp-controller="Home" asp-action="Privacy">Πολιτική απορρήτου</a>
+                    <span>Με υπευθυνότητα στον τόπο μας.</span>
+                </div>
+            </div>
+        </footer>
+    }
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

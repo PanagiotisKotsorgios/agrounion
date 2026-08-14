@@ -1,0 +1,199 @@
+@{ ViewData["Title"] = "Πληρωμές & Εξοφλήσεις"; }
+
+<section class="hero-photo" style="--hero-img:url(/images/photography/hero-contract.jpg);min-height:min(560px,68vh);padding:96px 0 80px">
+    <div class="container-wide">
+        <div class="overline">Στοιχεία πληρωμής</div>
+        <h1>Πληρωμές &amp; Εξοφλήσεις</h1>
+        <p class="lead">Ασφαλείς τραπεζικοί λογαριασμοί και IRIS για κάθε συνεργάτη της AGRO UNION. Επιλέξτε τον τρόπο που σας εξυπηρετεί.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container-narrow">
+        <div class="pay-header">
+            <div class="pay-header-mark">
+                <img src="~/images/agro-union-logo.png" alt="AGRO UNION" />
+            </div>
+            <div>
+                <div class="overline">AGRO UNION · Στοιχεία τραπεζών</div>
+                <h2 class="pay-title">Στοιχεία Πληρωμής</h2>
+                <p class="text-muted" style="max-width:640px;margin-top:12px">Παρακαλούμε χρησιμοποιήστε έναν από τους παρακάτω λογαριασμούς ή τη μέθοδο IRIS για την πληρωμή σας. Θυμηθείτε να συμπληρώσετε την αιτιολογία πληρωμής.</p>
+            </div>
+        </div>
+
+        <!-- Bank Account 1 -->
+        <article class="pay-card">
+            <header class="pay-card-head">
+                <span class="pay-badge"><i class="fa-solid fa-building-columns"></i> Λογαριασμός 1</span>
+                <span class="pay-brand">
+                    <img src="~/images/agro-union-logo.png" alt="" />
+                </span>
+            </header>
+            <table class="pay-table">
+                <tbody>
+                    <tr>
+                        <th><i class="fa-solid fa-landmark"></i> Τράπεζα</th>
+                        <td>Τράπεζα Πειραιώς</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-regular fa-user"></i> Δικαιούχος</th>
+                        <td class="mono-cell">ΠΑΝΑΓΙΩΤΗΣ ΚΟΤΣΟΡΓΙΟΣ</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-credit-card"></i> IBAN</th>
+                        <td class="iban">
+                            <span class="iban-value">GR18 0172 1610 0051 6111 8162 881</span>
+                            <button type="button" class="copy-btn" data-copy="GR18017216100051611181628 81" aria-label="Αντιγραφή IBAN"><i class="fa-regular fa-copy"></i> Αντιγραφή</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-globe"></i> SWIFT / BIC</th>
+                        <td class="mono-cell">PIRBGRAA</td>
+                    </tr>
+                </tbody>
+            </table>
+        </article>
+
+        <!-- Bank Account 2 -->
+        <article class="pay-card">
+            <header class="pay-card-head">
+                <span class="pay-badge"><i class="fa-solid fa-building-columns"></i> Λογαριασμός 2</span>
+                <span class="pay-brand">
+                    <img src="~/images/agro-union-logo.png" alt="" />
+                </span>
+            </header>
+            <table class="pay-table">
+                <tbody>
+                    <tr>
+                        <th><i class="fa-solid fa-landmark"></i> Τράπεζα</th>
+                        <td>Τράπεζα Πειραιώς</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-regular fa-user"></i> Δικαιούχος</th>
+                        <td class="mono-cell">ΠΑΝΑΓΙΩΤΗΣ ΚΟΤΣΟΡΓΙΟΣ</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-credit-card"></i> IBAN</th>
+                        <td class="iban">
+                            <span class="iban-value">GR94 0172 1610 0051 6110 9856 179</span>
+                            <button type="button" class="copy-btn" data-copy="GR94017216100051611098561 79" aria-label="Αντιγραφή IBAN"><i class="fa-regular fa-copy"></i> Αντιγραφή</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-globe"></i> SWIFT / BIC</th>
+                        <td class="mono-cell">PIRBGRAA</td>
+                    </tr>
+                </tbody>
+            </table>
+        </article>
+
+        <div class="pay-or"><span>ή</span></div>
+
+        <!-- IRIS 1 -->
+        <article class="pay-card iris-card">
+            <header class="pay-card-head">
+                <span class="pay-badge brass"><i class="fa-solid fa-mobile-screen-button"></i> IRIS Πληρωμή #1</span>
+                <span class="pay-brand">
+                    <img src="~/images/agro-union-logo.png" alt="" />
+                </span>
+            </header>
+            <table class="pay-table">
+                <tbody>
+                    <tr>
+                        <th><i class="fa-regular fa-user"></i> Όνομα</th>
+                        <td class="mono-cell">ΠΑΝΑΓΙΩΤΗΣ ΚΟΤΣΟΡΓΙΟΣ</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-mobile-screen"></i> Κινητό</th>
+                        <td class="iban">
+                            <span class="iban-value">6986788178</span>
+                            <button type="button" class="copy-btn" data-copy="6986788178" aria-label="Αντιγραφή αριθμού"><i class="fa-regular fa-copy"></i> Αντιγραφή</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-id-card"></i> ΑΦΜ</th>
+                        <td class="mono-cell">176091030</td>
+                    </tr>
+                </tbody>
+            </table>
+        </article>
+
+        <!-- IRIS 2 -->
+        <article class="pay-card iris-card">
+            <header class="pay-card-head">
+                <span class="pay-badge brass"><i class="fa-solid fa-mobile-screen-button"></i> IRIS Πληρωμή #2</span>
+                <span class="pay-brand">
+                    <img src="~/images/agro-union-logo.png" alt="" />
+                </span>
+            </header>
+            <table class="pay-table">
+                <tbody>
+                    <tr>
+                        <th><i class="fa-regular fa-user"></i> Όνομα</th>
+                        <td class="mono-cell">ΠΑΝΑΓΙΩΤΗΣ ΚΟΤΣΟΡΓΙΟΣ</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-mobile-screen"></i> Κινητό</th>
+                        <td class="iban">
+                            <span class="iban-value">6986788178</span>
+                            <button type="button" class="copy-btn" data-copy="6986788178" aria-label="Αντιγραφή αριθμού"><i class="fa-regular fa-copy"></i> Αντιγραφή</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><i class="fa-solid fa-id-card"></i> ΑΦΜ</th>
+                        <td class="mono-cell">176091030</td>
+                    </tr>
+                </tbody>
+            </table>
+        </article>
+
+        <!-- Payment reason box -->
+        <article class="pay-reason">
+            <header>
+                <span class="reason-ic"><i class="fa-solid fa-pen-to-square"></i></span>
+                <div>
+                    <div class="overline">Απαραίτητη οδηγία</div>
+                    <h3>Λόγος / αιτιολογία πληρωμής</h3>
+                </div>
+            </header>
+            <p>Για να αναγνωριστεί άμεσα η πληρωμή σας, καταχωρίστε ως αιτιολογία της τραπεζικής εντολής το παρακάτω πρότυπο:</p>
+            <div class="reason-template">
+                <code>Πληρωμή συνεργάτη &lt;ΟΝΟΜΑ ΕΤΑΙΡΕΙΑΣ&gt; προς AGRO UNION · &lt;Αιτιολογία&gt;</code>
+                <button type="button" class="copy-btn" data-copy="Πληρωμή συνεργάτη <ΟΝΟΜΑ ΕΤΑΙΡΕΙΑΣ> προς AGRO UNION · <Αιτιολογία>" aria-label="Αντιγραφή προτύπου"><i class="fa-regular fa-copy"></i> Αντιγραφή προτύπου</button>
+            </div>
+            <ul class="reason-notes">
+                <li><i class="fa-solid fa-check"></i><span>Αντικαταστήστε το <strong>&lt;ΟΝΟΜΑ ΕΤΑΙΡΕΙΑΣ&gt;</strong> με την πλήρη επωνυμία της εταιρείας σας.</span></li>
+                <li><i class="fa-solid fa-check"></i><span>Στην <strong>&lt;Αιτιολογία&gt;</strong> αναφέρετε τον σκοπό (τιμολόγιο, εκκαθάριση, προκαταβολή κ.λπ.).</span></li>
+                <li><i class="fa-solid fa-check"></i><span>Στείλτε αποδεικτικό πληρωμής στο <a href="mailto:info@agrounion.gr">info@agrounion.gr</a>.</span></li>
+            </ul>
+        </article>
+
+        <div class="pay-help">
+            <i class="fa-solid fa-headset"></i>
+            <div>
+                <strong>Χρειάζεστε βοήθεια με την πληρωμή σας;</strong>
+                <span>Επικοινωνήστε μαζί μας για διευκρινίσεις πριν πραγματοποιήσετε την κατάθεση.</span>
+            </div>
+            <a class="btn" asp-controller="Home" asp-action="Contact"><i class="fa-solid fa-envelope"></i> Επικοινωνία</a>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.copy-btn').forEach(btn => btn.addEventListener('click', async () => {
+    const text = btn.dataset.copy;
+    if (!text) return;
+    try {
+        await navigator.clipboard.writeText(text);
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Αντιγράφηκε';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.innerHTML = original; btn.classList.remove('copied'); }, 1600);
+    } catch (e) {
+        btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Απέτυχε';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Αντιγραφή'; }, 1600);
+    }
+}));
+</script>
+}

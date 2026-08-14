@@ -1,0 +1,104 @@
+@model AgroUnion.Web.ViewModels.InterestForm
+@using AgroUnion.Domain.Entities
+@{ ViewData["Title"] = "Αίτηση πρόσβασης"; Layout = "_AuthLayout"; }
+
+<div class="auth-page" style="--auth-img:url(/images/photography/hero-partner.jpg)">
+    <aside class="auth-visual">
+        <div>
+            <div class="overline">Νέα συνεργασία</div>
+            <h1>Ας ξεκινήσουμε τη συνεργασία μας.</h1>
+            <p>Στείλτε τα βασικά στοιχεία σας. Ένας υπεύθυνος συνεργασιών θα επικοινωνήσει προσωπικά για να συζητήσετε το πλαίσιο και να ενεργοποιηθεί ο λογαριασμός σας.</p>
+            <ul class="visual-list">
+                <li><i class="fa-solid fa-check"></i><span>Παραγωγοί, έμποροι και επιχειρήσεις</span></li>
+                <li><i class="fa-solid fa-check"></i><span>Καθαροί όροι από την πρώτη επαφή</span></li>
+                <li><i class="fa-solid fa-check"></i><span>Πρόσβαση με έγκριση από τη διαχείριση</span></li>
+            </ul>
+        </div>
+        <div class="auth-visual-footer">AGRO UNION · Νέες αιτήσεις συνεργασίας</div>
+    </aside>
+    <section class="auth-panel">
+        <form class="auth-form" asp-controller="Home" asp-action="Register" method="post" novalidate>
+            <div>
+                <h2>Ζητήστε πρόσβαση</h2>
+                <p>Συμπληρώστε τα βασικά στοιχεία. Η εγγραφή ολοκληρώνεται με προσωπική πρόσκληση.</p>
+            </div>
+            @if (TempData["Success"] is string success)
+            {
+                <div class="alert info"><i class="fa-solid fa-circle-check"></i><span>@success</span></div>
+            }
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+            <div class="field">
+                <label asp-for="FullNameOrCompany" class="field-label">Ονοματεπώνυμο ή επωνυμία</label>
+                <input asp-for="FullNameOrCompany" class="form-input" placeholder="π.χ. Γεώργιος Παπαδάκης" autofocus />
+                <span asp-validation-for="FullNameOrCompany" class="field-error"></span>
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label asp-for="Role" class="field-label">Ρόλος</label>
+                    <select asp-for="Role" class="form-select">
+                        <option value="Producer">Παραγωγός</option>
+                        <option value="Trader">Έμπορος</option>
+                        <option value="Company">Εταιρεία</option>
+                        <option value="Other">Άλλο</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="Region" class="field-label">Περιοχή</label>
+                    <input asp-for="Region" class="form-input" placeholder="π.χ. Αιτωλικό" />
+                    <span asp-validation-for="Region" class="field-error"></span>
+                </div>
+            </div>
+
+            <div class="field">
+                <label asp-for="ProductInterest" class="field-label">Αντικείμενο ενδιαφέροντος</label>
+                <select asp-for="ProductInterest" class="form-select">
+                    <option value="">Επιλέξτε αντικείμενο</option>
+                    <optgroup label="Αγροτική παραγωγή">
+                        <option>Ελαιόλαδο</option><option>Επιτραπέζια ελιά</option><option>Εσπεριδοειδή</option>
+                        <option>Πορτοκάλια</option><option>Λεμόνια</option><option>Μανταρίνια</option>
+                        <option>Ακτινίδια</option><option>Σταφύλια</option><option>Κηπευτικά</option>
+                        <option>Δημητριακά</option><option>Όσπρια</option>
+                        <option>Αρωματικά & φαρμακευτικά φυτά</option><option>Άλλος καρπός</option>
+                    </optgroup>
+                    <optgroup label="Άλλα προϊόντα & υπηρεσίες">
+                        <option>Μέλι & μελισσοκομικά προϊόντα</option>
+                        <option>Λιπάσματα & αγροτικά εφόδια</option>
+                        <option>Σπόροι & φυτωριακό υλικό</option>
+                        <option>Ζωοτροφές</option>
+                        <option>Αγροτικός εξοπλισμός</option>
+                        <option>Τυποποίηση & μεταποίηση</option>
+                        <option>Μεταφορές & logistics</option>
+                        <option>Γενική εμπορική συνεργασία</option>
+                    </optgroup>
+                </select>
+                <span asp-validation-for="ProductInterest" class="field-error"></span>
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label asp-for="Email" class="field-label">Email</label>
+                    <input asp-for="Email" class="form-input" type="email" placeholder="name@example.gr" />
+                    <span asp-validation-for="Email" class="field-error"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="Phone" class="field-label">Τηλέφωνο</label>
+                    <input asp-for="Phone" class="form-input" placeholder="+30 69..." />
+                    <span asp-validation-for="Phone" class="field-error"></span>
+                </div>
+            </div>
+
+            <div class="honeypot" aria-hidden="true"><input asp-for="Website" tabindex="-1" autocomplete="off" /></div>
+
+            <label class="form-check"><input asp-for="Consent" /><span>Αποδέχομαι την <a asp-controller="Home" asp-action="Privacy" target="_blank">πολιτική απορρήτου</a>.</span></label>
+
+            <button class="btn btn-lg" type="submit">Αποστολή αίτησης <i class="fa-solid fa-arrow-right"></i></button>
+
+            <div class="form-row" style="justify-content:center">
+                <span class="text-muted">Έχετε ήδη πρόσβαση;</span>
+                <a asp-controller="Account" asp-action="Login"><i class="fa-solid fa-right-to-bracket"></i> Συνδεθείτε</a>
+            </div>
+        </form>
+    </section>
+</div>

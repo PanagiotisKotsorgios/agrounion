@@ -1,0 +1,118 @@
+@{ ViewData["Title"] = "Προϊόντα δικτύου"; }
+
+<section class="hero-photo" style="--hero-img:url(/images/photography/olive-oil.jpg)">
+    <div class="container-wide">
+        <div class="overline">Από την παραγωγή</div>
+        <h1>Προϊόντα με ταυτότητα.<br />Εμπορία με οργάνωση.</h1>
+        <p class="lead">Χτίζουμε ένα δίκτυο γύρω από προϊόντα της Αιτωλοακαρνανίας και τις πραγματικές ανάγκες παραγωγών, εμπόρων και επιχειρήσεων.</p>
+        <div class="hero-actions">
+            <a class="btn btn-lg btn-brass" asp-action="Apply">Δηλώστε το προϊόν σας <i class="fa-solid fa-arrow-right"></i></a>
+            <a class="btn btn-lg btn-outline-light" asp-action="Services" asp-fragment="trade">Πώς λειτουργεί η εμπορία</a>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">Βασικές κατηγορίες</div>
+                <h2>Ο πλούτος του τόπου. Σε μια οργανωμένη ροή.</h2>
+            </div>
+            <p class="head-side">Οι κατηγορίες εμπλουτίζονται καθώς μεγαλώνει το δίκτυο και δημιουργούνται νέες, επαληθευμένες εμπορικές δυνατότητες.</p>
+        </div>
+        <div class="grid grid-2">
+            <article class="card">
+                <img src="/images/photography/olive-oil.jpg" alt="Ελαιόλαδο" style="aspect-ratio:16/9;object-fit:cover;width:100%" loading="lazy" />
+                <div class="card-body">
+                    <div class="overline">01 · Κύρια κατηγορία</div>
+                    <h3 style="margin-top:8px">Ελαιόλαδο</h3>
+                    <p>Οργανωμένη δήλωση ποσότητας και ποιοτικών χαρακτηριστικών, προσφορά αγοράς και συντονισμένη διάθεση.</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                        <span class="badge">Ποσότητα</span>
+                        <span class="badge">Ποιότητα</span>
+                        <span class="badge">Περίοδος</span>
+                    </div>
+                    <a class="btn-link" asp-action="Apply" asp-route-product="Ελαιόλαδο">Δήλωση ενδιαφέροντος <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </article>
+            <article class="card">
+                <img src="/images/photography/olive-harvest.jpg" alt="Επιτραπέζια ελιά" style="aspect-ratio:16/9;object-fit:cover;width:100%" loading="lazy" />
+                <div class="card-body">
+                    <div class="overline">02 · Επιτραπέζιο προϊόν</div>
+                    <h3 style="margin-top:8px">Επιτραπέζια ελιά</h3>
+                    <p>Καταγραφή ποικιλίας, κατηγορίας και διαθεσιμότητας για στοχευμένη σύνδεση με εμπόρους και τυποποιητές.</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                        <span class="badge">Ποικιλία</span>
+                        <span class="badge">Μέγεθος</span>
+                        <span class="badge">Παρτίδα</span>
+                    </div>
+                    <a class="btn-link" asp-action="Apply" asp-route-product="Επιτραπέζια ελιά">Δήλωση ενδιαφέροντος <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </article>
+            <article class="card">
+                <img src="/images/photography/hero-fields.jpg" alt="Λοιποί καρποί" style="aspect-ratio:16/9;object-fit:cover;width:100%" loading="lazy" />
+                <div class="card-body">
+                    <div class="overline">03 · Ευρύτερη παραγωγή</div>
+                    <h3 style="margin-top:8px">Λοιποί καρποί</h3>
+                    <p>Διερεύνηση νέων εμπορικών διαδρομών ανάλογα με τον διαθέσιμο όγκο, την εποχικότητα και τη ζήτηση.</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                        <span class="badge">Εποχικότητα</span>
+                        <span class="badge">Περιοχή</span>
+                        <span class="badge">Ζήτηση</span>
+                    </div>
+                    <a class="btn-link" asp-action="Contact">Συζητήστε μια κατηγορία <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </article>
+            <article class="card">
+                <img src="/images/photography/hero-warehouse.jpg" alt="Λιπάσματα και εφόδια" style="aspect-ratio:16/9;object-fit:cover;width:100%" loading="lazy" />
+                <div class="card-body">
+                    <div class="overline">04 · Συλλογικές προμήθειες</div>
+                    <h3 style="margin-top:8px">Λιπάσματα & εφόδια</h3>
+                    <p>Συγκέντρωση αναγκών και συλλογική διαπραγμάτευση για προμήθειες με οργανωμένους όρους συμμετοχής.</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                        <span class="badge">Ανάγκες</span>
+                        <span class="badge">Προθεσμία</span>
+                        <span class="badge">Όροι</span>
+                    </div>
+                    <a class="btn-link" asp-action="Services" asp-fragment="supplies">Πώς λειτουργεί <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="section section-paper">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">Τι καταγράφουμε</div>
+                <h2>Κάθε προϊόν συνοδεύεται από τη σωστή πληροφορία.</h2>
+            </div>
+            <p class="head-side">Η εμπορική αξία δεν εξαρτάται μόνο από την ποσότητα. Για αυτό οργανώνουμε τα δεδομένα που χρειάζονται οι εμπλεκόμενες πλευρές για να αξιολογήσουν μια πρόταση.</p>
+        </div>
+        <div class="grid grid-3">
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-scale-balanced"></i></div><h3 style="margin-top:12px">Ποσότητα & μονάδα</h3><p style="margin:0">Δηλωμένος διαθέσιμος όγκος</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-award"></i></div><h3 style="margin-top:12px">Ποιότητα & κατηγορία</h3><p style="margin:0">Χαρακτηριστικά του προϊόντος</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-calendar-days"></i></div><h3 style="margin-top:12px">Παράθυρο διαθεσιμότητας</h3><p style="margin:0">Από πότε έως πότε είναι διαθέσιμο</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-map-pin"></i></div><h3 style="margin-top:12px">Περιοχή προέλευσης</h3><p style="margin:0">Τοπική θέση και σημείο παραλαβής</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-file-signature"></i></div><h3 style="margin-top:12px">Εμπορικοί όροι</h3><p style="margin:0">Τιμή, ποσότητα και διάρκεια προσφοράς</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-truck"></i></div><h3 style="margin-top:12px">Συντονισμός παραλαβής</h3><p style="margin:0">Χρόνος και βασικές λεπτομέρειες κίνησης</p></div></article>
+        </div>
+    </div>
+</section>
+
+<section class="cta-band">
+    <div class="container">
+        <div class="side">
+            <div class="cta-icon"><i class="fa-solid fa-basket-shopping"></i></div>
+            <div>
+                <div class="overline plain">Παράγετε ή αναζητάτε προϊόν;</div>
+                <h2>Δώστε μας τις ανάγκες σας. Θα οργανώσουμε την επόμενη κίνηση.</h2>
+            </div>
+        </div>
+        <div class="side">
+            <a class="btn btn-lg" asp-action="Apply">Υποβολή ενδιαφέροντος <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </div>
+</section>

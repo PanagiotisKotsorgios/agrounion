@@ -1,0 +1,56 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: agro_union
+      MYSQL_USER: agro
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-agro-local-password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-local-password}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - agro_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root-local-password}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      DatabaseProvider: MySql
+      ConnectionStrings__DefaultConnection: server=mysql;port=3306;database=agro_union;user=agro;password=${MYSQL_PASSWORD:-agro-local-password}
+      Jwt__Key: ${JWT_KEY:-local-docker-jwt-key-change-in-production-2026}
+      Jwt__Issuer: AgroUnion
+      Jwt__Audience: AgroUnion.ApiClients
+      SeedData__AdminPassword: ${ADMIN_PASSWORD:-Admin!2026Demo}
+      SeedData__DemoPassword: ${DEMO_PASSWORD:-Demo!2026User}
+      Smtp__Enabled: ${SMTP_ENABLED:-false}
+      Smtp__Host: ${SMTP_HOST:-smtp.example.com}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__UseTls: ${SMTP_TLS:-true}
+      Smtp__From: ${SMTP_FROM:-info@agrounion.gr}
+      Smtp__Username: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - agro_logs:/app/logs
+      - agro_releases:/app/App_Data/releases
+      - agro_data_protection_keys:/app/.aspnet/DataProtection-Keys
+
+volumes:
+  agro_mysql_data:
+  agro_logs:
+  agro_releases:
+  agro_data_protection_keys:

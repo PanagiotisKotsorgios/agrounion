@@ -1,0 +1,234 @@
+@model AgroUnion.Application.Contracts.ProducerAdminWorkspaceDto
+@using AgroUnion.Domain.Entities
+@using System.Globalization
+@{
+    string CategoryName(ProducerCategory value) => value switch
+    {
+        ProducerCategory.Developing => "Υπό ανάπτυξη",
+        ProducerCategory.Standard => "Βασική",
+        ProducerCategory.Advanced => "Προηγμένη",
+        ProducerCategory.Premium => "Premium",
+        ProducerCategory.Strategic => "Στρατηγικός συνεργάτης",
+        _ => value.ToString()
+    };
+    string InvoiceStatusName(PartnerInvoiceStatus value) => value switch { PartnerInvoiceStatus.Draft => "Προσχέδιο", PartnerInvoiceStatus.Issued => "Εκδόθηκε", PartnerInvoiceStatus.PartiallyPaid => "Μερικώς εξοφλημένο", PartnerInvoiceStatus.Paid => "Εξοφλημένο", PartnerInvoiceStatus.Overdue => "Ληξιπρόθεσμο", PartnerInvoiceStatus.Cancelled => "Ακυρωμένο", _ => value.ToString() };
+    string FinancialCategoryName(FinancialEntryCategory value) => value switch { FinancialEntryCategory.ProductSale => "Πώληση παραγωγής", FinancialEntryCategory.Supplies => "Εφόδια", FinancialEntryCategory.Commission => "Προμήθεια", FinancialEntryCategory.Bonus => "Bonus", FinancialEntryCategory.Transport => "Μεταφορικά", FinancialEntryCategory.Services => "Υπηρεσίες", FinancialEntryCategory.Adjustment => "Διόρθωση", _ => "Άλλο" };
+    string LogisticsStatusName(DeliveryLogisticsStatus value) => value switch { DeliveryLogisticsStatus.Scheduled => "Προγραμματισμένο", DeliveryLogisticsStatus.InTransit => "Σε μεταφορά", DeliveryLogisticsStatus.Weighed => "Ζυγίστηκε", DeliveryLogisticsStatus.Delivered => "Παραδόθηκε", DeliveryLogisticsStatus.Settled => "Εκκαθαρίστηκε", DeliveryLogisticsStatus.Cancelled => "Ακυρώθηκε", _ => value.ToString() };
+    string PaymentStatusName(DeliveryPaymentStatus value) => value switch { DeliveryPaymentStatus.Pending => "Σε αναμονή", DeliveryPaymentStatus.PartiallyPaid => "Μερική πληρωμή", DeliveryPaymentStatus.Paid => "Εξοφλημένο", DeliveryPaymentStatus.OnHold => "Σε αναστολή", _ => value.ToString() };
+    string DecimalValue(decimal value) => value == 0 ? "" : value.ToString(CultureInfo.InvariantCulture);
+    string DateTimeValue(DateTime? value) => value?.ToString("yyyy-MM-ddTHH:mm") ?? "";
+    var selected = Model.SelectedProducer;
+    var profile = Model.Profile;
+    var editId = Guid.TryParse(Context.Request.Query["deliveryId"], out var parsedDeliveryId) ? parsedDeliveryId : (Guid?)null;
+    var editDelivery = editId is null ? null : Model.DeliveryRecords.FirstOrDefault(x => x.Id == editId);
+}
+
+<section class="producer-workspace" id="producer-workspace">
+    <header class="workspace-topbar">
+        <div class="workspace-title">
+            <span class="workspace-icon"><i class="fa-solid fa-folder-tree"></i></span>
+            <div><small>ADMIN · ΑΤΟΜΙΚΗ ΔΙΑΧΕΙΡΙΣΗ</small><h2>Φάκελος συνεργασίας παραγωγού</h2><p>Όροι, παραγωγή, δρομολόγια, ζυγίσεις, παραστατικά και οικονομικοί διακανονισμοί σε μία καρτέλα.</p></div>
+        </div>
+        <form asp-action="Index" method="get" class="producer-selector">
+            <label for="producerId"><i class="fa-solid fa-user-check"></i> Επιλεγμένος παραγωγός</label>
+            <div><select id="producerId" name="producerId" onchange="this.form.submit()">@foreach (var producer in Model.Producers){<option value="@producer.Id" selected="@(producer.Id == selected?.Id)">@producer.Name · @producer.Region</option>}</select><button type="submit" aria-label="Άνοιγμα φακέλου"><i class="fa-solid fa-arrow-right"></i></button></div>
+        </form>
+    </header>
+
+    @if (selected is null || profile is null)
+    {
+        <div class="workspace-empty"><i class="fa-solid fa-circle-info"></i><strong>Δεν υπάρχουν λογαριασμοί παραγωγών.</strong><span>Εγκρίνετε πρώτα μία αίτηση παραγωγού για να δημιουργηθεί ο ατομικός φάκελος.</span></div>
+    }
+    else
+    {
+        <div class="workspace-person">
+            <span class="person-avatar"><i class="fa-solid fa-tractor"></i></span>
+            <div><small>ΠΑΡΑΓΩΓΟΣ</small><h3>@selected.Name</h3><p><i class="fa-solid fa-location-dot"></i> @selected.Region <span>·</span> <i class="fa-solid fa-envelope"></i> @selected.Email</p></div>
+            <div class="tier-chip"><small>ΤΡΕΧΟΥΣΑ ΚΑΤΗΓΟΡΙΑ</small><strong><i class="fa-solid fa-medal"></i> @CategoryName(profile.Category)</strong></div>
+        </div>
+
+        <div class="workspace-stats">
+            <article><span><i class="fa-solid fa-wheat-awn"></i></span><small>ΔΗΛΩΜΕΝΗ ΠΑΡΑΓΩΓΗ</small><strong>@Model.Summary.DeclaredProduction.ToString("N0") kg</strong></article>
+            <article><span><i class="fa-solid fa-truck-ramp-box"></i></span><small>ΠΑΡΑΔΟΘΗΚΕ ΣΕ ΕΜΑΣ</small><strong>@Model.Summary.DeliveredProduction.ToString("N0") kg</strong></article>
+            <article><span><i class="fa-solid fa-euro-sign"></i></span><small>ΑΞΙΑ ΠΑΡΑΔΟΣΕΩΝ</small><strong>@Model.Summary.DeliveryRevenue.ToString("N2") €</strong></article>
+            <article><span><i class="fa-solid fa-scale-balanced"></i></span><small>ΚΑΘΑΡΗ ΡΟΗ</small><strong class="@(Model.Summary.NetCashFlow < 0 ? "negative" : "")">@Model.Summary.NetCashFlow.ToString("N2") €</strong></article>
+        </div>
+
+        <details class="workspace-editor" open>
+            <summary><span><i class="fa-solid fa-ranking-star"></i></span><div><strong>Κατηγορία & όροι συνεργασίας</strong><small>Ρυθμίσεις που βλέπει ο παραγωγός στον λογαριασμό του</small></div><i class="fa-solid fa-chevron-down"></i></summary>
+            <form class="workspace-form" asp-action="SaveProducerProfile" method="post">
+                <input type="hidden" name="ProducerUserId" value="@selected.Id" />
+                <div class="field"><label>Τρέχουσα κατηγορία</label><select name="Category"><option value="Developing" selected="@(profile.Category==ProducerCategory.Developing)">Υπό ανάπτυξη</option><option value="Standard" selected="@(profile.Category==ProducerCategory.Standard)">Βασική</option><option value="Advanced" selected="@(profile.Category==ProducerCategory.Advanced)">Προηγμένη</option><option value="Premium" selected="@(profile.Category==ProducerCategory.Premium)">Premium</option><option value="Strategic" selected="@(profile.Category==ProducerCategory.Strategic)">Στρατηγικός συνεργάτης</option></select></div>
+                <div class="field"><label>Επόμενη κατηγορία</label><select name="NextCategory"><option value="">— Χωρίς επόμενο επίπεδο —</option><option value="Standard" selected="@(profile.NextCategory==ProducerCategory.Standard)">Βασική</option><option value="Advanced" selected="@(profile.NextCategory==ProducerCategory.Advanced)">Προηγμένη</option><option value="Premium" selected="@(profile.NextCategory==ProducerCategory.Premium)">Premium</option><option value="Strategic" selected="@(profile.NextCategory==ProducerCategory.Strategic)">Στρατηγικός συνεργάτης</option></select></div>
+                <div class="field"><label>Πρόοδος αναβάθμισης (%)</label><input name="CategoryProgressPercent" type="number" min="0" max="100" value="@profile.CategoryProgressPercent" /></div>
+                <div class="field"><label>Έναρξη συνεργασίας</label><input name="RelationshipStartDate" type="date" value="@profile.RelationshipStartDate.ToString("yyyy-MM-dd")" /></div>
+                <div class="field"><label>Προμήθεια (%)</label><input name="CommissionRate" type="number" min="0" max="100" step=".001" value="@profile.CommissionRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
+                <div class="field"><label>Επιπλέον bonus (%)</label><input name="BonusRate" type="number" min="0" max="100" step=".001" value="@profile.BonusRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
+                <div class="field"><label>Υπεύθυνος λογαριασμού</label><input name="AccountManager" value="@profile.AccountManager" /></div>
+                <div class="field"><label>Όροι πληρωμής</label><input name="PaymentTerms" value="@profile.PaymentTerms" /></div>
+                <div class="field full"><label>Τι απαιτείται για αναβάθμιση</label><textarea name="UpgradeRequirements" rows="3">@profile.UpgradeRequirements</textarea></div>
+                <div class="field full"><label>Εσωτερικές σημειώσεις admin <small>δεν εμφανίζονται στον παραγωγό</small></label><textarea name="InternalNotes" rows="2">@profile.InternalNotes</textarea></div>
+                <button class="workspace-save" type="submit"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση φακέλου</button>
+            </form>
+        </details>
+
+        <details class="workspace-editor">
+            <summary><span><i class="fa-solid fa-wheat-awn"></i></span><div><strong>Παραγωγή & παραδόσεις</strong><small>Ο admin καταχωρίζει την παραγωγή του συγκεκριμένου συνεργάτη</small></div><i class="fa-solid fa-chevron-down"></i></summary>
+            <form class="workspace-form" asp-action="SaveAdminProduction" method="post">
+                <input type="hidden" name="ProducerUserId" value="@selected.Id" />
+                <div class="field"><label>Προϊόν</label><select name="Product"><option>Ελαιόλαδο</option><option>Επιτραπέζια ελιά</option><option>Εσπεριδοειδή</option><option>Πορτοκάλια</option><option>Μανταρίνια</option><option>Λεμόνια</option><option>Ακτινίδια</option><option>Σταφύλια</option><option>Κηπευτικά</option><option>Άλλος καρπός</option></select></div>
+                <div class="field"><label>Ποσότητα</label><input name="Quantity" type="number" min=".001" step=".001" required /></div>
+                <div class="field"><label>Μονάδα</label><input name="Unit" value="kg" /></div>
+                <div class="field"><label>Ποιότητα / διαλογή</label><input name="QualityGrade" required /></div>
+                <div class="field"><label>Περιοχή</label><input name="Region" value="@selected.Region" required /></div>
+                <div class="field"><label>Διαθέσιμη από</label><input name="AvailableFrom" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                <div class="field"><label>Διαθέσιμη έως</label><input name="AvailableTo" type="date" value="@DateTime.Today.AddMonths(3).ToString("yyyy-MM-dd")" /></div>
+                <button class="workspace-save" type="submit"><i class="fa-solid fa-floppy-disk"></i> Καταχώριση παραγωγής για τον συνεργάτη</button>
+            </form>
+            <div class="table-wrap"><table class="data-table workspace-table"><thead><tr><th>Προϊόν</th><th>Ποσότητα</th><th>Ποιότητα</th><th>Περιοχή</th><th>Διαθεσιμότητα</th><th>Κατάσταση</th><th></th></tr></thead><tbody>@foreach(var item in Model.Production){<tr><td><strong>@item.Product</strong></td><td>@item.Quantity.ToString("N0") @item.Unit</td><td>@item.QualityGrade</td><td>@item.Region</td><td>@item.AvailableFrom.ToString("dd/MM/yyyy") – @item.AvailableTo.ToString("dd/MM/yyyy")</td><td><span class="status">@item.Status</span></td><td>@if(item.Status==ProductionStatus.Available){<form asp-action="DeleteAdminProduction" asp-route-id="@item.Id" asp-route-producerUserId="@selected.Id" method="post"><button class="icon-delete" title="Διαγραφή" data-confirm="Να διαγραφεί η δήλωση παραγωγής;"><i class="fa-solid fa-trash"></i></button></form>}</td></tr>}</tbody></table></div>
+            <div class="workspace-delivery-note"><i class="fa-solid fa-circle-info"></i><span>Οι παραδόσεις προς την AGRO UNION δημιουργούνται από τη διαχείριση ως συμφωνίες στο εμπορικό τμήμα πιο κάτω και συνδέονται αυτόματα με τον φάκελο.</span></div>
+        </details>
+
+        <details class="workspace-editor delivery-admin-editor" id="producer-delivery-editor" open>
+            <summary><span><i class="fa-solid fa-truck-fast"></i></span><div><strong>Δρομολόγια, ζυγίσεις & διακανονισμοί</strong><small>@Model.DeliveryRecords.Count πλήρεις καρτέλες παραλαβής · ο admin ορίζει όλα τα δεδομένα</small></div><i class="fa-solid fa-chevron-down"></i></summary>
+            <div class="delivery-admin-summary">
+                <article><i class="fa-solid fa-route"></i><span><small>ΔΡΟΜΟΛΟΓΙΑ</small><strong>@Model.LogisticsSummary.TotalRoutes</strong></span></article>
+                <article><i class="fa-solid fa-weight-scale"></i><span><small>ΑΠΟΔΕΚΤΟ ΒΑΡΟΣ</small><strong>@Model.LogisticsSummary.AcceptedWeight.ToString("N0") kg</strong></span></article>
+                <article><i class="fa-solid fa-money-bill-transfer"></i><span><small>ΚΑΘΑΡΟ ΠΛΗΡΩΤΕΟ</small><strong>@Model.LogisticsSummary.NetPayable.ToString("N2") €</strong></span></article>
+                <article><i class="fa-solid fa-hourglass-half"></i><span><small>ΑΝΟΙΧΤΟ ΥΠΟΛΟΙΠΟ</small><strong>@Model.LogisticsSummary.Outstanding.ToString("N2") €</strong></span></article>
+            </div>
+            <form class="workspace-form delivery-record-form" asp-action="SaveProducerDelivery" method="post">
+                <input type="hidden" name="ProducerUserId" value="@selected.Id" />
+                <input type="hidden" name="Id" value="@editDelivery?.Id" />
+                <header class="delivery-form-heading full"><span>01</span><div><strong>@(editDelivery is null ? "Νέο δρομολόγιο" : $"Επεξεργασία {editDelivery.RouteNumber}")</strong><small>Ταυτότητα, κατάσταση και σύνδεση με παραγωγή / συμφωνία</small></div>@if(editDelivery is not null){<a asp-action="Index" asp-route-producerId="@selected.Id" asp-fragment="producer-delivery-editor"><i class="fa-solid fa-xmark"></i> Ακύρωση επεξεργασίας</a>}</header>
+                <div class="field"><label>Αριθμός δρομολογίου *</label><input name="RouteNumber" maxlength="80" value="@editDelivery?.RouteNumber" placeholder="AU-ROUTE-2026-071" required /></div>
+                <div class="field"><label>Κατάσταση φορτίου</label><select name="Status">@foreach(var value in Enum.GetValues<DeliveryLogisticsStatus>()){<option value="@value" selected="@(editDelivery?.Status==value)">@LogisticsStatusName(value)</option>}</select></div>
+                <div class="field"><label>Δήλωση παραγωγής</label><select name="ProductionDeclarationId"><option value="">— Χωρίς σύνδεση —</option>@foreach(var item in Model.Production){<option value="@item.Id" selected="@(editDelivery?.ProductionDeclarationId==item.Id)">@item.Product · @item.Quantity.ToString("N0") @item.Unit</option>}</select></div>
+                <div class="field"><label>Εμπορική συμφωνία</label><select name="DealId"><option value="">— Χωρίς σύνδεση —</option>@foreach(var item in Model.Deliveries){<option value="@item.Id" selected="@(editDelivery?.DealId==item.Id)">@item.Product · @item.Quantity.ToString("N0") kg · @item.BuyPricePerUnit.ToString("N3") €</option>}</select></div>
+                <div class="field"><label>Σύμβαση</label><select name="ContractId"><option value="">— Χωρίς σύνδεση —</option>@foreach(var item in Model.Contracts){<option value="@item.Id" selected="@(editDelivery?.ContractId==item.Id)">@item.ContractNumber</option>}</select></div>
+                <div class="field"><label>Προϊόν *</label><input name="Product" maxlength="120" value="@editDelivery?.Product" placeholder="Ελαιόλαδο" required /></div>
+                <div class="field"><label>Ποικιλία</label><input name="Variety" maxlength="120" value="@editDelivery?.Variety" placeholder="Κορωνέικη" /></div>
+                <div class="field"><label>Ποιότητα / διαλογή</label><input name="QualityGrade" maxlength="120" value="@editDelivery?.QualityGrade" placeholder="Έξτρα παρθένο" /></div>
+                <div class="field"><label>Αριθμός παρτίδας</label><input name="LotNumber" maxlength="80" value="@editDelivery?.LotNumber" placeholder="AU-LOT-071" /></div>
+
+                <header class="delivery-form-heading full"><span>02</span><div><strong>Διαδρομή & μεταφορέας</strong><small>Αφετηρία, προορισμός, ημερομηνίες, όχημα και οδηγός</small></div></header>
+                <div class="field full"><label>Σημείο φόρτωσης / αφετηρία *</label><input name="OriginAddress" maxlength="300" value="@(editDelivery?.OriginAddress ?? selected.Region)" required /></div>
+                <div class="field full"><label>Σημείο παράδοσης / προορισμός *</label><input name="DestinationAddress" maxlength="300" value="@(editDelivery?.DestinationAddress ?? "Κέντρο παραλαβής AGRO UNION · Μεσολόγγι")" required /></div>
+                <div class="field"><label>Προγραμματισμένη παραλαβή *</label><input name="ScheduledPickupAt" type="datetime-local" value="@(editDelivery?.ScheduledPickupAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.Today.AddDays(1).AddHours(8).ToString("yyyy-MM-ddTHH:mm"))" required /></div>
+                <div class="field"><label>Πραγματική φόρτωση</label><input name="LoadedAt" type="datetime-local" value="@DateTimeValue(editDelivery?.LoadedAt)" /></div>
+                <div class="field"><label>Άφιξη / παράδοση</label><input name="DeliveredAt" type="datetime-local" value="@DateTimeValue(editDelivery?.DeliveredAt)" /></div>
+                <div class="field"><label>Μεταφορική εταιρεία</label><input name="CarrierName" maxlength="120" value="@editDelivery?.CarrierName" /></div>
+                <div class="field"><label>Οδηγός</label><input name="DriverName" maxlength="120" value="@editDelivery?.DriverName" /></div>
+                <div class="field"><label>Πινακίδα οχήματος</label><input name="VehiclePlate" maxlength="30" value="@editDelivery?.VehiclePlate" placeholder="ΜΕΖ-1234" /></div>
+                <div class="field"><label>Πινακίδα ρυμουλκούμενου</label><input name="TrailerPlate" maxlength="30" value="@editDelivery?.TrailerPlate" /></div>
+
+                <header class="delivery-form-heading full"><span>03</span><div><strong>Ζύγιση & αποδεκτό φορτίο</strong><small>Καθαρό = μικτό − απόβαρο · αποδεκτό = καθαρό − απορρίψεις</small></div></header>
+                <div class="field"><label>Μικτό βάρος</label><input name="GrossWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.GrossWeight ?? 0)" /></div>
+                <div class="field"><label>Απόβαρο</label><input name="TareWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.TareWeight ?? 0)" /></div>
+                <div class="field"><label>Απορριφθέν βάρος</label><input name="RejectedWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.RejectedWeight ?? 0)" /></div>
+                <div class="field"><label>Μονάδα βάρους</label><input name="WeightUnit" maxlength="30" value="@(editDelivery?.WeightUnit ?? "kg")" /></div>
+                <div class="field"><label>Ημερομηνία ζύγισης</label><input name="WeighedAt" type="datetime-local" value="@DateTimeValue(editDelivery?.WeighedAt)" /></div>
+                <div class="field"><label>Γεφυροπλάστιγγα / σημείο</label><input name="WeighbridgeName" maxlength="180" value="@editDelivery?.WeighbridgeName" /></div>
+                <div class="field"><label>Αριθμός δελτίου ζύγισης</label><input name="WeighingSlipNumber" maxlength="80" value="@editDelivery?.WeighingSlipNumber" /></div>
+                <div class="field"><label>URL δελτίου ζύγισης</label><input name="WeighingSlipUrl" maxlength="1000" value="@editDelivery?.WeighingSlipUrl" placeholder="https://... ή /αρχεία/..." /></div>
+
+                <header class="delivery-form-heading full"><span>04</span><div><strong>Παραστατικά διακίνησης</strong><small>Δελτίο αποστολής και αποδεικτικό παραλαβής</small></div></header>
+                <div class="field"><label>Αριθμός δελτίου αποστολής</label><input name="DispatchNoteNumber" maxlength="80" value="@editDelivery?.DispatchNoteNumber" /></div>
+                <div class="field"><label>URL δελτίου αποστολής</label><input name="DispatchNoteUrl" maxlength="1000" value="@editDelivery?.DispatchNoteUrl" placeholder="https://..." /></div>
+                <div class="field"><label>Αριθμός αποδεικτικού παραλαβής</label><input name="DeliveryReceiptNumber" maxlength="80" value="@editDelivery?.DeliveryReceiptNumber" /></div>
+                <div class="field"><label>URL αποδεικτικού παραλαβής</label><input name="DeliveryReceiptUrl" maxlength="1000" value="@editDelivery?.DeliveryReceiptUrl" placeholder="https://..." /></div>
+
+                <header class="delivery-form-heading full"><span>05</span><div><strong>Συμφωνία & οικονομική εκκαθάριση</strong><small>Η εφαρμογή υπολογίζει αυτόματα όλα τα ποσά από το αποδεκτό βάρος</small></div></header>
+                <div class="field"><label>Αναφορά συμφωνίας *</label><input name="AgreementReference" maxlength="80" value="@editDelivery?.AgreementReference" placeholder="AU-AGR-2026-071" required /></div>
+                <div class="field"><label>Τύπος τιμολόγησης</label><select name="AgreementType">@foreach(var value in Enum.GetValues<PricingAgreementType>()){<option value="@value" selected="@(editDelivery?.AgreementType==value)">@(value switch { PricingAgreementType.FixedPrice => "Σταθερή τιμή", PricingAgreementType.DailyPrice => "Ημερήσια τιμή", PricingAgreementType.Percentage => "Ποσοστιαία συμφωνία", _ => "Μικτή συμφωνία" })</option>}</select></div>
+                <div class="field"><label>Τιμή αγοράς (€ / μονάδα)</label><input name="UnitPrice" type="number" min="0" step=".0001" value="@DecimalValue(editDelivery?.UnitPrice ?? 0)" /></div>
+                <div class="field"><label>Bonus ποιότητας (%)</label><input name="QualityBonusPercent" type="number" min="0" max="100" step=".001" value="@DecimalValue(editDelivery?.QualityBonusPercent ?? profile.BonusRate)" /></div>
+                <div class="field"><label>Προμήθεια AGRO UNION (%)</label><input name="CommissionPercent" type="number" min="0" max="100" step=".001" value="@DecimalValue(editDelivery?.CommissionPercent ?? profile.CommissionRate)" /></div>
+                <div class="field"><label>Παρακράτηση (%)</label><input name="WithholdingPercent" type="number" min="0" max="100" step=".001" value="@DecimalValue(editDelivery?.WithholdingPercent ?? 0)" /></div>
+                <div class="field"><label>ΦΠΑ (%)</label><input name="VatPercent" type="number" min="0" max="100" step=".001" value="@DecimalValue(editDelivery?.VatPercent ?? 0)" /></div>
+                <div class="field"><label>Μεταφορικά (€)</label><input name="TransportCost" type="number" min="0" step=".01" value="@DecimalValue(editDelivery?.TransportCost ?? 0)" /></div>
+                <div class="field"><label>Λοιπές κρατήσεις (€)</label><input name="OtherDeductions" type="number" min="0" step=".01" value="@DecimalValue(editDelivery?.OtherDeductions ?? 0)" /></div>
+                <div class="field"><label>Ήδη πληρωμένο (€)</label><input name="PaidAmount" type="number" min="0" step=".01" value="@DecimalValue(editDelivery?.PaidAmount ?? 0)" /></div>
+                <div class="field"><label>Προθεσμία πληρωμής</label><input name="PaymentDueDate" type="date" value="@editDelivery?.PaymentDueDate?.ToString("yyyy-MM-dd")" /></div>
+                <div class="field"><label>Ημερομηνία εξόφλησης</label><input name="PaidAt" type="datetime-local" value="@DateTimeValue(editDelivery?.PaidAt)" /></div>
+                <div class="field"><label>Κατάσταση πληρωμής</label><select name="PaymentStatus">@foreach(var value in Enum.GetValues<DeliveryPaymentStatus>()){<option value="@value" selected="@(editDelivery?.PaymentStatus==value)">@PaymentStatusName(value)</option>}</select></div>
+                <div class="field full"><label>Όροι / περιγραφή συμφωνίας</label><textarea name="AgreementNotes" maxlength="2000" rows="2">@editDelivery?.AgreementNotes</textarea></div>
+                <div class="field full"><label>Παρατηρήσεις φορτίου & ποιοτικού ελέγχου</label><textarea name="LoadNotes" maxlength="2000" rows="2">@editDelivery?.LoadNotes</textarea></div>
+                <div class="field full"><label>Εσωτερικές σημειώσεις admin <small>δεν εμφανίζονται στον παραγωγό</small></label><textarea name="InternalNotes" maxlength="2000" rows="2">@editDelivery?.InternalNotes</textarea></div>
+                <label class="workspace-check full">
+                    @if(editDelivery?.IsVisibleToProducer ?? true){<input name="IsVisibleToProducer" type="checkbox" value="true" checked />}else{<input name="IsVisibleToProducer" type="checkbox" value="true" />}
+                    <input name="IsVisibleToProducer" type="hidden" value="false" /><span><i class="fa-solid fa-eye"></i> Ορατό στον παραγωγό</span>
+                </label>
+                <button class="workspace-save" type="submit"><i class="fa-solid fa-calculator"></i> @(editDelivery is null ? "Υπολογισμός & καταχώριση δρομολογίου" : "Επανυπολογισμός & αποθήκευση αλλαγών")</button>
+            </form>
+            <div class="admin-delivery-list">
+                @if(Model.DeliveryRecords.Count == 0){<div class="workspace-empty"><i class="fa-solid fa-truck-ramp-box"></i><strong>Δεν έχουν καταχωριστεί δρομολόγια.</strong><span>Χρησιμοποιήστε την παραπάνω φόρμα για την πρώτη πλήρη καρτέλα παραλαβής.</span></div>}
+                @foreach(var item in Model.DeliveryRecords)
+                {
+                    <article>
+                        <span class="admin-route-icon"><i class="fa-solid fa-truck-moving"></i></span>
+                        <div class="admin-route-main"><small>@item.ScheduledPickupAt.ToString("dd/MM/yyyy HH:mm") · @LogisticsStatusName(item.Status)</small><strong>@item.RouteNumber · @item.Product</strong><p>@item.OriginAddress <i class="fa-solid fa-arrow-right-long"></i> @item.DestinationAddress</p></div>
+                        <div><small>ΑΠΟΔΕΚΤΟ</small><strong>@item.AcceptedWeight.ToString("N0") @item.WeightUnit</strong><span>από @item.NetWeight.ToString("N0") καθαρά</span></div>
+                        <div><small>ΤΙΜΗ / ΒΑΣΗ</small><strong>@item.UnitPrice.ToString("N4") €</strong><span>@item.BaseAmount.ToString("N2") €</span></div>
+                        <div><small>ΠΛΗΡΩΤΕΟ / ΥΠΟΛΟΙΠΟ</small><strong>@item.NetPayableAmount.ToString("N2") €</strong><span class="@(item.OutstandingAmount>0?"negative":"")">@item.OutstandingAmount.ToString("N2") €</span></div>
+                        <div class="admin-route-actions"><a asp-action="Index" asp-route-producerId="@selected.Id" asp-route-deliveryId="@item.Id" asp-fragment="producer-delivery-editor"><i class="fa-solid fa-pen"></i> Επεξεργασία</a><form asp-action="DeleteProducerDelivery" asp-route-id="@item.Id" asp-route-producerUserId="@selected.Id" method="post"><button data-confirm="Να διαγραφεί οριστικά το δρομολόγιο και η οικονομική του ανάλυση;"><i class="fa-solid fa-trash"></i></button></form></div>
+                    </article>
+                }
+            </div>
+        </details>
+
+        <div class="workspace-columns">
+            <details class="workspace-editor">
+                <summary><span><i class="fa-solid fa-folder-open"></i></span><div><strong>Έγγραφα</strong><small>@Model.Documents.Count καταχωρίσεις</small></div><i class="fa-solid fa-chevron-down"></i></summary>
+                <form class="workspace-form compact" asp-action="AddPartnerDocument" method="post">
+                    <input type="hidden" name="ProducerUserId" value="@selected.Id" />
+                    <div class="field"><label>Τύπος</label><select name="Type"><option value="ContractAnnex">Παράρτημα σύμβασης</option><option value="Certification">Πιστοποίηση</option><option value="TaxDocument">Φορολογικό έγγραφο</option><option value="DeliveryNote">Δελτίο αποστολής</option><option value="Statement">Κατάσταση συνεργασίας</option><option value="Other">Άλλο</option></select></div>
+                    <div class="field"><label>Τίτλος</label><input name="Title" required /></div>
+                    <div class="field"><label>Αριθμός αναφοράς</label><input name="ReferenceNumber" required /></div>
+                    <div class="field"><label>Σύνδεσμος αρχείου</label><input name="FileUrl" type="url" placeholder="https://..." /></div>
+                    <div class="field"><label>Έκδοση</label><input name="IssueDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                    <div class="field"><label>Λήξη</label><input name="ExpiryDate" type="date" /></div>
+                    <div class="field full"><label>Σημείωση</label><textarea name="Notes"></textarea></div>
+                    <label class="workspace-check full"><input name="IsVisibleToPartner" type="checkbox" value="true" checked /><span><i class="fa-solid fa-eye"></i> Ορατό στον παραγωγό</span></label>
+                    <button class="workspace-save" type="submit"><i class="fa-solid fa-file-circle-plus"></i> Προσθήκη εγγράφου</button>
+                </form>
+                <div class="workspace-list">@foreach(var document in Model.Documents){<article><span class="list-icon"><i class="fa-solid fa-file-lines"></i></span><div><strong>@document.Title</strong><small>@document.ReferenceNumber · @document.IssueDate.ToString("dd/MM/yyyy")</small></div>@if(document.IsVisibleToPartner){<i class="fa-solid fa-eye" title="Ορατό"></i>}else{<i class="fa-solid fa-eye-slash" title="Κρυφό"></i>}<form asp-action="DeletePartnerDocument" asp-route-id="@document.Id" asp-route-producerUserId="@selected.Id" method="post"><button title="Διαγραφή" data-confirm="Να διαγραφεί το έγγραφο;"><i class="fa-solid fa-trash"></i></button></form></article>}</div>
+            </details>
+
+            <details class="workspace-editor">
+                <summary><span><i class="fa-solid fa-file-invoice-dollar"></i></span><div><strong>Τιμολόγια δύο κατευθύνσεων</strong><small>@Model.Invoices.Count καταχωρίσεις</small></div><i class="fa-solid fa-chevron-down"></i></summary>
+                <form class="workspace-form compact" asp-action="AddPartnerInvoice" method="post">
+                    <input type="hidden" name="ProducerUserId" value="@selected.Id" />
+                    <div class="field"><label>Εκδότης</label><select name="Direction"><option value="FromProducer">Ο παραγωγός → AGRO UNION</option><option value="FromAgroUnion">AGRO UNION → παραγωγός</option></select></div>
+                    <div class="field"><label>Αριθμός τιμολογίου</label><input name="InvoiceNumber" required /></div>
+                    <div class="field"><label>Έκδοση</label><input name="IssueDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                    <div class="field"><label>Λήξη</label><input name="DueDate" type="date" /></div>
+                    <div class="field"><label>Καθαρή αξία (€)</label><input name="NetAmount" type="number" min="0" step=".01" /></div>
+                    <div class="field"><label>ΦΠΑ (€)</label><input name="VatAmount" type="number" min="0" step=".01" /></div>
+                    <div class="field"><label>Εξοφλημένο (€)</label><input name="PaidAmount" type="number" min="0" step=".01" /></div>
+                    <div class="field"><label>Κατάσταση</label><select name="Status"><option value="Issued">Εκδόθηκε</option><option value="PartiallyPaid">Μερικώς εξοφλημένο</option><option value="Paid">Εξοφλημένο</option><option value="Overdue">Ληξιπρόθεσμο</option><option value="Draft">Προσχέδιο</option><option value="Cancelled">Ακυρωμένο</option></select></div>
+                    <div class="field full"><label>Περιγραφή</label><input name="Description" /></div>
+                    <div class="field full"><label>Σύνδεσμος PDF</label><input name="FileUrl" type="url" placeholder="https://..." /></div>
+                    <button class="workspace-save" type="submit"><i class="fa-solid fa-plus"></i> Καταχώριση τιμολογίου</button>
+                </form>
+                <div class="workspace-list">@foreach(var invoice in Model.Invoices){<article><span class="list-icon"><i class="fa-solid @(invoice.Direction==PartnerInvoiceDirection.FromProducer?"fa-arrow-right-to-bracket":"fa-arrow-right-from-bracket")"></i></span><div><strong>@invoice.InvoiceNumber · @invoice.TotalAmount.ToString("N2") €</strong><small>@(invoice.Direction==PartnerInvoiceDirection.FromProducer?"Παραγωγός → AGRO UNION":"AGRO UNION → Παραγωγός") · υπόλοιπο @invoice.OutstandingAmount.ToString("N2") €</small></div><span class="status">@InvoiceStatusName(invoice.Status)</span><form asp-action="DeletePartnerInvoice" asp-route-id="@invoice.Id" asp-route-producerUserId="@selected.Id" method="post"><button title="Διαγραφή" data-confirm="Να διαγραφεί το τιμολόγιο;"><i class="fa-solid fa-trash"></i></button></form></article>}</div>
+            </details>
+        </div>
+
+        <details class="workspace-editor">
+            <summary><span><i class="fa-solid fa-book-open"></i></span><div><strong>Έσοδα, έξοδα & οικονομικό καθολικό</strong><small>Ατομικές χρεώσεις, πιστώσεις, bonus, προμήθειες και εφόδια</small></div><i class="fa-solid fa-chevron-down"></i></summary>
+            <form class="workspace-form ledger-form" asp-action="AddPartnerFinancialEntry" method="post">
+                <input type="hidden" name="ProducerUserId" value="@selected.Id" />
+                <div class="field"><label>Ημερομηνία</label><input name="EntryDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                <div class="field"><label>Κίνηση για παραγωγό</label><select name="Type"><option value="Income">Έσοδο / πίστωση</option><option value="Expense">Έξοδο / χρέωση</option></select></div>
+                <div class="field"><label>Κατηγορία</label><select name="Category"><option value="ProductSale">Πώληση παραγωγής</option><option value="Supplies">Εφόδια</option><option value="Commission">Προμήθεια</option><option value="Bonus">Bonus</option><option value="Transport">Μεταφορικά</option><option value="Services">Υπηρεσίες</option><option value="Adjustment">Διόρθωση</option><option value="Other">Άλλο</option></select></div>
+                <div class="field"><label>Ποσό (€)</label><input name="Amount" type="number" min=".01" step=".01" /></div>
+                <div class="field"><label>Αναφορά</label><input name="ReferenceNumber" /></div>
+                <div class="field"><label>Σύνδεση με τιμολόγιο</label><select name="PartnerInvoiceId"><option value="">— Καμία —</option>@foreach(var invoice in Model.Invoices){<option value="@invoice.Id">@invoice.InvoiceNumber</option>}</select></div>
+                <div class="field full"><label>Περιγραφή</label><input name="Description" required /></div>
+                <button class="workspace-save" type="submit"><i class="fa-solid fa-circle-plus"></i> Καταχώριση κίνησης</button>
+            </form>
+            <div class="table-wrap"><table class="data-table workspace-table"><thead><tr><th>Ημερομηνία</th><th>Τύπος</th><th>Κατηγορία</th><th>Περιγραφή</th><th>Αναφορά</th><th>Ποσό</th><th></th></tr></thead><tbody>@foreach(var entry in Model.FinancialEntries){<tr><td>@entry.EntryDate.ToString("dd/MM/yyyy")</td><td><span class="finance-direction @(entry.Type==FinancialEntryType.Expense?"expense":"income")"><i class="fa-solid @(entry.Type==FinancialEntryType.Expense?"fa-arrow-down":"fa-arrow-up")"></i> @(entry.Type==FinancialEntryType.Expense?"Έξοδο":"Έσοδο")</span></td><td>@FinancialCategoryName(entry.Category)</td><td><strong>@entry.Description</strong></td><td>@entry.ReferenceNumber</td><td class="money">@(entry.Type==FinancialEntryType.Expense?"−":"+")@entry.Amount.ToString("N2") €</td><td><form asp-action="DeletePartnerFinancialEntry" asp-route-id="@entry.Id" asp-route-producerUserId="@selected.Id" method="post"><button class="icon-delete" title="Διαγραφή" data-confirm="Να διαγραφεί η οικονομική κίνηση;"><i class="fa-solid fa-trash"></i></button></form></td></tr>}</tbody></table></div>
+        </details>
+    }
+</section>

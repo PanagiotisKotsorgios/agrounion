@@ -1,0 +1,49 @@
+@model AgroUnion.Web.ViewModels.LoginForm
+@{ ViewData["Title"] = "Είσοδος στο Portal"; Layout = "_AuthLayout"; }
+
+<div class="auth-page" style="--auth-img:url(/images/photography/hero-fields.jpg)">
+    <aside class="auth-visual">
+        <div>
+            <div class="overline">Portal συνεργατών</div>
+            <h1>Καλώς ήρθατε στο δίκτυο.</h1>
+            <p>Συνδεθείτε για να δείτε τη συνεργασία σας, τα οικονομικά, τις παραδόσεις και τις προσφορές που αφορούν τον λογαριασμό σας.</p>
+            <ul class="visual-list">
+                <li><i class="fa-solid fa-check"></i><span>Ασφαλής πρόσβαση με έλεγχο ρόλου</span></li>
+                <li><i class="fa-solid fa-check"></i><span>Πλήρης εικόνα εμπορικών κινήσεων</span></li>
+                <li><i class="fa-solid fa-check"></i><span>Οι πληροφορίες σας, μόνο για εσάς</span></li>
+            </ul>
+        </div>
+        <div class="auth-visual-footer">AGRO UNION · Πύλη συνεργατών</div>
+    </aside>
+    <section class="auth-panel" aria-labelledby="login-title">
+        <form class="auth-form" method="post">
+            <div>
+                <h2 id="login-title">Είσοδος</h2>
+                <p>Χρησιμοποιήστε τα στοιχεία που σας έδωσε η ομάδα συνεργασιών.</p>
+            </div>
+            @if (TempData["PasswordResetSuccess"] is string resetSuccess)
+            {
+                <div class="alert info"><i class="fa-solid fa-circle-check"></i><span>@resetSuccess</span></div>
+            }
+            <div asp-validation-summary="All" class="validation-summary"></div>
+            <input asp-for="ReturnUrl" type="hidden" />
+            <div class="field">
+                <label asp-for="Email" class="field-label">Email</label>
+                <input asp-for="Email" class="form-input" type="email" autocomplete="username" placeholder="name@example.gr" autofocus required />
+            </div>
+            <div class="field">
+                <label asp-for="Password" class="field-label">Κωδικός πρόσβασης</label>
+                <input asp-for="Password" class="form-input" type="password" autocomplete="current-password" placeholder="••••••••••" required />
+            </div>
+            <div class="form-row">
+                <label class="form-check"><input asp-for="RememberMe" /> <span>Να παραμείνω συνδεδεμένος</span></label>
+                <a asp-controller="Account" asp-action="ForgotPassword">Ξεχάσατε τον κωδικό;</a>
+            </div>
+            <button class="btn btn-lg" type="submit">Είσοδος <i class="fa-solid fa-arrow-right"></i></button>
+            <div class="form-row" style="justify-content:center">
+                <span class="text-muted">Δεν έχετε ακόμη πρόσβαση;</span>
+                <a asp-controller="Home" asp-action="Register"><i class="fa-solid fa-user-plus"></i> Αίτηση εγγραφής</a>
+            </div>
+        </form>
+    </section>
+</div>

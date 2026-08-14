@@ -1,0 +1,93 @@
+@{ ViewData["Title"] = "Υπηρεσίες"; }
+
+<section class="hero-photo" style="--hero-img:url(/images/photography/hero-warehouse.jpg)">
+    <div class="container">
+        <div class="overline">Τι κάνουμε</div>
+        <h1>Υπηρεσίες που κινούν ολόκληρη την αλυσίδα.</h1>
+        <p class="lead">Από τη συγκέντρωση της παραγωγής έως τη μεταπώληση, την προμήθεια και τον συντονισμό.</p>
+    </div>
+</section>
+
+<section class="section" id="trade">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">01 · Εμπορία παραγωγής</div>
+                <h2>Από τον δηλωμένο όγκο στη σωστή αγορά.</h2>
+            </div>
+            <p class="head-side">Η AGRO UNION αγοράζει η ίδια την παραγωγή με συμφωνημένη τιμή και οργανώνει τη διάθεσή της σε εμπόρους, εργοστάσια και τυποποιητές.</p>
+        </div>
+        <div class="grid grid-2">
+            <div>
+                <ul class="checklist">
+                    <li><i class="fa-solid fa-check"></i><span>Δηλώσεις ανά προϊόν, ποιότητα και περίοδο</span></li>
+                    <li><i class="fa-solid fa-check"></i><span>Στοχευμένες προσφορές αγοράς προς παραγωγούς</span></li>
+                    <li><i class="fa-solid fa-check"></i><span>Ξεχωριστές προσφορές πώλησης προς αγοραστές</span></li>
+                    <li><i class="fa-solid fa-check"></i><span>Αυτόματος υπολογισμός εμπορικού περιθωρίου</span></li>
+                </ul>
+                <a class="btn mt-6" asp-action="Apply"><i class="fa-solid fa-plus"></i> Δηλώστε ενδιαφέρον <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="overline">Live model · Ενδεικτική ροή</div>
+                    <div class="stack-lg mt-4">
+                        <div class="alert"><i class="fa-solid fa-tractor"></i><span><strong>Buy-side:</strong> Παραγωγός → AGRO UNION</span></div>
+                        <div class="alert info"><i class="fa-solid fa-circle-nodes"></i><span><strong>Coordination:</strong> Ποσότητα · Όροι · Logistics</span></div>
+                        <div class="alert" style="border-left-color:var(--brass-500);background:rgba(198,164,91,.1);color:var(--brass-700)"><i class="fa-solid fa-industry" style="color:var(--brass-700)"></i><span><strong>Sell-side:</strong> AGRO UNION → Αγοραστής</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section section-paper" id="supplies">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">02 · Εφόδια</div>
+                <h2>Πολλές ανάγκες. Μία καλύτερη παραγγελία.</h2>
+            </div>
+            <p class="head-side">Συγκεντρώνουμε τη ζήτηση για λιπάσματα και γεωργικά εφόδια, διαπραγματευόμαστε ως δίκτυο και οργανώνουμε την τελική παραγγελία.</p>
+        </div>
+        <div class="grid grid-2">
+            <article class="card">
+                <div class="card-body">
+                    <div class="feature-icon"><i class="fa-solid fa-tags"></i></div>
+                    <h3 style="margin-top:12px">Καλύτερη τιμή</h3>
+                    <p>Μέσω συγκεντρωτικού όγκου και οργανωμένης διαπραγμάτευσης με τους προμηθευτές.</p>
+                </div>
+            </article>
+            <article class="card">
+                <div class="card-body">
+                    <div class="feature-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                    <h3 style="margin-top:12px">Σαφής προθεσμία</h3>
+                    <p>Καταγεγραμμένη συμμετοχή, καθαρή προθεσμία και οργανωμένη παραλαβή.</p>
+                </div>
+            </article>
+        </div>
+        <div style="margin-top:32px">
+            <a class="btn" asp-action="Partners" asp-fragment="producers">Για παραγωγούς <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="coordination">
+    <div class="container">
+        <div class="section-header">
+            <div class="head-copy">
+                <div class="overline">03 · Συντονισμός</div>
+                <h2>Κάθε βήμα σε μία καθαρή εικόνα.</h2>
+            </div>
+            <p class="head-side">Το portal μετατρέπει τη συνεργασία σε οργανωμένη καθημερινή λειτουργία, με εργαλεία προσαρμοσμένα σε κάθε ρόλο.</p>
+        </div>
+        <div class="grid grid-3">
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-file-circle-plus"></i></div><h3 style="margin-top:12px">Δηλώσεις</h3><p style="margin:0">Προϊόν, ποσότητα, ποιότητα και διαθεσιμότητα.</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-tags"></i></div><h3 style="margin-top:12px">Προσφορές</h3><p style="margin:0">Role-specific τιμές αγοράς ή πώλησης.</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-truck-ramp-box"></i></div><h3 style="margin-top:12px">Παραλαβές</h3><p style="margin:0">Ημερομηνία, μεταφορικά στοιχεία και κατάσταση.</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-file-signature"></i></div><h3 style="margin-top:12px">Συμβάσεις</h3><p style="margin:0">Ενεργοί όροι και πλήρες ιστορικό συνεργασίας.</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-chart-pie"></i></div><h3 style="margin-top:12px">Αναφορές</h3><p style="margin:0">Συναλλαγές, φίλτρα και εξαγωγές CSV.</p></div></article>
+            <article class="card"><div class="card-body"><div class="feature-icon"><i class="fa-solid fa-bell"></i></div><h3 style="margin-top:12px">Ενημερώσεις</h3><p style="margin:0">Έγκαιρη εικόνα για όσα απαιτούν ενέργεια.</p></div></article>
+        </div>
+    </div>
+</section>

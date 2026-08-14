@@ -1,0 +1,16 @@
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+logs/
+.env
+.env.*
+!.env.example
+*.user
+*.suo
+TestResults/
+.artifacts/
+.dotnet-home/
+src/AgroUnion.Web/wwwroot/uploads/
+src/AgroUnion.Web/App_Data/releases/

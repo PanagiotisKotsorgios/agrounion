@@ -1,5 +1,6 @@
 using AgroUnion.Domain.Entities;
 using AgroUnion.Domain.Services;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -8,16 +9,19 @@ namespace AgroUnion.Infrastructure.Persistence;
 
 public sealed class DatabaseSeeder(AgroUnionDbContext db, UserManager<ApplicationUser> users, RoleManager<IdentityRole> roles, IConfiguration configuration)
 {
+    private const string SeedPasswordVersionClaim = "agrounion:seed-password-version";
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
         foreach (var role in RoleNames.All)
             if (!await roles.RoleExistsAsync(role)) await roles.CreateAsync(new IdentityRole(role));
 
-        var admin = await EnsureUser("admin@agrounion.local", "Διαχειριστής AGRO UNION", "Μεσολόγγι", RoleNames.Admin, configuration["SeedData:AdminPassword"] ?? "Admin!2026Demo");
-        var producer = await EnsureUser("producer@agrounion.local", "Ελαιοπαραγωγός Δημήτρης Νικολάου", "Αιτωλικό", RoleNames.Producer, configuration["SeedData:DemoPassword"] ?? "Demo!2026User");
-        var producer2 = await EnsureUser("producer2@agrounion.local", "Αγρόκτημα Μακρή", "Πεντάλοφος", RoleNames.Producer, configuration["SeedData:DemoPassword"] ?? "Demo!2026User");
-        var trader = await EnsureUser("trader@agrounion.local", "Εμπορική Καρπών Δυτικής Ελλάδας", "Αγρίνιο", RoleNames.Trader, configuration["SeedData:DemoPassword"] ?? "Demo!2026User");
-        var company = await EnsureUser("company@agrounion.local", "Τυποποιητική Αιτωλίας Α.Ε.", "Μεσολόγγι", RoleNames.Company, configuration["SeedData:DemoPassword"] ?? "Demo!2026User");
+        var passwordVersion = configuration["SeedData:PasswordVersion"];
+        var admin = await EnsureUser("admin@agrounion.local", "Διαχειριστής AGRO UNION", "Μεσολόγγι", RoleNames.Admin, configuration["SeedData:AdminPassword"] ?? "Admin!2026Demo", passwordVersion);
+        var producer = await EnsureUser("producer@agrounion.local", "Ελαιοπαραγωγός Δημήτρης Νικολάου", "Αιτωλικό", RoleNames.Producer, configuration["SeedData:DemoPassword"] ?? "Demo!2026User", passwordVersion);
+        var producer2 = await EnsureUser("producer2@agrounion.local", "Αγρόκτημα Μακρή", "Πεντάλοφος", RoleNames.Producer, configuration["SeedData:DemoPassword"] ?? "Demo!2026User", passwordVersion);
+        var trader = await EnsureUser("trader@agrounion.local", "Εμπορική Καρπών Δυτικής Ελλάδας", "Αγρίνιο", RoleNames.Trader, configuration["SeedData:DemoPassword"] ?? "Demo!2026User", passwordVersion);
+        var company = await EnsureUser("company@agrounion.local", "Τυποποιητική Αιτωλίας Α.Ε.", "Μεσολόγγι", RoleNames.Company, configuration["SeedData:DemoPassword"] ?? "Demo!2026User", passwordVersion);
 
         if (await db.ProductionDeclarations.AnyAsync(ct))
         {
@@ -159,17 +163,39 @@ public sealed class DatabaseSeeder(AgroUnionDbContext db, UserManager<Applicatio
         await db.SaveChangesAsync(ct);
     }
 
-    private async Task<ApplicationUser> EnsureUser(string email, string name, string region, string role, string password)
+    private async Task<ApplicationUser> EnsureUser(string email, string name, string region, string role, string password, string? passwordVersion)
     {
         var user = await users.FindByEmailAsync(email);
+        var created = user is null;
         if (user is null)
         {
             user = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true, FullNameOrCompany = name, Region = region };
             var result = await users.CreateAsync(user, password);
-            if (!result.Succeeded) throw new InvalidOperationException(string.Join(" ", result.Errors.Select(x => x.Description)));
+            EnsureSucceeded(result);
+        }
+
+        if (!string.IsNullOrWhiteSpace(passwordVersion))
+        {
+            var claims = await users.GetClaimsAsync(user);
+            var versionClaim = claims.SingleOrDefault(x => x.Type == SeedPasswordVersionClaim);
+            if (!created && versionClaim?.Value != passwordVersion)
+            {
+                var resetToken = await users.GeneratePasswordResetTokenAsync(user);
+                EnsureSucceeded(await users.ResetPasswordAsync(user, resetToken, password));
+            }
+
+            if (versionClaim is null)
+                EnsureSucceeded(await users.AddClaimAsync(user, new Claim(SeedPasswordVersionClaim, passwordVersion)));
+            else if (versionClaim.Value != passwordVersion)
+                EnsureSucceeded(await users.ReplaceClaimAsync(user, versionClaim, new Claim(SeedPasswordVersionClaim, passwordVersion)));
         }
         if (!await users.IsInRoleAsync(user, role)) await users.AddToRoleAsync(user, role);
         return user;
+    }
+
+    private static void EnsureSucceeded(IdentityResult result)
+    {
+        if (!result.Succeeded) throw new InvalidOperationException(string.Join(" ", result.Errors.Select(x => x.Description)));
     }
 
     private static Contract ContractFor(string userId, PartnerRole role, string number) => new()

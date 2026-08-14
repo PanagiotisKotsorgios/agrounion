@@ -18,7 +18,14 @@ This repository includes `docker-compose.coolify.yml` for production deployment.
 
 The application exposes `/health`. Coolify uses it to confirm that both the web process and MySQL connection are ready before routing traffic.
 
-To retrieve the initially seeded login passwords, reveal `SERVICE_PASSWORDWITHSYMBOLS_64_ADMIN` and `SERVICE_PASSWORDWITHSYMBOLS_64_DEMO` in the resource's environment variables. The seeded emails are documented in `README.md`.
+To retrieve the initially seeded login passwords, reveal the generated values in the resource's environment variables and add the shown prefix:
+
+- Admin password: `Admin1!` + `SERVICE_HEX_64_ADMIN`
+- Demo-user password: `Demo1!` + `SERVICE_HEX_64_DEMO`
+
+The seeded emails are documented in `README.md`. `SeedData__PasswordVersion` makes password rotation idempotent: a new version resets the built-in seeded accounts once, while ordinary redeployments do not overwrite passwords changed by users.
+
+If the resource was created before these hex-based passwords were introduced, remove the now-unused `SERVICE_PASSWORDWITHSYMBOLS_64_ADMIN` and `SERVICE_PASSWORDWITHSYMBOLS_64_DEMO` entries from Coolify after a successful deployment. This removes Docker Compose warnings caused by `$` characters in the old generated values.
 
 ## Automatic deployments
 

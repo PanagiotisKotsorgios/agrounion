@@ -68,6 +68,8 @@
                 <a class="@(producerPage == "invoices" ? "active" : "")" asp-action="ProducerPage" asp-route-page="invoices"><i class="fa-solid fa-file-invoice-dollar"></i> Τιμολόγια</a>
                 <a class="@(producerPage == "offers" ? "active" : "")" asp-action="ProducerPage" asp-route-page="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
                 <a class="@(producerPage == "documents" ? "active" : "")" asp-action="ProducerPage" asp-route-page="documents"><i class="fa-solid fa-folder-open"></i> Έγγραφα</a>
+                <div class="portal-nav-section">Πλατφόρμα</div>
+                <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-code-branch"></i> Εκδόσεις</a>
             }
             else if (User.IsInRole(RoleNames.Admin))
             {
@@ -91,6 +93,8 @@
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="pickups"><i class="fa-solid fa-truck-fast"></i> Παραλαβές</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="contracts"><i class="fa-solid fa-file-signature"></i> Σύμβαση</a>
+                <div class="portal-nav-section">Πλατφόρμα</div>
+                <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-code-branch"></i> Εκδόσεις</a>
             }
         </nav>
         <div class="portal-sidebar-foot">

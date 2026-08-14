@@ -4,17 +4,17 @@
     var latest = Model.Releases.FirstOrDefault(x => x.IsPublished);
 }
 
-<section class="release-hero">
+<section class="release-hero release-hero-partners">
     <div class="container release-hero-grid">
         <div class="release-hero-copy reveal">
-            <span class="eyebrow eyebrow-pill"><i class="fa-solid fa-box-archive"></i> Κέντρο λήψεων</span>
-            <h1>Όλες οι εκδόσεις.<br /><em>Σε ένα ασφαλές σημείο.</em></h1>
-            <p>Δείτε το πλήρες ιστορικό δημοσιεύσεων της AGRO UNION και κατεβάστε το κατάλληλο αρχείο απευθείας από την πλατφόρμα.</p>
+            <span class="eyebrow eyebrow-pill"><i class="fa-solid fa-sparkles"></i> Ενημερώσεις πλατφόρμας</span>
+            <h1>Η πλατφόρμα εξελίσσεται.<br /><em>Το δίκτυο ενημερώνεται.</em></h1>
+            <p>Ιδιωτικό ιστορικό των εκδόσεων, των βελτιώσεων και των νέων δυνατοτήτων που είναι διαθέσιμες στα μέλη του δικτύου συνεργατών της AGRO UNION.</p>
             <div class="release-hero-actions">
-                <a class="button button-primary" href="#release-catalog"><i class="fa-solid fa-download"></i> Προβολή εκδόσεων</a>
+                <a class="button button-primary" href="#release-catalog"><i class="fa-solid fa-list-check"></i> Προβολή ιστορικού</a>
                 @if (Model.IsAdmin)
                 {
-                    <a class="button button-glass" href="#release-admin"><i class="fa-solid fa-cloud-arrow-up"></i> Νέα έκδοση</a>
+                    <a class="button button-glass" href="#release-admin"><i class="fa-solid fa-plus"></i> Νέα ενημέρωση</a>
                 }
             </div>
         </div>
@@ -25,25 +25,24 @@
                 <strong>@latest.Version</strong>
                 <h2>@latest.Title</h2>
                 <p>Δημοσιεύτηκε στις @latest.PublishedAtUtc.ToLocalTime().ToString("dd MMMM yyyy")</p>
-                <a href="#release-@latest.Id">Αρχεία & σημειώσεις <i class="fa-solid fa-arrow-down"></i></a>
+                <a href="#release-@latest.Id">Δείτε τα χαρακτηριστικά <i class="fa-solid fa-arrow-down"></i></a>
             }
             else
             {
-                <span class="release-latest-label"><i class="fa-solid fa-clock"></i> ΚΑΤΑΛΟΓΟΣ ΕΚΔΟΣΕΩΝ</span>
+                <span class="release-latest-label"><i class="fa-solid fa-clock"></i> ΙΣΤΟΡΙΚΟ ΠΛΑΤΦΟΡΜΑΣ</span>
                 <strong>—</strong>
-                <h2>Δεν έχει δημοσιευτεί ακόμη έκδοση</h2>
-                <p>Οι νέες δημοσιεύσεις θα εμφανιστούν αυτόματα εδώ.</p>
+                <h2>Δεν έχει καταχωριστεί ακόμη έκδοση</h2>
+                <p>Οι επόμενες ενημερώσεις θα εμφανίζονται αυτόματα σε αυτό το σημείο.</p>
             }
         </aside>
     </div>
 </section>
 
 <section class="release-summary-strip">
-    <div class="container release-summary-grid">
+    <div class="container release-summary-grid is-partner-summary">
         <article><span><i class="fa-solid fa-layer-group"></i></span><div><strong>@Model.PublishedCount</strong><small>ΔΗΜΟΣΙΕΥΜΕΝΕΣ ΕΚΔΟΣΕΙΣ</small></div></article>
-        <article><span><i class="fa-solid fa-file-arrow-down"></i></span><div><strong>@Model.AssetCount</strong><small>ΔΙΑΘΕΣΙΜΑ ΑΡΧΕΙΑ</small></div></article>
-        <article><span><i class="fa-solid fa-arrow-down-wide-short"></i></span><div><strong>@Model.TotalDownloads.ToString("N0")</strong><small>ΣΥΝΟΛΙΚΕΣ ΛΗΨΕΙΣ</small></div></article>
-        <article><span><i class="fa-solid fa-shield-halved"></i></span><div><strong>250 MB</strong><small>ΜΕΓΙΣΤΟ ΑΝΑ ΑΡΧΕΙΟ</small></div></article>
+        <article><span><i class="fa-solid fa-code-branch"></i></span><div><strong>@(latest?.Version ?? "—")</strong><small>ΤΡΕΧΟΥΣΑ ΕΚΔΟΣΗ</small></div></article>
+        <article><span><i class="fa-solid fa-user-group"></i></span><div><strong>Μέλη</strong><small>ΠΡΟΣΒΑΣΗ ΔΙΚΤΥΟΥ ΣΥΝΕΡΓΑΤΩΝ</small></div></article>
     </div>
 </section>
 
@@ -52,34 +51,21 @@
     <section class="section release-admin-section" id="release-admin">
         <div class="container">
             <div class="release-admin-heading">
-                <div><span class="eyebrow eyebrow-pill"><i class="fa-solid fa-user-shield"></i> Platform admin</span><h2>Δημοσίευση νέας έκδοσης</h2><p>Μεταφορτώστε ένα ή περισσότερα πακέτα ή συνδέστε επίσημο αρχείο GitHub. Τα αρχεία αποθηκεύονται εκτός του δημόσιου φακέλου και διατίθενται μόνο μέσω ελεγχόμενης λήψης.</p></div>
+                <div><span class="eyebrow eyebrow-pill"><i class="fa-solid fa-user-shield"></i> Διαχείριση πλατφόρμας</span><h2>Καταχώριση νέας έκδοσης</h2><p>Καταγράψτε τον αριθμό έκδοσης και παρουσιάστε με σαφήνεια τις νέες δυνατότητες και τις βελτιώσεις προς τους συνεργάτες.</p></div>
                 <span class="release-security-chip"><i class="fa-solid fa-lock"></i> Μόνο διαχειριστές</span>
             </div>
-            <form class="release-upload-form" asp-action="Create" asp-controller="Versions" method="post" enctype="multipart/form-data">
+            <form class="release-upload-form release-feature-form" asp-action="Create" asp-controller="Versions" method="post">
                 <div class="release-form-section">
-                    <header><span>01</span><div><strong>Στοιχεία έκδοσης</strong><small>Η πληροφορία που θα βλέπει ο χρήστης</small></div></header>
+                    <header><span>01</span><div><strong>Στοιχεία ενημέρωσης</strong><small>Η πληροφορία που θα βλέπουν τα μέλη του δικτύου</small></div></header>
                     <div class="release-form-grid">
                         <div class="field"><label for="release-version">Αριθμός έκδοσης</label><div class="input-with-icon"><i class="fa-solid fa-code-branch"></i><input id="release-version" name="Version" maxlength="40" placeholder="π.χ. v2.4.0" required /></div></div>
-                        <div class="field"><label for="release-title">Τίτλος</label><div class="input-with-icon"><i class="fa-solid fa-heading"></i><input id="release-title" name="Title" maxlength="180" placeholder="Σταθερή έκδοση Αυγούστου" required /></div></div>
+                        <div class="field"><label for="release-title">Τίτλος ενημέρωσης</label><div class="input-with-icon"><i class="fa-solid fa-heading"></i><input id="release-title" name="Title" maxlength="180" placeholder="π.χ. Νέα οικονομική επισκόπηση" required /></div></div>
                         <div class="field"><label for="release-date">Ημερομηνία δημοσίευσης</label><div class="input-with-icon"><i class="fa-solid fa-calendar-day"></i><input id="release-date" name="PublishedAt" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div></div>
-                        <div class="field"><label for="release-platform">Πλατφόρμα / στόχος</label><div class="input-with-icon"><i class="fa-solid fa-laptop"></i><input id="release-platform" name="TargetPlatform" maxlength="100" value="Όλες οι πλατφόρμες" /></div></div>
-                        <div class="field full"><label for="release-notes">Σημειώσεις έκδοσης</label><textarea id="release-notes" name="ReleaseNotes" maxlength="5000" rows="5" placeholder="Νέα χαρακτηριστικά, βελτιώσεις και σημαντικές οδηγίες..."></textarea></div>
+                        <div class="field full"><label for="release-notes">Νέα χαρακτηριστικά & βελτιώσεις</label><textarea id="release-notes" name="ReleaseNotes" maxlength="5000" rows="7" placeholder="Καταγράψτε κάθε νέο χαρακτηριστικό ή βελτίωση σε ξεχωριστή γραμμή..."></textarea></div>
                         <label class="release-publish-toggle"><input name="IsPublished" type="checkbox" value="true" checked /><input name="IsPublished" type="hidden" value="false" /><span><i class="fa-solid fa-eye"></i></span><div><strong>Άμεση δημοσίευση</strong><small>Απενεργοποιήστε το για αποθήκευση ως πρόχειρο</small></div></label>
                     </div>
                 </div>
-                <div class="release-form-section">
-                    <header><span>02</span><div><strong>Αρχεία λήψης</strong><small>Τοπική μεταφόρτωση ή επίσημο GitHub asset</small></div></header>
-                    <div class="release-source-grid">
-                        <label class="release-dropzone" for="release-files"><i class="fa-solid fa-cloud-arrow-up"></i><strong>Επιλέξτε αρχεία</strong><span>ZIP, MSI, EXE, APK, DMG, PKG, DEB, RPM, GZ ή PDF · έως 250 MB</span><input id="release-files" name="Files" type="file" multiple accept=".zip,.msi,.exe,.apk,.dmg,.pkg,.deb,.rpm,.gz,.pdf" /></label>
-                        <div class="release-or"><span>ή</span></div>
-                        <div class="release-github-fields">
-                            <span class="github-heading"><i class="fa-brands fa-github"></i><strong>Σύνδεση GitHub asset</strong></span>
-                            <div class="field"><label for="github-asset-name">Όνομα αρχείου</label><input id="github-asset-name" name="GitHubAssetName" maxlength="180" placeholder="agro-union-v2.4.0.zip" /></div>
-                            <div class="field"><label for="github-download-url">HTTPS σύνδεσμος github.com</label><input id="github-download-url" name="GitHubDownloadUrl" type="url" maxlength="1000" placeholder="https://github.com/owner/repo/releases/download/..." /></div>
-                        </div>
-                    </div>
-                </div>
-                <button class="release-submit" type="submit"><span><i class="fa-solid fa-rocket"></i> Αποθήκευση & δημοσίευση</span><i class="fa-solid fa-arrow-right"></i></button>
+                <button class="release-submit" type="submit"><span><i class="fa-solid fa-check"></i> Αποθήκευση έκδοσης</span><i class="fa-solid fa-arrow-right"></i></button>
             </form>
         </div>
     </section>
@@ -88,13 +74,13 @@
 <section class="section release-catalog-section" id="release-catalog">
     <div class="container">
         <div class="release-catalog-heading">
-            <div><span class="eyebrow eyebrow-pill"><i class="fa-solid fa-clock-rotate-left"></i> Ιστορικό εκδόσεων</span><h2>Αρχεία, ημερομηνίες και λήψεις</h2><p>Κάθε δημοσίευση διατηρεί το δικό της ιστορικό και όλα τα διαθέσιμα πακέτα σε καθαρή μορφή πίνακα.</p></div>
+            <div><span class="eyebrow eyebrow-pill"><i class="fa-solid fa-clock-rotate-left"></i> Ιστορικό εκδόσεων</span><h2>Εκδόσεις και νέες δυνατότητες</h2><p>Μία καθαρή εικόνα όσων προστίθενται, βελτιώνονται ή αλλάζουν στην πλατφόρμα συνεργατών.</p></div>
             <span class="release-count">@Model.Releases.Count @(Model.Releases.Count == 1 ? "έκδοση" : "εκδόσεις")</span>
         </div>
 
         @if (Model.Releases.Count == 0)
         {
-            <div class="release-empty"><span><i class="fa-solid fa-box-open"></i></span><h3>Ο κατάλογος είναι έτοιμος</h3><p>Δεν υπάρχουν ακόμη δημοσιευμένα αρχεία. Η επόμενη έκδοση θα εμφανιστεί εδώ μόλις καταχωριστεί από τη διαχείριση.</p>@if (Model.IsAdmin) { <a class="button button-primary" href="#release-admin"><i class="fa-solid fa-plus"></i> Προσθήκη πρώτης έκδοσης</a> }</div>
+            <div class="release-empty"><span><i class="fa-solid fa-code-branch"></i></span><h3>Το ιστορικό είναι έτοιμο</h3><p>Δεν υπάρχουν ακόμη καταχωρισμένες εκδόσεις. Η πρώτη ενημέρωση θα εμφανιστεί εδώ μόλις δημοσιευτεί από τη διαχείριση.</p>@if (Model.IsAdmin) { <a class="button button-primary" href="#release-admin"><i class="fa-solid fa-plus"></i> Προσθήκη πρώτης έκδοσης</a> }</div>
         }
         else
         {
@@ -102,53 +88,28 @@
                 @for (var releaseIndex = 0; releaseIndex < Model.Releases.Count; releaseIndex++)
                 {
                     var release = Model.Releases[releaseIndex];
-                    <article class="release-card @(!release.IsPublished ? "is-draft" : "")" id="release-@release.Id">
+                    <article class="release-card release-feature-card @(!release.IsPublished ? "is-draft" : "")" id="release-@release.Id">
                         <header class="release-card-header">
                             <div class="release-version-mark"><small>ΕΚΔΟΣΗ</small><strong>@release.Version</strong></div>
                             <div class="release-card-title"><div class="release-badges">@if (releaseIndex == 0 && release.IsPublished) { <span class="latest"><i class="fa-solid fa-star"></i> Τελευταία</span> }<span class="@(release.IsPublished ? "published" : "draft")"><i class="fa-solid @(release.IsPublished ? "fa-circle-check" : "fa-pen-ruler")"></i> @(release.IsPublished ? "Δημοσιευμένη" : "Πρόχειρη")</span></div><h3>@release.Title</h3><span><i class="fa-regular fa-calendar"></i> @release.PublishedAtUtc.ToLocalTime().ToString("dd MMMM yyyy")</span></div>
-                            <div class="release-file-total"><strong>@release.Assets.Count</strong><small>ΑΡΧΕΙΑ</small></div>
+                            <div class="release-audience"><i class="fa-solid fa-user-group"></i><span><small>ΔΙΑΘΕΣΙΜΗ ΣΤΟ</small><strong>Δίκτυο συνεργατών</strong></span></div>
                         </header>
-                        @if (!string.IsNullOrWhiteSpace(release.ReleaseNotes))
-                        {
-                            <div class="release-notes"><span><i class="fa-solid fa-list-check"></i></span><div><strong>Τι περιλαμβάνει</strong><p>@release.ReleaseNotes</p></div></div>
-                        }
-                        <div class="release-table-wrap">
-                            <table class="release-table">
-                                <thead><tr><th>Αρχείο</th><th>Πλατφόρμα</th><th>Μέγεθος</th><th>Λήψεις</th><th><span class="sr-only">Ενέργειες</span></th></tr></thead>
-                                <tbody>
-                                    @if (release.Assets.Count == 0)
-                                    {
-                                        <tr><td class="release-no-assets" colspan="5"><i class="fa-solid fa-circle-info"></i> Δεν έχουν συνδεθεί ακόμη αρχεία με αυτή την έκδοση.</td></tr>
-                                    }
-                                    @foreach (var asset in release.Assets)
-                                    {
-                                        <tr>
-                                            <td data-label="Αρχείο"><div class="release-file-name"><span><i class="fa-solid @(asset.IsGitHubAsset ? "fa-code-branch" : "fa-file-zipper")"></i></span><div><strong>@asset.DisplayName</strong><small>@asset.OriginalFileName @(asset.IsGitHubAsset ? "· GitHub" : "· AGRO UNION")</small></div></div></td>
-                                            <td data-label="Πλατφόρμα"><span class="release-platform"><i class="fa-solid fa-display"></i> @asset.TargetPlatform</span></td>
-                                            <td data-label="Μέγεθος">@FormatBytes(asset.SizeBytes)</td>
-                                            <td data-label="Λήψεις"><strong class="release-download-count">@asset.DownloadCount.ToString("N0")</strong></td>
-                                            <td class="release-row-actions"><a class="release-download" asp-action="Download" asp-route-id="@asset.Id"><i class="fa-solid fa-download"></i><span>Λήψη</span></a>@if (Model.IsAdmin) { <form asp-action="DeleteAsset" asp-route-id="@asset.Id" method="post"><button class="release-delete-icon" type="submit" data-confirm="Να αφαιρεθεί οριστικά αυτό το αρχείο;"><i class="fa-solid fa-trash-can"></i><span class="sr-only">Διαγραφή</span></button></form> }</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                        <div class="release-feature-panel">
+                            <div class="release-feature-heading"><span><i class="fa-solid fa-list-check"></i></span><div><small>ΧΑΡΑΚΤΗΡΙΣΤΙΚΑ ΕΚΔΟΣΗΣ</small><strong>Τι νέο περιλαμβάνει</strong></div></div>
+                            @if (!string.IsNullOrWhiteSpace(release.ReleaseNotes))
+                            {
+                                <p>@release.ReleaseNotes</p>
+                            }
+                            else
+                            {
+                                <p class="is-empty">Δεν έχουν καταγραφεί ακόμη αναλυτικές σημειώσεις για αυτή την έκδοση.</p>
+                            }
                         </div>
                         @if (Model.IsAdmin)
                         {
                             <div class="release-admin-actions">
-                                <details>
-                                    <summary><i class="fa-solid fa-paperclip"></i> Προσθήκη αρχείων <i class="fa-solid fa-chevron-down"></i></summary>
-                                    <form asp-action="AddAsset" method="post" enctype="multipart/form-data">
-                                        <input type="hidden" name="ReleaseId" value="@release.Id" />
-                                        <div class="field"><label>Πλατφόρμα</label><input name="TargetPlatform" maxlength="100" value="Όλες οι πλατφόρμες" /></div>
-                                        <div class="field"><label>Τοπικά αρχεία</label><input name="Files" type="file" multiple accept=".zip,.msi,.exe,.apk,.dmg,.pkg,.deb,.rpm,.gz,.pdf" /></div>
-                                        <div class="field"><label>Όνομα GitHub asset</label><input name="GitHubAssetName" maxlength="180" placeholder="Προαιρετικό" /></div>
-                                        <div class="field"><label>GitHub download URL</label><input name="GitHubDownloadUrl" type="url" maxlength="1000" placeholder="https://github.com/..." /></div>
-                                        <button type="submit"><i class="fa-solid fa-plus"></i> Προσθήκη στην έκδοση</button>
-                                    </form>
-                                </details>
                                 <form asp-action="ToggleVisibility" asp-route-id="@release.Id" method="post"><button type="submit"><i class="fa-solid @(release.IsPublished ? "fa-eye-slash" : "fa-eye")"></i> @(release.IsPublished ? "Μεταφορά στα πρόχειρα" : "Δημοσίευση")</button></form>
-                                <form asp-action="DeleteRelease" asp-route-id="@release.Id" method="post"><button class="danger" type="submit" data-confirm="Να διαγραφεί οριστικά η έκδοση και όλα τα αρχεία της;"><i class="fa-solid fa-trash-can"></i> Διαγραφή έκδοσης</button></form>
+                                <form asp-action="DeleteRelease" asp-route-id="@release.Id" method="post"><button class="danger" type="submit" data-confirm="Να διαγραφεί οριστικά αυτή η έκδοση;"><i class="fa-solid fa-trash-can"></i> Διαγραφή έκδοσης</button></form>
                             </div>
                         }
                     </article>
@@ -157,15 +118,3 @@
         }
     </div>
 </section>
-
-@functions {
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes <= 0) return "—";
-        string[] units = ["B", "KB", "MB", "GB"];
-        var value = (double)bytes;
-        var unit = 0;
-        while (value >= 1024 && unit < units.Length - 1) { value /= 1024; unit++; }
-        return $"{value:0.#} {units[unit]}";
-    }
-}

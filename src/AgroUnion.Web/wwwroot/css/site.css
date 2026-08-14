@@ -245,6 +245,15 @@ em{font-style:normal;color:inherit}
 .card-header{padding:24px 32px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}
 .card-header h3{margin:0;font-size:var(--fs-xl);font-weight:650}
 .card-footer{padding:20px 32px;border-top:1px solid var(--line);background:var(--paper-50)}
+.product-category-grid{align-items:stretch}
+.product-category-card{display:flex;flex-direction:column;overflow:hidden;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.product-category-card:hover{transform:translateY(-4px);border-color:rgba(31,77,51,.3);box-shadow:var(--shadow-md)}
+.product-category-media{position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--paper-200)}
+.product-category-media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(15,36,23,.16));pointer-events:none}
+.product-category-media img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .45s ease}
+.product-category-card:hover .product-category-media img{transform:scale(1.025)}
+.product-category-card .card-body{display:flex;flex:1;flex-direction:column}
+.product-category-card .card-body>.btn-link{margin-top:auto;align-self:flex-start}
 
 .panel{background:#fff;border:var(--border);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-sm)}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid var(--line)}
@@ -1252,6 +1261,7 @@ em{font-style:normal;color:inherit}
 
 /* 18. VERSIONS / RELEASE PAGES --------------------------- */
 .release-hero{position:relative;overflow:hidden;padding:96px 0 72px;background:var(--green-900) url(/images/photography/hero-warehouse.jpg) center/cover;color:#fff}
+.release-hero-partners{background-image:url(/images/photography/hero-modern-office.jpg)}
 .release-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(15,36,23,.94),rgba(15,36,23,.75) 60%,rgba(15,36,23,.5))}
 .release-hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.4fr 1fr;gap:64px;align-items:center}
 .release-hero-copy h1{margin:16px 0 20px;color:#fff;font-size:var(--fs-hero)}
@@ -1265,6 +1275,7 @@ em{font-style:normal;color:inherit}
 .release-latest-card>a{display:flex;align-items:center;justify-content:space-between;margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,.14);color:var(--brass-300);font-size:13px;font-weight:600}
 .release-summary-strip{background:#fff;border-bottom:1px solid var(--line)}
 .release-summary-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.release-summary-grid.is-partner-summary{grid-template-columns:repeat(3,1fr)}
 .release-summary-grid article{display:flex;align-items:center;gap:14px;padding:24px 28px;border-right:1px solid var(--line)}
 .release-summary-grid article:last-child{border:0}
 .release-summary-grid article>span{width:44px;height:44px;display:grid;place-items:center;border-radius:8px;background:var(--green-50);color:var(--green-700);font-size:16px}
@@ -1287,6 +1298,7 @@ em{font-style:normal;color:inherit}
 .release-form-section>header strong{font-size:15px;color:var(--ink-900);font-weight:650}
 .release-form-section>header small{margin-top:2px;font-size:11px;color:var(--ink-500)}
 .release-form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.release-feature-form .release-form-grid{grid-template-columns:repeat(3,1fr)}
 .release-form-grid .full{grid-column:1/-1}
 .release-upload-form input,.release-upload-form textarea{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:var(--r);background:#fff;color:var(--ink-900);font-size:13px}
 .release-upload-form textarea{resize:vertical;min-height:80px;line-height:1.55}
@@ -1331,6 +1343,11 @@ em{font-style:normal;color:inherit}
 .release-card-title h3{margin:6px 0 4px;font-size:var(--fs-lg)}
 .release-card-title>span{font-size:11px;color:var(--ink-500)}
 .release-card-title>span i{margin-right:6px}
+.release-audience{display:flex;align-items:center;justify-content:flex-end;gap:10px;text-align:right;color:var(--green-800)}
+.release-audience>i{width:36px;height:36px;display:grid;place-items:center;border-radius:9px;background:var(--green-50)}
+.release-audience>span{display:flex;flex-direction:column;gap:2px}
+.release-audience small{font-size:9px;letter-spacing:.1em;color:var(--ink-500);font-weight:600}
+.release-audience strong{font-size:12px;font-weight:650}
 .release-badges{display:flex;gap:6px}
 .release-badges>span{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-sm);font-size:10px;font-weight:600}
 .release-badges .latest{background:var(--warning-bg);color:var(--warning)}
@@ -1344,6 +1361,14 @@ em{font-style:normal;color:inherit}
 .release-notes>div{display:flex;flex-direction:column;gap:4px}
 .release-notes strong{font-size:11px;color:var(--ink-900)}
 .release-notes p{margin:0;white-space:pre-line;font-size:12px;color:var(--ink-500);line-height:1.6}
+.release-feature-panel{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;padding:28px;background:linear-gradient(135deg,var(--paper-50),#fff);border-top:1px solid var(--paper-200)}
+.release-feature-heading{display:flex;align-items:flex-start;gap:12px}
+.release-feature-heading>span{width:40px;height:40px;display:grid;place-items:center;flex:none;border-radius:9px;background:var(--green-800);color:#fff}
+.release-feature-heading>div{display:flex;flex-direction:column;gap:3px}
+.release-feature-heading small{font-size:9px;letter-spacing:.12em;color:var(--ink-500);font-weight:600}
+.release-feature-heading strong{font-size:14px;color:var(--ink-900)}
+.release-feature-panel>p{margin:0;padding-left:24px;border-left:1px solid var(--line);white-space:pre-line;color:var(--ink-700);font-size:14px;line-height:1.8}
+.release-feature-panel>p.is-empty{color:var(--ink-500);font-style:italic}
 .release-table-wrap{overflow-x:auto}
 .release-table{width:100%;border-collapse:collapse}
 .release-table th{padding:12px 20px;background:var(--paper-100);text-align:left;font-size:10px;letter-spacing:.06em;color:var(--ink-500);text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--line)}
@@ -1404,7 +1429,9 @@ em{font-style:normal;color:inherit}
   .release-summary-grid article:nth-child(-n+2){border-bottom:1px solid var(--line)}
   .release-summary-grid article:nth-child(2){border-right:0}
   .release-form-grid{grid-template-columns:1fr 1fr}
+  .release-feature-form .release-form-grid{grid-template-columns:1fr 1fr}
   .release-card-header{grid-template-columns:130px 1fr}
+  .release-feature-card .release-audience{grid-column:1/-1;justify-content:flex-start;text-align:left}
   .release-file-total{display:none}
 }
 @media (max-width:1024px){
@@ -1470,6 +1497,8 @@ em{font-style:normal;color:inherit}
   .release-source-grid{grid-template-columns:1fr}
   .release-or{padding:8px 0}
   .release-hero-grid{grid-template-columns:1fr}
+  .release-feature-panel{grid-template-columns:1fr;gap:20px}
+  .release-feature-panel>p{padding:20px 0 0;border-left:0;border-top:1px solid var(--line)}
   .admin-release-cta{grid-template-columns:auto 1fr;padding:20px 24px!important}
   .admin-release-cta>a:last-child{grid-column:1/-1;justify-self:flex-start}
 }
@@ -1532,9 +1561,12 @@ em{font-style:normal;color:inherit}
   .reconciliation-flow,.recon-flow{flex-direction:column}
   .reconciliation-flow>i,.recon-flow>i{transform:rotate(90deg);padding:4px 0}
   .release-summary-grid{grid-template-columns:1fr}
+  .release-summary-grid.is-partner-summary{grid-template-columns:1fr}
   .release-summary-grid article{border-right:0;border-bottom:1px solid var(--line)}
   .release-summary-grid article:last-child{border-bottom:0}
   .release-card-header{grid-template-columns:1fr;padding:20px}
+  .release-feature-card .release-card-header{grid-template-columns:1fr}
+  .release-feature-card .release-audience{grid-column:auto}
   .release-version-mark{width:max-content}
   .release-notes{padding:16px 20px}
   .release-table thead{display:none}
@@ -1546,6 +1578,8 @@ em{font-style:normal;color:inherit}
   .release-table td:first-child::before,.release-table td:last-child::before{display:none}
   .release-admin-actions{flex-wrap:wrap}
   .release-form-grid{grid-template-columns:1fr}
+  .release-feature-form .release-form-grid{grid-template-columns:1fr}
+  .release-feature-panel{padding:20px}
 }
 
 /* 20b. ADMIN PRODUCER WORKSPACE -------------------------- */

@@ -227,29 +227,7 @@ public sealed class ReleaseUploadForm
     public string ReleaseNotes { get; set; } = "";
     public DateTime PublishedAt { get; set; } = DateTime.Today;
     public bool IsPublished { get; set; } = true;
-    public string TargetPlatform { get; set; } = "Όλες οι πλατφόρμες";
-    public List<IFormFile> Files { get; set; } = [];
-    public string? GitHubDownloadUrl { get; set; }
-    public string? GitHubAssetName { get; set; }
 }
-
-public sealed class ReleaseAssetUploadForm
-{
-    public Guid ReleaseId { get; set; }
-    public string TargetPlatform { get; set; } = "Όλες οι πλατφόρμες";
-    public List<IFormFile> Files { get; set; } = [];
-    public string? GitHubDownloadUrl { get; set; }
-    public string? GitHubAssetName { get; set; }
-}
-
-public sealed record ReleaseAssetViewModel(
-    Guid Id,
-    string DisplayName,
-    string OriginalFileName,
-    string TargetPlatform,
-    long SizeBytes,
-    long DownloadCount,
-    bool IsGitHubAsset);
 
 public sealed record ReleaseViewModel(
     Guid Id,
@@ -257,8 +235,7 @@ public sealed record ReleaseViewModel(
     string Title,
     string ReleaseNotes,
     DateTime PublishedAtUtc,
-    bool IsPublished,
-    IReadOnlyList<ReleaseAssetViewModel> Assets);
+    bool IsPublished);
 
 public sealed class ReleaseCatalogViewModel
 {
@@ -266,6 +243,4 @@ public sealed class ReleaseCatalogViewModel
     public bool IsAdmin { get; init; }
     public ReleaseUploadForm Upload { get; init; } = new();
     public int PublishedCount => Releases.Count(x => x.IsPublished);
-    public int AssetCount => Releases.Sum(x => x.Assets.Count);
-    public long TotalDownloads => Releases.Sum(x => x.Assets.Sum(a => a.DownloadCount));
 }

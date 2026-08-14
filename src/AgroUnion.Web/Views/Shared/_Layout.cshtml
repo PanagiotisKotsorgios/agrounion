@@ -1,6 +1,5 @@
 @{
     var isAuthed = User.Identity?.IsAuthenticated == true;
-    var isAdmin = isAuthed && User.IsInRole("Admin");
 }
 <!DOCTYPE html>
 <html lang="el">
@@ -41,10 +40,7 @@
             @if (isAuthed)
             {
                 <a asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-grip"></i> Επισκόπηση</a>
-                @if (isAdmin)
-                {
-                    <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-box-archive"></i> Εκδόσεις</a>
-                }
+                <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-code-branch"></i> Εκδόσεις</a>
                 <a asp-controller="Account" asp-action="ChangePassword"><i class="fa-solid fa-shield-halved"></i> Ασφάλεια</a>
                 <form asp-controller="Account" asp-action="Logout" method="post">
                     <button class="nav-login" type="submit"><i class="fa-solid fa-arrow-right-from-bracket"></i> Αποσύνδεση</button>
@@ -88,7 +84,6 @@
                             <a asp-controller="Home" asp-action="Services" asp-fragment="supplies"><span class="menu-icon"><i class="fa-solid fa-boxes-stacked"></i></span><span><strong>Συλλογικές προμήθειες</strong><small>Οργανωμένες αγορές εφοδίων</small></span></a>
                             <a asp-controller="Home" asp-action="Sustainability"><span class="menu-icon"><i class="fa-solid fa-leaf"></i></span><span><strong>Βιωσιμότητα</strong><small>Υπεύθυνη ανάπτυξη του τόπου</small></span></a>
                             <a asp-controller="Home" asp-action="Faq"><span class="menu-icon"><i class="fa-solid fa-circle-question"></i></span><span><strong>Συχνές ερωτήσεις</strong><small>Απαντήσεις και υποστήριξη</small></span></a>
-                            <a asp-controller="Versions" asp-action="Index"><span class="menu-icon"><i class="fa-solid fa-box-archive"></i></span><span><strong>Εκδόσεις πλατφόρμας</strong><small>Ιστορικό και ασφαλείς λήψεις</small></span></a>
                             <a asp-controller="Home" asp-action="Payments"><span class="menu-icon"><i class="fa-solid fa-credit-card"></i></span><span><strong>Πληρωμές & εξοφλήσεις</strong><small>Τραπεζικοί λογαριασμοί και IRIS</small></span></a>
                         </div>
                     </div>
@@ -176,7 +171,6 @@
                     <small>ΥΠΗΡΕΣΙΕΣ</small>
                     <a asp-controller="Home" asp-action="Services">Όλες οι υπηρεσίες</a>
                     <a asp-controller="Home" asp-action="Products">Προϊόντα δικτύου</a>
-                    <a asp-controller="Versions" asp-action="Index">Όλες οι εκδόσεις</a>
                     <a asp-controller="Home" asp-action="Sustainability">Βιωσιμότητα</a>
                     <a asp-controller="Home" asp-action="Faq">Συχνές ερωτήσεις</a>
                     <a asp-controller="Home" asp-action="Contracts">Συμβάσεις</a>

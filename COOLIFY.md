@@ -16,6 +16,8 @@ This repository includes `docker-compose.coolify.yml` for production deployment.
 6. Review the generated environment variables. Coolify generates the MySQL, JWT, admin, and demo secrets referenced by the `SERVICE_*` variables. Set `ADMIN_EMAIL` and the optional `SMTP_*` variables if email delivery is required.
 7. Click **Deploy**, then check the application URL and the deployment logs.
 
+The application exposes `/health`. Coolify uses it to confirm that both the web process and MySQL connection are ready before routing traffic.
+
 To retrieve the initially seeded login passwords, reveal `SERVICE_PASSWORDWITHSYMBOLS_64_ADMIN` and `SERVICE_PASSWORDWITHSYMBOLS_64_DEMO` in the resource's environment variables. The seeded emails are documented in `README.md`.
 
 ## Automatic deployments

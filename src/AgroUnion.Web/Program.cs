@@ -74,6 +74,7 @@ builder.Services.AddRateLimiter(options =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHealthChecks().AddDbContextCheck<AgroUnionDbContext>("mysql");
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "AGRO UNION API", Version = "v1", Description = "Ασφαλές API συναλλαγών και portal συνεργατών." });
@@ -108,6 +109,7 @@ app.UseAuthorization();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();
+app.MapHealthChecks("/health");
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 
 await using (var scope = app.Services.CreateAsyncScope())

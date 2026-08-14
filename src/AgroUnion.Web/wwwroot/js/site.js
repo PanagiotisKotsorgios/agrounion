@@ -82,6 +82,27 @@
   document.querySelectorAll('.toast button').forEach(button => button.addEventListener('click', () => button.parentElement.remove()));
   document.querySelectorAll('.toast').forEach(toast => window.setTimeout(() => toast.remove(), 8000));
 
+  document.querySelectorAll('[data-hero-slideshow]').forEach(hero => {
+    const slides = [...hero.querySelectorAll('.hero-slide')];
+    if (slides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let current = 0;
+    let timer;
+    const show = index => {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, slideIndex) => slide.classList.toggle('is-active', slideIndex === current));
+    };
+    const stop = () => window.clearInterval(timer);
+    const start = () => {
+      stop();
+      if (!document.hidden) timer = window.setInterval(() => show(current + 1), 6500);
+    };
+
+    document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+    show(0);
+    start();
+  });
+
   document.querySelectorAll('.password-toggle').forEach(button => button.addEventListener('click', () => {
     const input = button.parentElement.querySelector('input');
     if (!input) return;

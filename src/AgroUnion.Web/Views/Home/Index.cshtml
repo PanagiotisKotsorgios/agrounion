@@ -1,6 +1,11 @@
 @{ ViewData["Title"] = "Σύγχρονο δίκτυο αγροτικής συνεργασίας"; }
 
-<section class="hero-photo" style="--hero-img:url(/images/photography/hero-network-olive.jpg)">
+<section class="hero-photo" data-hero-slideshow>
+    <div class="hero-slides" aria-hidden="true">
+        <span class="hero-slide is-active" style="--slide-img:url(/images/photography/hero-network-olive.jpg)"></span>
+        <span class="hero-slide" style="--slide-img:url(/images/photography/hero-network-harvest.jpg)"></span>
+        <span class="hero-slide" style="--slide-img:url(/images/photography/hero-network-field.jpg)"></span>
+    </div>
     <div class="container-wide">
         <div class="overline">Δίκτυο συνεργασίας</div>
         <h1 class="reveal">Η παραγωγή γίνεται<br />πιο δυνατή όταν<br />λειτουργεί ως δίκτυο.</h1>

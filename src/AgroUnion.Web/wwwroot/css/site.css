@@ -1473,9 +1473,9 @@ em{font-style:normal;color:inherit}
   .footer-lead,.footer-topline{flex-direction:column;align-items:flex-start;gap:16px}
   .footer-bottom{flex-direction:column;align-items:flex-start}
   .auth-page,.account-page{grid-template-columns:1fr}
-  .auth-visual,.account-art{padding:64px 28px;min-height:auto}
-  .auth-visual h1,.account-art h1{font-size:clamp(38px,8vw,54px)}
-  .auth-panel,.account-card{padding:64px 28px}
+  .auth-visual,.account-art{display:none}
+  .auth-panel,.account-card{min-height:calc(100vh - var(--header-h));padding:40px 24px;justify-content:flex-start}
+  .auth-panel .auth-form,.account-card .account-form{gap:20px}
   .auth-panel h2,.account-card h2{font-size:clamp(28px,6vw,38px)}
   .document-grid,.doc-grid{grid-template-columns:1fr}
   .photo-gallery{grid-template-columns:1fr;grid-template-rows:auto;height:auto}
@@ -2024,54 +2024,27 @@ em{font-style:normal;color:inherit}
 .pay-header-mark img{width:64px;height:64px;object-fit:contain;mix-blend-mode:multiply}
 .pay-title{margin:8px 0 0;font-size:clamp(30px,3vw,42px);font-weight:700;letter-spacing:-.015em}
 
-.pay-card{
-  background:#fff;border:1px solid var(--line);border-radius:20px;
-  overflow:hidden;box-shadow:var(--shadow-sm);
-  margin-bottom:20px;
-}
-.pay-card-head{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:20px 28px;background:linear-gradient(135deg,var(--green-50),#fff);
-  border-bottom:1px solid var(--paper-200);
-}
-.pay-card.iris-card .pay-card-head{background:linear-gradient(135deg,rgba(198,164,91,.12),#fff)}
-.pay-badge{
-  display:inline-flex;align-items:center;gap:10px;
-  padding:10px 20px;background:var(--green-700);color:#fff;
-  border-radius:12px;font-size:15px;font-weight:700;letter-spacing:.01em;
-}
-.pay-badge i{font-size:14px}
-.pay-badge.brass{background:var(--brass-500);color:#fff}
-.pay-brand{
-  width:52px;height:52px;background:#fff;border:1px solid var(--line);border-radius:12px;
-  display:grid;place-items:center;flex:none;
-}
-.pay-brand img{width:44px;height:44px;object-fit:contain;mix-blend-mode:multiply}
-
-.pay-table{width:100%;border-collapse:collapse}
-.pay-table th,.pay-table td{
-  padding:20px 28px;text-align:left;vertical-align:middle;
-  border-bottom:1px solid var(--paper-200);
-}
-.pay-table tr:last-child th,.pay-table tr:last-child td{border-bottom:0}
-.pay-table th{
-  width:220px;font-size:15px;font-weight:650;color:var(--green-700);
-  background:var(--paper-50);
-  display:flex;align-items:center;gap:12px;
-}
-.pay-table th i{width:24px;text-align:center;color:var(--green-600);font-size:16px}
-.pay-table td{
-  font-size:17px;color:var(--ink-900);font-weight:600;line-height:1.5;
-  word-break:break-word;
-}
-.pay-table td.mono-cell{font-family:var(--sans);letter-spacing:.02em}
-.pay-table td.iban{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
-}
-.pay-table .iban-value{
-  font-family:var(--mono);font-size:17px;font-weight:600;color:var(--green-800);
-  letter-spacing:.03em;
-}
+.payment-table-card{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.payment-overview{width:100%;border-collapse:collapse;table-layout:fixed}
+.payment-overview th,.payment-overview td{padding:24px 22px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--paper-200)}
+.payment-overview thead th{background:var(--green-900);color:#fff;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.payment-overview thead th:nth-child(1){width:21%}
+.payment-overview thead th:nth-child(2){width:22%}
+.payment-overview thead th:nth-child(3){width:39%}
+.payment-overview thead th:nth-child(4){width:18%}
+.payment-overview tbody th{background:var(--paper-50);color:var(--ink-900)}
+.payment-overview tbody td{color:var(--ink-900);font-size:18px;line-height:1.45}
+.payment-overview tbody tr:last-child th,.payment-overview tbody tr:last-child td{border-bottom:0}
+.payment-overview .iris-row th{background:rgba(198,164,91,.13)}
+.payment-method{display:flex;align-items:center;gap:13px}
+.payment-method>span:last-child,.payment-reference{display:flex;flex-direction:column;gap:4px}
+.payment-method strong{font-size:18px;line-height:1.2}
+.payment-method small,.payment-reference small{color:var(--ink-500);font-size:12px;font-weight:650;letter-spacing:.05em;text-transform:uppercase}
+.payment-method-icon{width:46px;height:46px;display:grid;place-items:center;flex:none;border-radius:12px;background:var(--green-800);color:var(--brass-300);font-size:17px}
+.iris-row .payment-method-icon{background:var(--brass-500);color:var(--green-900)}
+.payment-number{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.payment-number>strong{font-family:var(--mono);font-size:clamp(17px,1.35vw,21px);color:var(--green-800);letter-spacing:.025em;word-break:break-word}
+.payment-reference strong{font-size:19px;letter-spacing:.035em}
 .copy-btn{
   display:inline-flex;align-items:center;gap:8px;
   padding:9px 16px;background:#fff;border:1px solid var(--line-strong);
@@ -2081,19 +2054,6 @@ em{font-style:normal;color:inherit}
 .copy-btn:hover{background:var(--green-700);color:#fff;border-color:var(--green-700)}
 .copy-btn.copied{background:var(--success);color:#fff;border-color:var(--success)}
 .copy-btn i{font-size:13px}
-
-.pay-or{
-  display:flex;align-items:center;justify-content:center;gap:20px;
-  margin:20px 0;position:relative;
-}
-.pay-or::before,.pay-or::after{
-  content:"";height:1px;flex:1;background:var(--paper-300);
-}
-.pay-or span{
-  display:grid;place-items:center;width:48px;height:48px;
-  background:#fff;border:1px solid var(--line-strong);border-radius:50%;
-  font-family:var(--sans);font-size:18px;font-weight:700;color:var(--brass-700);font-style:italic;
-}
 
 .pay-reason{
   margin-top:32px;background:linear-gradient(135deg,var(--warning-bg),#fff);
@@ -2142,25 +2102,29 @@ em{font-style:normal;color:inherit}
 .pay-help .btn:hover{background:var(--brass-300);color:var(--green-900)}
 
 @media (max-width:900px){
-  .pay-table th{width:180px;font-size:14px}
-  .pay-table td{font-size:15px}
-  .pay-table .iban-value{font-size:14px}
+  .payment-overview th,.payment-overview td{padding:20px 16px}
+  .payment-overview tbody td{font-size:16px}
+  .payment-method strong{font-size:16px}
+  .payment-method-icon{width:40px;height:40px}
+  .payment-number>strong{font-size:16px}
 }
 @media (max-width:720px){
   .pay-header{flex-direction:column;gap:16px}
   .pay-header-mark{width:64px;height:64px}
   .pay-header-mark img{width:52px;height:52px}
-  .pay-card-head{padding:14px 18px}
-  .pay-badge{padding:8px 14px;font-size:13px}
-  .pay-brand{width:44px;height:44px}
-  .pay-brand img{width:36px;height:36px}
-  .pay-table th,.pay-table td{padding:12px 18px;font-size:14px;display:block}
-  .pay-table tr{display:grid;padding:8px 0}
-  .pay-table th{background:transparent;border-bottom:0;padding-bottom:4px;width:auto;color:var(--ink-500);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-  .pay-table th i{display:none}
-  .pay-table td{padding-top:0;font-size:15px;font-weight:650}
-  .pay-table td.iban{flex-direction:column;align-items:stretch;gap:10px}
-  .pay-table .iban-value{font-size:15px;word-break:break-all}
+  .payment-table-card{border-radius:14px}
+  .payment-overview,.payment-overview tbody,.payment-overview tr,.payment-overview th,.payment-overview td{display:block;width:100%}
+  .payment-overview{table-layout:auto}
+  .payment-overview thead{display:none}
+  .payment-overview tbody tr{padding:0 0 8px}
+  .payment-overview tbody tr:not(:last-child){border-bottom:8px solid var(--paper-100)}
+  .payment-overview tbody th{padding:18px;border-bottom:1px solid var(--paper-200)}
+  .payment-overview tbody td{padding:15px 18px;font-size:17px;border-bottom:1px solid var(--paper-200)}
+  .payment-overview tbody td::before{content:attr(data-label);display:block;margin-bottom:6px;color:var(--ink-500);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .payment-overview tbody tr:last-child td:last-child{border-bottom:0}
+  .payment-number{align-items:stretch}
+  .payment-number>strong{font-size:17px;word-break:break-all}
+  .payment-number .copy-btn{justify-content:center;width:100%}
   .reason-template{flex-direction:column;align-items:stretch}
   .reason-template code{font-size:13px;word-break:break-word}
   .reason-template .copy-btn{justify-content:center}

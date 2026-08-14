@@ -191,6 +191,7 @@ public sealed class ProducerDeliveryForm : ProducerAdminForm
     public string? LotNumber { get; set; }
     public string OriginAddress { get; set; } = "";
     public string DestinationAddress { get; set; } = "Κέντρο παραλαβής AGRO UNION";
+    public string FactoryName { get; set; } = "";
     public DateTime ScheduledPickupAt { get; set; } = DateTime.Today.AddDays(1).AddHours(8);
     public DateTime? LoadedAt { get; set; }
     public DateTime? DeliveredAt { get; set; }
@@ -213,6 +214,7 @@ public sealed class ProducerDeliveryForm : ProducerAdminForm
     public string AgreementReference { get; set; } = "";
     public PricingAgreementType AgreementType { get; set; }
     public decimal UnitPrice { get; set; }
+    public decimal FactoryUnitPrice { get; set; }
     public decimal QualityBonusPercent { get; set; }
     public decimal CommissionPercent { get; set; }
     public decimal WithholdingPercent { get; set; }
@@ -227,7 +229,7 @@ public sealed class ProducerDeliveryForm : ProducerAdminForm
     public string? LoadNotes { get; set; }
     public string? InternalNotes { get; set; }
     public bool IsVisibleToProducer { get; set; } = true;
-    public ProducerDeliveryRequest ToRequest() => new(ProductionDeclarationId, ContractId, DealId, RouteNumber, Status, Product, Variety, QualityGrade, LotNumber, OriginAddress, DestinationAddress, ScheduledPickupAt, LoadedAt, DeliveredAt, CarrierName, DriverName, VehiclePlate, TrailerPlate, GrossWeight, TareWeight, RejectedWeight, WeightUnit, WeighedAt, WeighbridgeName, WeighingSlipNumber, WeighingSlipUrl, DispatchNoteNumber, DispatchNoteUrl, DeliveryReceiptNumber, DeliveryReceiptUrl, AgreementReference, AgreementType, UnitPrice, QualityBonusPercent, CommissionPercent, WithholdingPercent, VatPercent, TransportCost, OtherDeductions, PaidAmount, PaymentDueDate, PaidAt, PaymentStatus, AgreementNotes, LoadNotes, InternalNotes, IsVisibleToProducer);
+    public ProducerDeliveryRequest ToRequest() => new(ProductionDeclarationId, ContractId, DealId, RouteNumber, Status, Product, Variety, QualityGrade, LotNumber, OriginAddress, DestinationAddress, FactoryName, ScheduledPickupAt, LoadedAt, DeliveredAt, CarrierName, DriverName, VehiclePlate, TrailerPlate, GrossWeight, TareWeight, RejectedWeight, WeightUnit, WeighedAt, WeighbridgeName, WeighingSlipNumber, WeighingSlipUrl, DispatchNoteNumber, DispatchNoteUrl, DeliveryReceiptNumber, DeliveryReceiptUrl, AgreementReference, AgreementType, UnitPrice, FactoryUnitPrice, QualityBonusPercent, CommissionPercent, WithholdingPercent, VatPercent, TransportCost, OtherDeductions, PaidAmount, PaymentDueDate, PaidAt, PaymentStatus, AgreementNotes, LoadNotes, InternalNotes, IsVisibleToProducer);
 }
 
 public sealed class ReleaseUploadForm

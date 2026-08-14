@@ -295,7 +295,7 @@
                             role="button"
                             aria-label="Προβολή λεπτομερειών για το δρομολόγιο @r.RouteNumber"
                             data-delivery-row
-                            data-search="@($"{r.RouteNumber} {r.Product} {r.Variety} {LogisticsStatusName(r.Status)} {r.OriginAddress} {r.DestinationAddress}".ToLowerInvariant())"
+                            data-search="@($"{r.RouteNumber} {r.Product} {r.Variety} {LogisticsStatusName(r.Status)} {r.OriginAddress} {r.DestinationAddress} {r.FactoryName}".ToLowerInvariant())"
                             data-route="@r.RouteNumber"
                             data-product="@r.Product"
                             data-variety="@(string.IsNullOrWhiteSpace(r.Variety) ? "—" : r.Variety)"
@@ -303,7 +303,12 @@
                             data-scheduled="@r.ScheduledPickupAt.ToString("dd/MM/yyyy · HH:mm")"
                             data-origin="@r.OriginAddress"
                             data-destination="@r.DestinationAddress"
+                            data-factory="@(string.IsNullOrWhiteSpace(r.FactoryName) ? "—" : r.FactoryName)"
+                            data-loaded="@(r.LoadedAt?.ToString("dd/MM/yyyy · HH:mm") ?? "—")"
+                            data-delivered="@(r.DeliveredAt?.ToString("dd/MM/yyyy · HH:mm") ?? "—")"
+                            data-loadedweight="@($"{r.NetWeight:N0} {r.WeightUnit}")"
                             data-weight="@($"{r.AcceptedWeight:N0} {r.WeightUnit}")"
+                            data-unitprice="@($"{r.UnitPrice:N4} €/{r.WeightUnit}")"
                             data-value="@($"{r.NetPayableAmount:N2} €")"
                             data-paid="@($"{r.PaidAmount:N2} €")"
                             data-outstanding="@($"{r.OutstandingAmount:N2} €")"
@@ -355,10 +360,13 @@
                     <section>
                         <h3>Στοιχεία δρομολογίου</h3>
                         <dl class="delivery-detail-grid">
-                            <div><dt>Ημερομηνία</dt><dd data-delivery-field="scheduled">—</dd></div>
+                            <div><dt>Προγραμματισμένη παραλαβή</dt><dd data-delivery-field="scheduled">—</dd></div>
                             <div><dt>Ποικιλία</dt><dd data-delivery-field="variety">—</dd></div>
+                            <div><dt>Πραγματική φόρτωση</dt><dd data-delivery-field="loaded">—</dd></div>
+                            <div><dt>Παράδοση</dt><dd data-delivery-field="delivered">—</dd></div>
                             <div><dt>Αφετηρία</dt><dd data-delivery-field="origin">—</dd></div>
                             <div><dt>Προορισμός</dt><dd data-delivery-field="destination">—</dd></div>
+                            <div class="full"><dt>Εργοστάσιο παραλαβής</dt><dd data-delivery-field="factory">—</dd></div>
                             <div><dt>Μεταφορέας</dt><dd data-delivery-field="carrier">—</dd></div>
                             <div><dt>Όχημα</dt><dd data-delivery-field="vehicle">—</dd></div>
                         </dl>
@@ -366,7 +374,9 @@
                     <section>
                         <h3>Ποσότητα και εκκαθάριση</h3>
                         <dl class="delivery-detail-grid financial">
+                            <div><dt>Φορτωμένο καθαρό βάρος</dt><dd data-delivery-field="loadedweight">—</dd></div>
                             <div><dt>Αποδεκτό βάρος</dt><dd data-delivery-field="weight">—</dd></div>
+                            <div><dt>Τιμή παραγωγού</dt><dd data-delivery-field="unitprice">—</dd></div>
                             <div><dt>Καθαρή αξία</dt><dd data-delivery-field="value">—</dd></div>
                             <div><dt>Πληρωμένο</dt><dd data-delivery-field="paid">—</dd></div>
                             <div><dt>Υπόλοιπο</dt><dd data-delivery-field="outstanding">—</dd></div>
@@ -782,10 +792,11 @@
                 <div class="route-journey">
                     <div><span><i class="fa-solid fa-location-dot"></i></span><small>Φόρτωση</small><strong>@item.OriginAddress</strong></div>
                     <div class="route-line"><i class="fa-solid fa-truck"></i></div>
-                    <div><span><i class="fa-solid fa-warehouse"></i></span><small>Παράδοση</small><strong>@item.DestinationAddress</strong></div>
+                    <div><span><i class="fa-solid fa-warehouse"></i></span><small>Παράδοση · @item.FactoryName</small><strong>@item.DestinationAddress</strong></div>
                 </div>
                 <div class="delivery-payment-result">
-                    <div><small>Αποδεκτό</small><strong>@item.AcceptedWeight.ToString("N0") @item.WeightUnit</strong></div>
+                    <div><small>Φορτώθηκε / έγινε αποδεκτό</small><strong>@item.NetWeight.ToString("N0") / @item.AcceptedWeight.ToString("N0") @item.WeightUnit</strong></div>
+                    <div><small>Τιμή παραγωγού</small><strong>@item.UnitPrice.ToString("N4") €/@item.WeightUnit</strong></div>
                     <div><small>Καθαρό πληρωτέο</small><strong>@item.NetPayableAmount.ToString("N2") €</strong></div>
                     <div class="@(item.OutstandingAmount > 0 ? "outstanding" : "paid")"><small>Υπόλοιπο</small><strong>@item.OutstandingAmount.ToString("N2") €</strong></div>
                 </div>

@@ -31,6 +31,9 @@
     var editDelivery = editId is null ? null : Model.DeliveryRecords.FirstOrDefault(x => x.Id == editId);
     var annualAcceptedKg = Model.DeliveryRecords.Where(x => x.ScheduledPickupAt.Year == DateTime.Today.Year && x.Status != DeliveryLogisticsStatus.Cancelled).Sum(x => x.AcceptedWeight);
     var suggestedCategory = annualAcceptedKg >= 50000 ? ProducerCategory.Strategic : annualAcceptedKg >= 20000 ? ProducerCategory.Premium : annualAcceptedKg >= 10000 ? ProducerCategory.Advanced : annualAcceptedKg >= 3000 ? ProducerCategory.Standard : ProducerCategory.Developing;
+    var activeDeliveryRecords = Model.DeliveryRecords.Where(x => x.Status != DeliveryLogisticsStatus.Cancelled).ToList();
+    var factoryCount = activeDeliveryRecords.Select(x => x.FactoryName).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+    var factoryGrossValue = activeDeliveryRecords.Sum(x => x.FactoryGrossValue);
 }
 
 <section class="producer-workspace" id="producer-workspace">
@@ -116,9 +119,10 @@
             <summary><span><i class="fa-solid fa-truck-fast"></i></span><div><strong>Δρομολόγια, ζυγίσεις & διακανονισμοί</strong><small>@Model.DeliveryRecords.Count πλήρεις καρτέλες παραλαβής · ο admin ορίζει όλα τα δεδομένα</small></div><i class="fa-solid fa-chevron-down"></i></summary>
             <div class="delivery-admin-summary">
                 <article><i class="fa-solid fa-route"></i><span><small>ΔΡΟΜΟΛΟΓΙΑ</small><strong>@Model.LogisticsSummary.TotalRoutes</strong></span></article>
+                <article><i class="fa-solid fa-industry"></i><span><small>ΕΡΓΟΣΤΑΣΙΑ</small><strong>@factoryCount</strong></span></article>
                 <article><i class="fa-solid fa-weight-scale"></i><span><small>ΑΠΟΔΕΚΤΟ ΒΑΡΟΣ</small><strong>@Model.LogisticsSummary.AcceptedWeight.ToString("N0") kg</strong></span></article>
-                <article><i class="fa-solid fa-money-bill-transfer"></i><span><small>ΚΑΘΑΡΟ ΠΛΗΡΩΤΕΟ</small><strong>@Model.LogisticsSummary.NetPayable.ToString("N2") €</strong></span></article>
-                <article><i class="fa-solid fa-hourglass-half"></i><span><small>ΑΝΟΙΧΤΟ ΥΠΟΛΟΙΠΟ</small><strong>@Model.LogisticsSummary.Outstanding.ToString("N2") €</strong></span></article>
+                <article><i class="fa-solid fa-money-bill-transfer"></i><span><small>ΠΛΗΡΩΤΕΟ ΠΑΡΑΓΩΓΟΥ</small><strong>@Model.LogisticsSummary.NetPayable.ToString("N2") €</strong></span></article>
+                <article class="admin-only-stat"><i class="fa-solid fa-building-columns"></i><span><small>ΑΞΙΑ ΕΡΓΟΣΤΑΣΙΩΝ</small><strong>@factoryGrossValue.ToString("N2") €</strong></span></article>
             </div>
             <form class="workspace-form delivery-record-form" asp-action="SaveProducerDelivery" method="post">
                 <input type="hidden" name="ProducerUserId" value="@selected.Id" />
@@ -136,6 +140,7 @@
 
                 <header class="delivery-form-heading full"><span>02</span><div><strong>Διαδρομή & μεταφορέας</strong><small>Αφετηρία, προορισμός, ημερομηνίες, όχημα και οδηγός</small></div></header>
                 <div class="field full"><label>Σημείο φόρτωσης / αφετηρία *</label><input name="OriginAddress" maxlength="300" value="@(editDelivery?.OriginAddress ?? selected.Region)" required /></div>
+                <div class="field"><label>Εργοστάσιο προορισμού *</label><input name="FactoryName" maxlength="180" value="@editDelivery?.FactoryName" placeholder="Πλήρης επωνυμία εργοστασίου" required /></div>
                 <div class="field full"><label>Σημείο παράδοσης / προορισμός *</label><input name="DestinationAddress" maxlength="300" value="@(editDelivery?.DestinationAddress ?? "Κέντρο παραλαβής AGRO UNION · Μεσολόγγι")" required /></div>
                 <div class="field"><label>Προγραμματισμένη παραλαβή *</label><input name="ScheduledPickupAt" type="datetime-local" value="@(editDelivery?.ScheduledPickupAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.Today.AddDays(1).AddHours(8).ToString("yyyy-MM-ddTHH:mm"))" required /></div>
                 <div class="field"><label>Πραγματική φόρτωση</label><input name="LoadedAt" type="datetime-local" value="@DateTimeValue(editDelivery?.LoadedAt)" /></div>
@@ -146,9 +151,9 @@
                 <div class="field"><label>Πινακίδα ρυμουλκούμενου</label><input name="TrailerPlate" maxlength="30" value="@editDelivery?.TrailerPlate" /></div>
 
                 <header class="delivery-form-heading full"><span>03</span><div><strong>Ζύγιση & αποδεκτό φορτίο</strong><small>Καθαρό = μικτό − απόβαρο · αποδεκτό = καθαρό − απορρίψεις</small></div></header>
-                <div class="field"><label>Μικτό βάρος</label><input name="GrossWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.GrossWeight ?? 0)" /></div>
-                <div class="field"><label>Απόβαρο</label><input name="TareWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.TareWeight ?? 0)" /></div>
-                <div class="field"><label>Απορριφθέν βάρος</label><input name="RejectedWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.RejectedWeight ?? 0)" /></div>
+                <div class="field"><label>Μικτό βάρος οχήματος</label><input name="GrossWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.GrossWeight ?? 0)" data-settlement-input="gross" /></div>
+                <div class="field"><label>Απόβαρο οχήματος</label><input name="TareWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.TareWeight ?? 0)" data-settlement-input="tare" /></div>
+                <div class="field"><label>Απορριφθέν βάρος</label><input name="RejectedWeight" type="number" min="0" step=".001" value="@DecimalValue(editDelivery?.RejectedWeight ?? 0)" data-settlement-input="rejected" /></div>
                 <div class="field"><label>Μονάδα βάρους</label><input name="WeightUnit" maxlength="30" value="@(editDelivery?.WeightUnit ?? "kg")" /></div>
                 <div class="field"><label>Ημερομηνία ζύγισης</label><input name="WeighedAt" type="datetime-local" value="@DateTimeValue(editDelivery?.WeighedAt)" /></div>
                 <div class="field"><label>Γεφυροπλάστιγγα / σημείο</label><input name="WeighbridgeName" maxlength="180" value="@editDelivery?.WeighbridgeName" /></div>
@@ -164,7 +169,8 @@
                 <header class="delivery-form-heading full"><span>05</span><div><strong>Συμφωνία & οικονομική εκκαθάριση</strong><small>Η εφαρμογή υπολογίζει αυτόματα όλα τα ποσά από το αποδεκτό βάρος</small></div></header>
                 <div class="field"><label>Αναφορά συμφωνίας *</label><input name="AgreementReference" maxlength="80" value="@editDelivery?.AgreementReference" placeholder="AU-AGR-2026-071" required /></div>
                 <div class="field"><label>Τύπος τιμολόγησης</label><select name="AgreementType">@foreach(var value in Enum.GetValues<PricingAgreementType>()){<option value="@value" selected="@(editDelivery?.AgreementType==value)">@(value switch { PricingAgreementType.FixedPrice => "Σταθερή τιμή", PricingAgreementType.DailyPrice => "Ημερήσια τιμή", PricingAgreementType.Percentage => "Ποσοστιαία συμφωνία", _ => "Μικτή συμφωνία" })</option>}</select></div>
-                <div class="field"><label>Τιμή αγοράς (€ / μονάδα)</label><input name="UnitPrice" type="number" min="0" step=".0001" value="@DecimalValue(editDelivery?.UnitPrice ?? 0)" /></div>
+                <div class="field"><label>Τιμή παραγωγού (€ / μονάδα)</label><input name="UnitPrice" type="number" min="0" step=".0001" value="@DecimalValue(editDelivery?.UnitPrice ?? 0)" data-settlement-input="producer-price" /><small>Η τιμή που λαμβάνει ο παραγωγός.</small></div>
+                <div class="field internal-field"><label>Τιμή εργοστασίου (€ / μονάδα) <small>μόνο admin</small></label><input name="FactoryUnitPrice" type="number" min="0" step=".0001" value="@DecimalValue(editDelivery?.FactoryUnitPrice ?? 0)" data-settlement-input="factory-price" /><small>Η συμφωνημένη τιμή πώλησης προς το εργοστάσιο.</small></div>
                 <div class="field"><label>Bonus ποιότητας (%)</label><input name="QualityBonusPercent" type="number" min="0" max="100" step=".001" value="@DecimalValue(editDelivery?.QualityBonusPercent ?? profile.BonusRate)" /></div>
                 <div class="field"><label>Προμήθεια AGRO UNION (%)</label><input name="CommissionPercent" type="number" min="0" max="100" step=".001" value="@DecimalValue(editDelivery?.CommissionPercent ?? profile.CommissionRate)" /></div>
                 <div class="field"><label>Παρακράτηση (%)</label><input name="WithholdingPercent" type="number" min="0" max="100" step=".001" value="@DecimalValue(editDelivery?.WithholdingPercent ?? 0)" /></div>
@@ -178,25 +184,37 @@
                 <div class="field full"><label>Όροι / περιγραφή συμφωνίας</label><textarea name="AgreementNotes" maxlength="2000" rows="2">@editDelivery?.AgreementNotes</textarea></div>
                 <div class="field full"><label>Παρατηρήσεις φορτίου & ποιοτικού ελέγχου</label><textarea name="LoadNotes" maxlength="2000" rows="2">@editDelivery?.LoadNotes</textarea></div>
                 <div class="field full"><label>Εσωτερικές σημειώσεις admin <small>δεν εμφανίζονται στον παραγωγό</small></label><textarea name="InternalNotes" maxlength="2000" rows="2">@editDelivery?.InternalNotes</textarea></div>
+                <div class="delivery-settlement-preview full" data-settlement-preview>
+                    <header><i class="fa-solid fa-calculator"></i><div><strong>Προεπισκόπηση φορτίου και αξιών</strong><small>Οι τελικοί υπολογισμοί επιβεβαιώνονται κατά την αποθήκευση.</small></div></header>
+                    <div><span><small>ΦΟΡΤΩΜΕΝΟ ΚΑΘΑΡΟ</small><strong data-settlement-output="loaded">0 kg</strong></span><span><small>ΑΠΟΔΕΚΤΟ ΦΟΡΤΙΟ</small><strong data-settlement-output="accepted">0 kg</strong></span><span><small>ΒΑΣΗ ΠΑΡΑΓΩΓΟΥ</small><strong data-settlement-output="producer-value">0,00 €</strong></span><span class="admin-only"><small>ΑΞΙΑ ΕΡΓΟΣΤΑΣΙΟΥ</small><strong data-settlement-output="factory-value">0,00 €</strong></span></div>
+                </div>
                 <label class="workspace-check full">
                     @if(editDelivery?.IsVisibleToProducer ?? true){<input name="IsVisibleToProducer" type="checkbox" value="true" checked />}else{<input name="IsVisibleToProducer" type="checkbox" value="true" />}
                     <input name="IsVisibleToProducer" type="hidden" value="false" /><span><i class="fa-solid fa-eye"></i> Ορατό στον παραγωγό</span>
                 </label>
                 <button class="workspace-save" type="submit"><i class="fa-solid fa-calculator"></i> @(editDelivery is null ? "Υπολογισμός & καταχώριση δρομολογίου" : "Επανυπολογισμός & αποθήκευση αλλαγών")</button>
             </form>
-            <div class="admin-delivery-list">
+            <div class="admin-route-tools" data-admin-route-filters>
+                <label class="delivery-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Δρομολόγιο, προϊόν, εργοστάσιο ή περιοχή" data-admin-route-search /></label>
+                <label class="producer-filter-select"><span>Κατάσταση</span><select data-admin-route-status><option value="all">Όλες</option>@foreach(var value in Enum.GetValues<DeliveryLogisticsStatus>()){<option value="@value">@LogisticsStatusName(value)</option>}</select></label>
+                <label class="producer-filter-select"><span>Εργοστάσιο</span><select data-admin-route-factory><option value="all">Όλα</option>@foreach(var factory in activeDeliveryRecords.Select(x => x.FactoryName).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x)){<option value="@factory.ToLowerInvariant()">@factory</option>}</select></label>
+                <span data-admin-route-count>@Model.DeliveryRecords.Count δρομολόγια</span>
+            </div>
+            <div class="admin-delivery-list" data-admin-route-list>
                 @if(Model.DeliveryRecords.Count == 0){<div class="workspace-empty"><i class="fa-solid fa-truck-ramp-box"></i><strong>Δεν έχουν καταχωριστεί δρομολόγια.</strong><span>Χρησιμοποιήστε την παραπάνω φόρμα για την πρώτη πλήρη καρτέλα παραλαβής.</span></div>}
                 @foreach(var item in Model.DeliveryRecords)
                 {
-                    <article>
+                    <article data-admin-route-row data-search="@($"{item.RouteNumber} {item.Product} {item.OriginAddress} {item.DestinationAddress} {item.FactoryName}").ToLowerInvariant()" data-status="@item.Status" data-factory="@item.FactoryName.ToLowerInvariant()">
                         <span class="admin-route-icon"><i class="fa-solid fa-truck-moving"></i></span>
-                        <div class="admin-route-main"><small>@item.ScheduledPickupAt.ToString("dd/MM/yyyy HH:mm") · @LogisticsStatusName(item.Status)</small><strong>@item.RouteNumber · @item.Product</strong><p>@item.OriginAddress <i class="fa-solid fa-arrow-right-long"></i> @item.DestinationAddress</p></div>
-                        <div><small>ΑΠΟΔΕΚΤΟ</small><strong>@item.AcceptedWeight.ToString("N0") @item.WeightUnit</strong><span>από @item.NetWeight.ToString("N0") καθαρά</span></div>
-                        <div><small>ΤΙΜΗ / ΒΑΣΗ</small><strong>@item.UnitPrice.ToString("N4") €</strong><span>@item.BaseAmount.ToString("N2") €</span></div>
-                        <div><small>ΠΛΗΡΩΤΕΟ / ΥΠΟΛΟΙΠΟ</small><strong>@item.NetPayableAmount.ToString("N2") €</strong><span class="@(item.OutstandingAmount>0?"negative":"")">@item.OutstandingAmount.ToString("N2") €</span></div>
+                        <div class="admin-route-main"><small>@LogisticsStatusName(item.Status) · @item.RouteNumber</small><strong>@item.Product · @(string.IsNullOrWhiteSpace(item.Variety) ? item.QualityGrade : item.Variety)</strong><p><b>@item.FactoryName</b><br />@item.OriginAddress <i class="fa-solid fa-arrow-right-long"></i> @item.DestinationAddress</p></div>
+                        <div class="admin-route-timeline"><small>ΗΜΕΡΟΜΗΝΙΕΣ</small><strong>@item.ScheduledPickupAt.ToString("dd/MM/yyyy HH:mm")</strong><span>Φόρτωση: @(item.LoadedAt?.ToString("dd/MM HH:mm") ?? "—")</span><span>Παράδοση: @(item.DeliveredAt?.ToString("dd/MM HH:mm") ?? "—")</span></div>
+                        <div><small>ΦΟΡΤΩΣΗ / ΑΠΟΔΟΧΗ</small><strong>@item.NetWeight.ToString("N0") / @item.AcceptedWeight.ToString("N0") @item.WeightUnit</strong><span>Μικτό όχημα @item.GrossWeight.ToString("N0") @item.WeightUnit</span></div>
+                        <div><small>ΠΑΡΑΓΩΓΟΣ</small><strong>@item.UnitPrice.ToString("N4") €/kg</strong><span>Πληρωτέο @item.NetPayableAmount.ToString("N2") €</span><span class="@(item.OutstandingAmount>0?"negative":"")">Υπόλοιπο @item.OutstandingAmount.ToString("N2") €</span></div>
+                        <div class="admin-factory-value"><small>ΕΡΓΟΣΤΑΣΙΟ · ADMIN</small><strong>@item.FactoryUnitPrice.ToString("N4") €/kg</strong><span>Αξία @item.FactoryGrossValue.ToString("N2") €</span></div>
                         <div class="admin-route-actions"><a asp-action="Index" asp-route-producerId="@selected.Id" asp-route-deliveryId="@item.Id" asp-fragment="producer-delivery-editor"><i class="fa-solid fa-pen"></i> Επεξεργασία</a><form asp-action="DeleteProducerDelivery" asp-route-id="@item.Id" asp-route-producerUserId="@selected.Id" method="post"><button data-confirm="Να διαγραφεί οριστικά το δρομολόγιο και η οικονομική του ανάλυση;"><i class="fa-solid fa-trash"></i></button></form></div>
                     </article>
                 }
+                <div class="producer-table-empty" data-admin-route-empty hidden><i class="fa-solid fa-filter-circle-xmark"></i> Δεν βρέθηκαν δρομολόγια με αυτά τα φίλτρα.</div>
             </div>
         </details>
 

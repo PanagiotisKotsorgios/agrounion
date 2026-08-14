@@ -254,6 +254,55 @@
     render();
   });
 
+  document.querySelectorAll('.delivery-record-form').forEach(form => {
+    const input = key => form.querySelector(`[data-settlement-input="${key}"]`);
+    const output = key => form.querySelector(`[data-settlement-output="${key}"]`);
+    const numberValue = key => Math.max(0, Number(input(key)?.value) || 0);
+    const numberFormat = new Intl.NumberFormat('el-GR', { maximumFractionDigits: 3 });
+    const moneyFormat = new Intl.NumberFormat('el-GR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const renderSettlementPreview = () => {
+      const loaded = Math.max(0, numberValue('gross') - numberValue('tare'));
+      const accepted = Math.max(0, loaded - numberValue('rejected'));
+      const producerValue = accepted * numberValue('producer-price');
+      const factoryValue = accepted * numberValue('factory-price');
+      if (output('loaded')) output('loaded').textContent = numberFormat.format(loaded) + ' kg';
+      if (output('accepted')) output('accepted').textContent = numberFormat.format(accepted) + ' kg';
+      if (output('producer-value')) output('producer-value').textContent = moneyFormat.format(producerValue) + ' €';
+      if (output('factory-value')) output('factory-value').textContent = moneyFormat.format(factoryValue) + ' €';
+    };
+    form.querySelectorAll('[data-settlement-input]').forEach(element => element.addEventListener('input', renderSettlementPreview));
+    renderSettlementPreview();
+  });
+
+  document.querySelectorAll('[data-admin-route-filters]').forEach(filters => {
+    const container = filters.closest('.workspace-editor') || document;
+    const rows = [...container.querySelectorAll('[data-admin-route-row]')];
+    const search = filters.querySelector('[data-admin-route-search]');
+    const status = filters.querySelector('[data-admin-route-status]');
+    const factory = filters.querySelector('[data-admin-route-factory]');
+    const count = filters.querySelector('[data-admin-route-count]');
+    const empty = container.querySelector('[data-admin-route-empty]');
+    const render = () => {
+      const term = (search?.value || '').trim().toLocaleLowerCase('el-GR');
+      const selectedStatus = status?.value || 'all';
+      const selectedFactory = factory?.value || 'all';
+      let visible = 0;
+      rows.forEach(row => {
+        const matches = (!term || (row.dataset.search || '').includes(term))
+          && (selectedStatus === 'all' || row.dataset.status === selectedStatus)
+          && (selectedFactory === 'all' || row.dataset.factory === selectedFactory);
+        row.hidden = !matches;
+        if (matches) visible += 1;
+      });
+      if (count) count.textContent = visible + (visible === 1 ? ' δρομολόγιο' : ' δρομολόγια');
+      if (empty) empty.hidden = visible > 0 || rows.length === 0;
+    };
+    search?.addEventListener('input', render);
+    status?.addEventListener('change', render);
+    factory?.addEventListener('change', render);
+    render();
+  });
+
   document.querySelectorAll('[data-finance-ledger]').forEach(panel => {
     const rows = [...panel.querySelectorAll('[data-finance-row]')];
     const search = panel.querySelector('[data-finance-search]');

@@ -436,13 +436,14 @@ public sealed class AgroUnionService(
     {
         await EnsureProducerAsync(producerUserId);
         if (string.IsNullOrWhiteSpace(request.RouteNumber) || string.IsNullOrWhiteSpace(request.Product) ||
-            string.IsNullOrWhiteSpace(request.OriginAddress) || string.IsNullOrWhiteSpace(request.DestinationAddress) ||
+            string.IsNullOrWhiteSpace(request.OriginAddress) || string.IsNullOrWhiteSpace(request.DestinationAddress) || string.IsNullOrWhiteSpace(request.FactoryName) ||
             string.IsNullOrWhiteSpace(request.AgreementReference))
-            throw new ValidationException("Συμπληρώστε αριθμό δρομολογίου, προϊόν, αφετηρία, προορισμό και αναφορά συμφωνίας.");
+            throw new ValidationException("Συμπληρώστε αριθμό δρομολογίου, προϊόν, αφετηρία, εργοστάσιο, προορισμό και αναφορά συμφωνίας.");
         if (request.ScheduledPickupAt == default) throw new ValidationException("Συμπληρώστε την προγραμματισμένη ημερομηνία παραλαβής.");
         if (request.LoadedAt < request.ScheduledPickupAt.AddDays(-1)) throw new ValidationException("Η φόρτωση δεν μπορεί να προηγείται σημαντικά του προγραμματισμένου δρομολογίου.");
         if (request.DeliveredAt < request.LoadedAt || request.DeliveredAt < request.ScheduledPickupAt.AddDays(-1)) throw new ValidationException("Η παράδοση δεν μπορεί να προηγείται της φόρτωσης ή του δρομολογίου.");
         if (request.PaidAt is not null && request.PaidAmount <= 0) throw new ValidationException("Η ημερομηνία πληρωμής απαιτεί θετικό εξοφλημένο ποσό.");
+        if (request.FactoryUnitPrice < 0) throw new ValidationException("Η τιμή εργοστασίου δεν μπορεί να είναι αρνητική.");
         if (request.Status is DeliveryLogisticsStatus.Weighed or DeliveryLogisticsStatus.Delivered or DeliveryLogisticsStatus.Settled && request.GrossWeight <= 0)
             throw new ValidationException("Για ζυγισμένο ή ολοκληρωμένο φορτίο απαιτείται μικτό βάρος.");
         ValidateFileUrl(request.WeighingSlipUrl);
@@ -483,6 +484,7 @@ public sealed class AgroUnionService(
         item.LotNumber = CleanOptional(request.LotNumber);
         item.OriginAddress = request.OriginAddress.Trim();
         item.DestinationAddress = request.DestinationAddress.Trim();
+        item.FactoryName = request.FactoryName.Trim();
         item.ScheduledPickupAt = request.ScheduledPickupAt;
         item.LoadedAt = request.LoadedAt;
         item.DeliveredAt = request.DeliveredAt;
@@ -507,6 +509,7 @@ public sealed class AgroUnionService(
         item.AgreementReference = request.AgreementReference.Trim();
         item.AgreementType = request.AgreementType;
         item.UnitPrice = request.UnitPrice;
+        item.FactoryUnitPrice = request.FactoryUnitPrice;
         item.QualityBonusPercent = request.QualityBonusPercent;
         item.CommissionPercent = request.CommissionPercent;
         item.WithholdingPercent = request.WithholdingPercent;
@@ -530,7 +533,7 @@ public sealed class AgroUnionService(
         item.UpdatedAt = DateTime.UtcNow;
         item.UpdatedByUserId = adminUserId;
         if (id is null) db.ProducerDeliveryRecords.Add(item);
-        AddAudit(adminUserId, id is null ? "Create" : "Update", nameof(ProducerDeliveryRecord), item.Id, $"Producer {producerUserId}, route {item.RouteNumber}, accepted {item.AcceptedWeight:N3} {item.WeightUnit}, payable {item.NetPayableAmount:N2}");
+        AddAudit(adminUserId, id is null ? "Create" : "Update", nameof(ProducerDeliveryRecord), item.Id, $"Producer {producerUserId}, route {item.RouteNumber}, factory {item.FactoryName}, accepted {item.AcceptedWeight:N3} {item.WeightUnit}, producer payable {item.NetPayableAmount:N2}, factory value {item.FactoryGrossValue:N2}");
         db.Notifications.Add(new Notification { UserId = producerUserId, Title = id is null ? "Νέο δρομολόγιο στον φάκελό σας" : "Ενημέρωση δρομολογίου", Message = $"Το δρομολόγιο {item.RouteNumber} ενημερώθηκε με κατάσταση {item.Status}." });
         await db.SaveChangesAsync(ct);
         return item.Id;
@@ -592,12 +595,12 @@ public sealed class AgroUnionService(
 
     private static ProducerDeliveryDto ToDeliveryDto(ProducerDeliveryRecord x) => new(
         x.Id, x.ProducerUserId, x.ProductionDeclarationId, x.ContractId, x.DealId, x.RouteNumber, x.Status, x.Product, x.Variety, x.QualityGrade,
-        x.LotNumber, x.OriginAddress, x.DestinationAddress, x.ScheduledPickupAt, x.LoadedAt, x.DeliveredAt, x.CarrierName, x.DriverName,
+        x.LotNumber, x.OriginAddress, x.DestinationAddress, x.FactoryName, x.ScheduledPickupAt, x.LoadedAt, x.DeliveredAt, x.CarrierName, x.DriverName,
         x.VehiclePlate, x.TrailerPlate, x.GrossWeight, x.TareWeight, x.NetWeight, x.RejectedWeight, x.AcceptedWeight, x.WeightUnit, x.WeighedAt,
         x.WeighbridgeName, x.WeighingSlipNumber, x.WeighingSlipUrl, x.DispatchNoteNumber, x.DispatchNoteUrl, x.DeliveryReceiptNumber,
-        x.DeliveryReceiptUrl, x.AgreementReference, x.AgreementType, x.UnitPrice, x.QualityBonusPercent, x.CommissionPercent, x.WithholdingPercent,
+        x.DeliveryReceiptUrl, x.AgreementReference, x.AgreementType, x.UnitPrice, x.FactoryUnitPrice, x.QualityBonusPercent, x.CommissionPercent, x.WithholdingPercent,
         x.VatPercent, x.TransportCost, x.OtherDeductions, x.BaseAmount, x.BonusAmount, x.CommissionAmount, x.WithholdingAmount, x.VatAmount,
-        x.NetPayableAmount, x.PaidAmount, x.OutstandingAmount, x.PaymentDueDate, x.PaidAt, x.PaymentStatus, x.AgreementNotes, x.LoadNotes,
+        x.NetPayableAmount, x.FactoryGrossValue, x.PaidAmount, x.OutstandingAmount, x.PaymentDueDate, x.PaidAt, x.PaymentStatus, x.AgreementNotes, x.LoadNotes,
         x.InternalNotes, x.IsVisibleToProducer, x.UpdatedAt);
 
     private static ProducerLogisticsSummaryDto LogisticsSummary(IReadOnlyList<ProducerDeliveryDto> deliveries)

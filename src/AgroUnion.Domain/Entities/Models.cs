@@ -245,6 +245,7 @@ public sealed class ProducerDeliveryRecord : Entity
     [MaxLength(80)] public string? LotNumber { get; set; }
     [MaxLength(300)] public string OriginAddress { get; set; } = string.Empty;
     [MaxLength(300)] public string DestinationAddress { get; set; } = string.Empty;
+    [MaxLength(180)] public string FactoryName { get; set; } = string.Empty;
     public DateTime ScheduledPickupAt { get; set; }
     public DateTime? LoadedAt { get; set; }
     public DateTime? DeliveredAt { get; set; }
@@ -269,6 +270,7 @@ public sealed class ProducerDeliveryRecord : Entity
     [MaxLength(80)] public string AgreementReference { get; set; } = string.Empty;
     public PricingAgreementType AgreementType { get; set; } = PricingAgreementType.FixedPrice;
     [Column(TypeName = "decimal(18,4)")] public decimal UnitPrice { get; set; }
+    [Column(TypeName = "decimal(18,4)")] public decimal FactoryUnitPrice { get; set; }
     [Column(TypeName = "decimal(7,3)")] public decimal QualityBonusPercent { get; set; }
     [Column(TypeName = "decimal(7,3)")] public decimal CommissionPercent { get; set; }
     [Column(TypeName = "decimal(7,3)")] public decimal WithholdingPercent { get; set; }
@@ -294,6 +296,7 @@ public sealed class ProducerDeliveryRecord : Entity
     public string CreatedByUserId { get; set; } = string.Empty;
     public string UpdatedByUserId { get; set; } = string.Empty;
     [NotMapped] public decimal OutstandingAmount => Math.Max(0, NetPayableAmount - PaidAmount);
+    [NotMapped] public decimal FactoryGrossValue => AcceptedWeight * FactoryUnitPrice;
 }
 
 public sealed class AuditLog : Entity

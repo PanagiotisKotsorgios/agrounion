@@ -4,12 +4,20 @@
 @{
     string CategoryName(ProducerCategory value) => value switch
     {
-        ProducerCategory.Developing => "Υπό ανάπτυξη",
-        ProducerCategory.Standard => "Βασική",
-        ProducerCategory.Advanced => "Προηγμένη",
-        ProducerCategory.Premium => "Premium",
-        ProducerCategory.Strategic => "Στρατηγικός συνεργάτης",
+        ProducerCategory.Developing => "Κατηγορία Ε",
+        ProducerCategory.Standard => "Κατηγορία Δ",
+        ProducerCategory.Advanced => "Κατηγορία Γ",
+        ProducerCategory.Premium => "Κατηγορία Β",
+        ProducerCategory.Strategic => "Κατηγορία Α",
         _ => value.ToString()
+    };
+    ProducerCategory? NextCategory(ProducerCategory value) => value switch
+    {
+        ProducerCategory.Developing => ProducerCategory.Standard,
+        ProducerCategory.Standard => ProducerCategory.Advanced,
+        ProducerCategory.Advanced => ProducerCategory.Premium,
+        ProducerCategory.Premium => ProducerCategory.Strategic,
+        _ => null
     };
     string InvoiceStatusName(PartnerInvoiceStatus value) => value switch { PartnerInvoiceStatus.Draft => "Προσχέδιο", PartnerInvoiceStatus.Issued => "Εκδόθηκε", PartnerInvoiceStatus.PartiallyPaid => "Μερικώς εξοφλημένο", PartnerInvoiceStatus.Paid => "Εξοφλημένο", PartnerInvoiceStatus.Overdue => "Ληξιπρόθεσμο", PartnerInvoiceStatus.Cancelled => "Ακυρωμένο", _ => value.ToString() };
     string FinancialCategoryName(FinancialEntryCategory value) => value switch { FinancialEntryCategory.ProductSale => "Πώληση παραγωγής", FinancialEntryCategory.Supplies => "Εφόδια", FinancialEntryCategory.Commission => "Προμήθεια", FinancialEntryCategory.Bonus => "Bonus", FinancialEntryCategory.Transport => "Μεταφορικά", FinancialEntryCategory.Services => "Υπηρεσίες", FinancialEntryCategory.Adjustment => "Διόρθωση", _ => "Άλλο" };
@@ -21,6 +29,8 @@
     var profile = Model.Profile;
     var editId = Guid.TryParse(Context.Request.Query["deliveryId"], out var parsedDeliveryId) ? parsedDeliveryId : (Guid?)null;
     var editDelivery = editId is null ? null : Model.DeliveryRecords.FirstOrDefault(x => x.Id == editId);
+    var annualAcceptedKg = Model.DeliveryRecords.Where(x => x.ScheduledPickupAt.Year == DateTime.Today.Year && x.Status != DeliveryLogisticsStatus.Cancelled).Sum(x => x.AcceptedWeight);
+    var suggestedCategory = annualAcceptedKg >= 50000 ? ProducerCategory.Strategic : annualAcceptedKg >= 20000 ? ProducerCategory.Premium : annualAcceptedKg >= 10000 ? ProducerCategory.Advanced : annualAcceptedKg >= 3000 ? ProducerCategory.Standard : ProducerCategory.Developing;
 }
 
 <section class="producer-workspace" id="producer-workspace">
@@ -56,20 +66,33 @@
 
         <details class="workspace-editor" open>
             <summary><span><i class="fa-solid fa-ranking-star"></i></span><div><strong>Κατηγορία & όροι συνεργασίας</strong><small>Ρυθμίσεις που βλέπει ο παραγωγός στον λογαριασμό του</small></div><i class="fa-solid fa-chevron-down"></i></summary>
+            <div class="admin-category-summary">
+                <div><small>ΕΤΗΣΙΟΣ ΟΓΚΟΣ ΠΡΟΣ AGRO UNION · @DateTime.Today.Year</small><strong>@annualAcceptedKg.ToString("N0") kg</strong><span>Υπολογίζεται από τις αποδεκτές παραδόσεις του έτους.</span></div>
+                <div><small>ΚΑΤΗΓΟΡΙΑ ΒΑΣΕΙ ΟΡΙΩΝ</small><strong>@CategoryName(suggestedCategory)</strong><span>Ο διαχειριστής επιβεβαιώνει την τελική κατηγορία του λογαριασμού.</span></div>
+            </div>
             <form class="workspace-form" asp-action="SaveProducerProfile" method="post">
                 <input type="hidden" name="ProducerUserId" value="@selected.Id" />
-                <div class="field"><label>Τρέχουσα κατηγορία</label><select name="Category"><option value="Developing" selected="@(profile.Category==ProducerCategory.Developing)">Υπό ανάπτυξη</option><option value="Standard" selected="@(profile.Category==ProducerCategory.Standard)">Βασική</option><option value="Advanced" selected="@(profile.Category==ProducerCategory.Advanced)">Προηγμένη</option><option value="Premium" selected="@(profile.Category==ProducerCategory.Premium)">Premium</option><option value="Strategic" selected="@(profile.Category==ProducerCategory.Strategic)">Στρατηγικός συνεργάτης</option></select></div>
-                <div class="field"><label>Επόμενη κατηγορία</label><select name="NextCategory"><option value="">— Χωρίς επόμενο επίπεδο —</option><option value="Standard" selected="@(profile.NextCategory==ProducerCategory.Standard)">Βασική</option><option value="Advanced" selected="@(profile.NextCategory==ProducerCategory.Advanced)">Προηγμένη</option><option value="Premium" selected="@(profile.NextCategory==ProducerCategory.Premium)">Premium</option><option value="Strategic" selected="@(profile.NextCategory==ProducerCategory.Strategic)">Στρατηγικός συνεργάτης</option></select></div>
-                <div class="field"><label>Πρόοδος αναβάθμισης (%)</label><input name="CategoryProgressPercent" type="number" min="0" max="100" value="@profile.CategoryProgressPercent" /></div>
+                <input type="hidden" name="NextCategory" value="@NextCategory(profile.Category)" />
+                <input type="hidden" name="CategoryProgressPercent" value="@profile.CategoryProgressPercent" />
+                <div class="field"><label>Τρέχουσα κατηγορία παραγωγού</label><select name="Category"><option value="Strategic" selected="@(profile.Category==ProducerCategory.Strategic)">Α · 50,00 τόνοι και πάνω</option><option value="Premium" selected="@(profile.Category==ProducerCategory.Premium)">Β · 20,00 έως 49,99 τόνοι</option><option value="Advanced" selected="@(profile.Category==ProducerCategory.Advanced)">Γ · 10,00 έως 19,99 τόνοι</option><option value="Standard" selected="@(profile.Category==ProducerCategory.Standard)">Δ · 3,00 έως 9,99 τόνοι</option><option value="Developing" selected="@(profile.Category==ProducerCategory.Developing)">Ε · 0,00 έως 2,99 τόνοι</option></select><small>Η επιλογή γίνεται από τη διαχείριση με βάση τον ετήσιο όγκο.</small></div>
+                <div class="field"><label>Ετήσιος προσμετρημένος όγκος</label><input value="@annualAcceptedKg.ToString("N0") kg" readonly /><small>Δεν χρησιμοποιείται όριο δέντρων.</small></div>
                 <div class="field"><label>Έναρξη συνεργασίας</label><input name="RelationshipStartDate" type="date" value="@profile.RelationshipStartDate.ToString("yyyy-MM-dd")" /></div>
-                <div class="field"><label>Προμήθεια (%)</label><input name="CommissionRate" type="number" min="0" max="100" step=".001" value="@profile.CommissionRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
-                <div class="field"><label>Επιπλέον bonus (%)</label><input name="BonusRate" type="number" min="0" max="100" step=".001" value="@profile.BonusRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
+                <div class="field internal-field"><label>Εσωτερική προμήθεια (%) <small>μόνο admin</small></label><input name="CommissionRate" type="number" min="0" max="100" step=".001" value="@profile.CommissionRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
+                <div class="field internal-field"><label>Εσωτερικό bonus (%) <small>μόνο admin</small></label><input name="BonusRate" type="number" min="0" max="100" step=".001" value="@profile.BonusRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" /></div>
                 <div class="field"><label>Υπεύθυνος λογαριασμού</label><input name="AccountManager" value="@profile.AccountManager" /></div>
                 <div class="field"><label>Όροι πληρωμής</label><input name="PaymentTerms" value="@profile.PaymentTerms" /></div>
                 <div class="field full"><label>Τι απαιτείται για αναβάθμιση</label><textarea name="UpgradeRequirements" rows="3">@profile.UpgradeRequirements</textarea></div>
                 <div class="field full"><label>Εσωτερικές σημειώσεις admin <small>δεν εμφανίζονται στον παραγωγό</small></label><textarea name="InternalNotes" rows="2">@profile.InternalNotes</textarea></div>
                 <button class="workspace-save" type="submit"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση φακέλου</button>
             </form>
+            <div class="admin-category-limits">
+                <header><div><small>ΕΝΕΡΓΑ ΟΡΙΑ ΚΑΤΗΓΟΡΙΩΝ</small><strong>Ετήσιοι τόνοι προς την εταιρεία</strong></div><span>Χωρίς όριο δέντρων</span></header>
+                <div class="admin-category-limit"><b>Α</b><span><strong>50,00 τόνοι και πάνω</strong><small>x ≥ 50,00 τόνοι</small></span></div>
+                <div class="admin-category-limit"><b>Β</b><span><strong>20,00 έως 49,99 τόνοι</strong><small>20,00 ≤ x &lt; 50,00 τόνοι</small></span></div>
+                <div class="admin-category-limit"><b>Γ</b><span><strong>10,00 έως 19,99 τόνοι</strong><small>10,00 ≤ x &lt; 20,00 τόνοι</small></span></div>
+                <div class="admin-category-limit"><b>Δ</b><span><strong>3,00 έως 9,99 τόνοι</strong><small>3,00 ≤ x &lt; 10,00 τόνοι</small></span></div>
+                <div class="admin-category-limit"><b>Ε</b><span><strong>0,00 έως 2,99 τόνοι</strong><small>0,00 ≤ x &lt; 3,00 τόνοι</small></span></div>
+            </div>
         </details>
 
         <details class="workspace-editor">

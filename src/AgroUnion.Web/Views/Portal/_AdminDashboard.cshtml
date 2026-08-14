@@ -270,22 +270,27 @@
     <h2>Τιμοκατάλογος</h2>
     <div class="rule"></div>
 </div>
+<div class="admin-price-guidance">
+    <i class="fa-solid fa-circle-info"></i>
+    <div><strong>Τιμές ανά προϊόν και εμπορική διαλογή</strong><span>Καταχωρίστε την ακριβή ποιότητα, μέγεθος ή κατηγορία. Ο παραγωγός βλέπει μόνο την τιμή που λαμβάνει.</span></div>
+</div>
 <div class="table-wrap">
     <table class="data-table pro">
-        <thead><tr><th>Προϊόν</th><th>Κατηγορία</th><th class="right">Τιμή</th><th></th></tr></thead>
+        <thead><tr><th>Προϊόν · ποιότητα / μέγεθος</th><th>Τύπος</th><th>Περίοδος ισχύος</th><th class="right">Τιμή παραγωγού</th><th></th></tr></thead>
         <tbody>
             @foreach (var pr in Model.PriceList)
             {
                 <tr>
                     <td><strong>@pr.ProductName</strong></td>
-                    <td><small style="color:var(--ink-500)">@pr.Category</small></td>
+                    <td><span class="status-pill">@(pr.Category == PriceCategory.Product ? "Προϊόν" : "Εφόδιο")</span></td>
+                    <td>@pr.EffectiveFrom.ToString("dd/MM/yyyy")@(pr.EffectiveTo.HasValue ? $" – {pr.EffectiveTo.Value:dd/MM/yyyy}" : " και μετά")</td>
                     <td class="right num">@pr.Price.ToString("N2") € / @pr.Unit</td>
                     <td><form asp-action="DeletePrice" asp-route-id="@pr.Id" method="post" style="margin:0"><button class="icon-delete" data-confirm="Διαγραφή;"><i class="fa-solid fa-trash"></i></button></form></td>
                 </tr>
             }
             @if (Model.PriceList.Count == 0)
             {
-                <tr><td colspan="4"><div class="portal-empty compact"><i class="fa-solid fa-tags"></i><span>Καμία δημοσιευμένη τιμή.</span></div></td></tr>
+                <tr><td colspan="5"><div class="portal-empty compact"><i class="fa-solid fa-tags"></i><span>Καμία δημοσιευμένη τιμή.</span></div></td></tr>
             }
         </tbody>
     </table>
@@ -294,10 +299,23 @@
     <summary><i class="fa-solid fa-plus"></i> Νέα τιμή</summary>
     <form class="workspace-form" asp-action="CreatePrice" method="post">
         <div class="field"><label>Κατηγορία</label><select name="Category"><option value="Product">Προϊόν</option><option value="Supply">Εφόδιο</option></select></div>
-        <div class="field"><label>Προϊόν</label><input name="ProductName" required /></div>
-        <div class="field"><label>Τιμή</label><input name="Price" type="number" step=".0001" required /></div>
+        <div class="field"><label>Προϊόν · ποιότητα / μέγεθος</label><input name="ProductName" list="producer-price-products" placeholder="π.χ. Ελιά Καλαμών · 181–200 τεμ./kg" required /></div>
+        <datalist id="producer-price-products">
+            <option value="Ελαιόλαδο · Έξτρα παρθένο ≤0,8%"></option>
+            <option value="Ελαιόλαδο · Παρθένο 0,8–2,0%"></option>
+            <option value="Ελιά Καλαμών · 121–140 τεμ./kg"></option>
+            <option value="Ελιά Καλαμών · 141–160 τεμ./kg"></option>
+            <option value="Ελιά Καλαμών · 161–180 τεμ./kg"></option>
+            <option value="Ελιά Καλαμών · 181–200 τεμ./kg"></option>
+            <option value="Ελιά Καλαμών · 201–230 τεμ./kg"></option>
+            <option value="Πορτοκάλια · Κατηγορία Α"></option>
+            <option value="Μανταρίνια · Κατηγορία Α"></option>
+            <option value="Λεμόνια · Κατηγορία Α"></option>
+        </datalist>
+        <div class="field"><label>Τιμή που λαμβάνει ο παραγωγός</label><input name="Price" type="number" step=".0001" required /></div>
         <div class="field"><label>Μονάδα</label><input name="Unit" value="kg" /></div>
         <div class="field"><label>Από</label><input name="EffectiveFrom" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+        <div class="field"><label>Έως (προαιρετικά)</label><input name="EffectiveTo" type="date" /></div>
         <div class="field"><label>Ορατό σε</label><input name="VisibleToRoles" value="Producer,Trader,Company" /></div>
         <button class="workspace-save"><i class="fa-solid fa-upload"></i> Δημοσίευση</button>
     </form>

@@ -5,20 +5,22 @@
 @{
     string CategoryName(ProducerCategory value) => value switch
     {
-        ProducerCategory.Developing => "Υπό ανάπτυξη",
-        ProducerCategory.Standard => "Βασική",
-        ProducerCategory.Advanced => "Προηγμένη",
-        ProducerCategory.Premium => "Premium",
-        ProducerCategory.Strategic => "Στρατηγικός συνεργάτης",
+        ProducerCategory.Developing => "Κατηγορία Ε",
+        ProducerCategory.Standard => "Κατηγορία Δ",
+        ProducerCategory.Advanced => "Κατηγορία Γ",
+        ProducerCategory.Premium => "Κατηγορία Β",
+        ProducerCategory.Strategic => "Κατηγορία Α",
         _ => value.ToString()
     };
     string InvoiceStatusName(PartnerInvoiceStatus value) => value switch { PartnerInvoiceStatus.Draft => "Προσχέδιο", PartnerInvoiceStatus.Issued => "Εκδόθηκε", PartnerInvoiceStatus.PartiallyPaid => "Μερικώς εξοφλημένο", PartnerInvoiceStatus.Paid => "Εξοφλημένο", PartnerInvoiceStatus.Overdue => "Ληξιπρόθεσμο", PartnerInvoiceStatus.Cancelled => "Ακυρωμένο", _ => value.ToString() };
     string DocumentTypeName(PartnerDocumentType value) => value switch { PartnerDocumentType.ContractAnnex => "Παράρτημα σύμβασης", PartnerDocumentType.Certification => "Πιστοποίηση", PartnerDocumentType.TaxDocument => "Φορολογικό έγγραφο", PartnerDocumentType.DeliveryNote => "Δελτίο αποστολής", PartnerDocumentType.Statement => "Κατάσταση συνεργασίας", _ => "Λοιπό έγγραφο" };
-    string FinancialCategoryName(FinancialEntryCategory value) => value switch { FinancialEntryCategory.ProductSale => "Πώληση παραγωγής", FinancialEntryCategory.Supplies => "Εφόδια", FinancialEntryCategory.Commission => "Προμήθεια", FinancialEntryCategory.Bonus => "Bonus", FinancialEntryCategory.Transport => "Μεταφορικά", FinancialEntryCategory.Services => "Υπηρεσίες", FinancialEntryCategory.Adjustment => "Διόρθωση", _ => "Άλλο" };
+    string FinancialCategoryName(FinancialEntryCategory value) => value switch { FinancialEntryCategory.ProductSale => "Αξία παραγωγής", FinancialEntryCategory.Supplies => "Εφόδια", FinancialEntryCategory.Bonus => "Πρόσθετη αξία", FinancialEntryCategory.Transport => "Μεταφορικά", FinancialEntryCategory.Services => "Υπηρεσίες", FinancialEntryCategory.Adjustment => "Τακτοποίηση", _ => "Άλλο" };
+    string FinancialDescription(AgroUnion.Application.Contracts.PartnerFinancialEntryDto entry) => entry.Category == FinancialEntryCategory.Bonus
+        ? entry.Description.Replace("Bonus", "Πρόσθετη αξία", StringComparison.OrdinalIgnoreCase)
+        : entry.Description;
     string DealStatusName(DealStatus value) => value switch { DealStatus.Proposed => "Προς επιβεβαίωση", DealStatus.BuySideConfirmed => "Επιβεβαιώθηκε από εσάς", DealStatus.SellSideConfirmed => "Επιβεβαιώθηκε από αγοραστή", DealStatus.Completed => "Ολοκληρώθηκε", DealStatus.Cancelled => "Ακυρώθηκε", _ => value.ToString() };
     string ProductionStatusName(ProductionStatus value) => value switch { ProductionStatus.Available => "Διαθέσιμη", ProductionStatus.Reserved => "Δεσμευμένη", ProductionStatus.Sold => "Παραδόθηκε", _ => value.ToString() };
     string ContractStatusName(ContractStatus value) => value switch { ContractStatus.Draft => "Προσχέδιο", ContractStatus.Active => "Ενεργή", ContractStatus.Terminated => "Ολοκληρωμένη", _ => value.ToString() };
-    string ContractSubjectName(ContractSubject value) => value switch { ContractSubject.Sale => "Πώληση παραγωγής", ContractSubject.Supply => "Προμήθεια προϊόντων", _ => value.ToString() };
     string LogisticsStatusName(DeliveryLogisticsStatus value) => value switch { DeliveryLogisticsStatus.Scheduled => "Προγραμματισμένο", DeliveryLogisticsStatus.InTransit => "Σε μεταφορά", DeliveryLogisticsStatus.Weighed => "Ζυγίστηκε", DeliveryLogisticsStatus.Delivered => "Παραδόθηκε", DeliveryLogisticsStatus.Settled => "Εκκαθαρίστηκε", DeliveryLogisticsStatus.Cancelled => "Ακυρώθηκε", _ => value.ToString() };
     string PaymentStatusName(DeliveryPaymentStatus value) => value switch { DeliveryPaymentStatus.Pending => "Σε αναμονή", DeliveryPaymentStatus.PartiallyPaid => "Μερική πληρωμή", DeliveryPaymentStatus.Paid => "Εξοφλημένο", DeliveryPaymentStatus.OnHold => "Σε αναστολή", _ => value.ToString() };
 
@@ -46,6 +48,88 @@
         .Where(x => x.ScheduledPickupAt.Year == month.Year && x.ScheduledPickupAt.Month == month.Month)
         .Sum(x => x.NetPayableAmount)).ToArray();
     var deliveriesForTable = Model.DeliveryRecords.OrderByDescending(x => x.ScheduledPickupAt).ToList();
+
+    decimal CategoryTargetKg(ProducerCategory category) => category switch
+    {
+        ProducerCategory.Developing => 3000m,
+        ProducerCategory.Standard => 10000m,
+        ProducerCategory.Advanced => 20000m,
+        ProducerCategory.Premium => 50000m,
+        _ => 0m
+    };
+    decimal CategoryLowerBoundKg(ProducerCategory category) => category switch
+    {
+        ProducerCategory.Standard => 3000m,
+        ProducerCategory.Advanced => 10000m,
+        ProducerCategory.Premium => 20000m,
+        ProducerCategory.Strategic => 50000m,
+        _ => 0m
+    };
+    bool PriceMatchesProduction(AgroUnion.Application.Contracts.PriceItemDto price)
+    {
+        if (price.Category != PriceCategory.Product) return false;
+        if (Model.Declarations.Count == 0) return true;
+        var priceName = price.ProductName.ToLowerInvariant();
+        return Model.Declarations.Any(declaration =>
+        {
+            var product = declaration.Product.ToLowerInvariant();
+            return priceName.Contains(product) || product.Contains(priceName)
+                || ((product.Contains("ελαιόλαδο") || product.Contains("λάδι")) && (priceName.Contains("ελαιόλαδο") || priceName.Contains("λάδι")))
+                || ((product.Contains("ελιά") || product.Contains("καλαμών")) && (priceName.Contains("ελιά") || priceName.Contains("καλαμών")))
+                || (product.Contains("εσπεριδο") && (priceName.Contains("πορτοκ") || priceName.Contains("μανταρ") || priceName.Contains("λεμόν") || priceName.Contains("εσπεριδο")));
+        });
+    }
+
+    var categoryTargetKg = CategoryTargetKg(p.Category);
+    var annualAcceptedKg = Model.DeliveryRecords
+        .Where(x => x.ScheduledPickupAt.Year == DateTime.Today.Year && x.Status != DeliveryLogisticsStatus.Cancelled)
+        .Sum(x => x.AcceptedWeight);
+    var categoryLowerBoundKg = CategoryLowerBoundKg(p.Category);
+    var categoryProgress = categoryTargetKg > categoryLowerBoundKg
+        ? Math.Clamp((int)Math.Round((annualAcceptedKg - categoryLowerBoundKg) / (categoryTargetKg - categoryLowerBoundKg) * 100m), 0, 100)
+        : 100;
+    var categoryCreditedKg = annualAcceptedKg;
+    var categoryRemainingKg = Math.Max(0, categoryTargetKg - annualAcceptedKg);
+    var qualityRequirements = p.UpgradeRequirements;
+    if (qualityRequirements.Contains("kg", StringComparison.OrdinalIgnoreCase) && qualityRequirements.Contains(','))
+    {
+        qualityRequirements = qualityRequirements[(qualityRequirements.IndexOf(',') + 1)..].Trim();
+        if (qualityRequirements.Length > 0) qualityRequirements = char.ToUpper(qualityRequirements[0], new CultureInfo("el-GR")) + qualityRequirements[1..];
+    }
+
+    var activeProducerOffers = Model.Offers
+        .Where(x => x.Status == OfferStatus.Active && x.ValidUntil >= DateTime.Now)
+        .OrderByDescending(x => x.BuyPricePerUnit)
+        .ToList();
+    var relevantAdminPrices = Model.PriceList
+        .Where(x => x.EffectiveFrom <= todayDo && (!x.EffectiveTo.HasValue || x.EffectiveTo.Value >= todayDo) && PriceMatchesProduction(x))
+        .OrderBy(x => x.ProductName)
+        .ToList();
+    var displayedPriceCount = activeProducerOffers.Count + relevantAdminPrices.Count;
+    var highestPublishedPrice = activeProducerOffers.Select(x => x.BuyPricePerUnit)
+        .Concat(relevantAdminPrices.Select(x => x.Price))
+        .DefaultIfEmpty(f.AverageDeliveryPrice)
+        .Max();
+    var visibleFinancialEntries = Model.FinancialEntries
+        .Where(x => x.Category != FinancialEntryCategory.Commission)
+        .OrderByDescending(x => x.EntryDate)
+        .ToList();
+    var priceHistoryDeals = Model.Deals
+        .Where(x => x.Status != DealStatus.Cancelled)
+        .OrderBy(x => x.CreatedAt)
+        .TakeLast(10)
+        .ToList();
+    var productionMix = Model.Declarations
+        .GroupBy(x => x.Product)
+        .Select(x => new { Product = x.Key, Quantity = x.Sum(item => item.Quantity) })
+        .OrderByDescending(x => x.Quantity)
+        .ToList();
+    var financeIncome = chartMonths.Select(month => visibleFinancialEntries
+        .Where(x => x.EntryDate.Year == month.Year && x.EntryDate.Month == month.Month && x.Type == FinancialEntryType.Income)
+        .Sum(x => x.Amount)).ToArray();
+    var financeExpenses = chartMonths.Select(month => visibleFinancialEntries
+        .Where(x => x.EntryDate.Year == month.Year && x.EntryDate.Month == month.Month && x.Type == FinancialEntryType.Expense)
+        .Sum(x => x.Amount)).ToArray();
 }
 
 @* OVERVIEW — minimal, focused on 4 KPIs, recent deliveries, activity *@
@@ -300,14 +384,14 @@
     </div>
 }
 
-@* COLLABORATION — hero + category progress + terms *@
+@* COLLABORATION — category, kilogram target and producer-facing purchase prices *@
 @if (page == "collaboration")
 {
-    <div class="producer-relationship-hero" style="margin-top:0">
+    <div class="producer-relationship-hero collaboration-command" style="margin-top:0">
         <div class="relationship-copy">
-            <span class="relationship-kicker"><i class="fa-solid fa-shield-heart"></i> Ο προσωπικός σας φάκελος</span>
+            <span class="relationship-kicker"><i class="fa-solid fa-shield-heart"></i> Ο προσωπικός σας φάκελος συνεργασίας</span>
             <h2>@p.ProducerName</h2>
-            <p>Όλη η συνεργασία σας με την AGRO UNION.</p>
+            <p>Κατηγορία συνεργασίας, στόχος παράδοσης και οι τιμές αγοράς που ισχύουν για τη δική σας παραγωγή.</p>
             <div class="relationship-meta">
                 <span><i class="fa-solid fa-location-dot"></i> @p.Region</span>
                 <span><i class="fa-solid fa-calendar-check"></i> Από @p.RelationshipStartDate.ToString("dd/MM/yyyy")</span>
@@ -316,116 +400,234 @@
         </div>
         <div class="relationship-tier">
             <div class="tier-symbol"><i class="fa-solid fa-medal"></i></div>
-            <small>Κατηγορία</small>
+            <small>Τρέχουσα κατηγορία</small>
             <strong>@CategoryName(p.Category)</strong>
             @if (p.NextCategory is { } next)
             {
-                <div class="tier-progress-head"><span>Προς @CategoryName(next)</span><b>@p.CategoryProgressPercent%</b></div>
-                <div class="tier-progress"><i style="width:@p.CategoryProgressPercent%"></i></div>
+                <div class="tier-progress-head"><span>Επόμενη: @CategoryName(next)</span><b>@categoryRemainingKg.ToString("N0") kg ακόμη</b></div>
+                <div class="tier-progress" role="progressbar" aria-label="Πρόοδος προς @CategoryName(next)" aria-valuenow="@categoryProgress" aria-valuemin="0" aria-valuemax="100"><i style="width:@categoryProgress%"></i></div>
             }
         </div>
     </div>
 
-    <div class="kpi-pro-grid" style="grid-template-columns:repeat(2,1fr);margin-top:32px">
+    <div class="producer-stat-strip collaboration-stats">
         <article class="kpi-pro">
-            <div class="kpi-pro-head"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-percent"></i></span><span>Προμήθεια</span></div></div>
-            <div class="kpi-pro-value">@p.CommissionRate.ToString("N2")<span class="unit">%</span></div>
-            <div class="kpi-pro-sub">Ορισμένη από τη διαχείριση</div>
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-bullseye"></i></span><span>Στόχος κατηγορίας</span></div>
+            <div class="kpi-pro-value">@categoryTargetKg.ToString("N0") <span class="unit">kg</span></div>
+            <div class="kpi-pro-sub">Συνολικός όγκος για @(p.NextCategory is { } targetCategory ? CategoryName(targetCategory) : "την επόμενη αξιολόγηση")</div>
         </article>
         <article class="kpi-pro">
-            <div class="kpi-pro-head"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-plus"></i></span><span>Επιπλέον bonus</span></div></div>
-            <div class="kpi-pro-value">@p.BonusRate.ToString("N2")<span class="unit">%</span></div>
-            <div class="kpi-pro-sub">Βάσει επίτευξης στόχων</div>
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-scale-balanced"></i></span><span>Υπολογισμένος όγκος</span></div>
+            <div class="kpi-pro-value">@categoryCreditedKg.ToString("N0") <span class="unit">kg</span></div>
+            <div class="kpi-pro-sub">Παραδόσεις προς AGRO UNION το @DateTime.Today.Year</div>
+        </article>
+        <article class="kpi-pro emphasis">
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-truck-ramp-box"></i></span><span>Υπόλοιπο στόχου</span></div>
+            <div class="kpi-pro-value">@categoryRemainingKg.ToString("N0") <span class="unit">kg</span></div>
+            <div class="kpi-pro-sub">Απαιτούνται για την επόμενη κατηγορία</div>
+        </article>
+        <article class="kpi-pro">
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-tag"></i></span><span>Υψηλότερη ενεργή τιμή</span></div>
+            <div class="kpi-pro-value">@highestPublishedPrice.ToString("N3") <span class="unit">€/kg</span></div>
+            <div class="kpi-pro-sub">Από τις τιμές που αφορούν τη δική σας παραγωγή</div>
         </article>
     </div>
 
-    <div class="section-title">
-        <h2>Απαιτήσεις για επόμενη κατηγορία</h2>
-        <div class="rule"></div>
-    </div>
-    <div class="card">
-        <div class="card-body">
-            <p style="font-size:17px;line-height:1.7;color:var(--ink-700);margin:0">@p.UpgradeRequirements</p>
+    <section class="category-program">
+        <div class="category-program-copy">
+            <span class="eyebrow">ΠΡΟΓΡΑΜΜΑ ΚΑΤΗΓΟΡΙΑΣ</span>
+            <h2>Πώς περνάτε στην επόμενη κατηγορία</h2>
+            @if (p.NextCategory is { } nextCategory)
+            {
+                <p>Με την παράδοση ακόμη <strong>@categoryRemainingKg.ToString("N0") kg</strong> — από συνολικό στόχο <strong>@categoryTargetKg.ToString("N0") kg</strong> — ο λογαριασμός σας αξιολογείται για την κατηγορία <strong>@CategoryName(nextCategory)</strong>.</p>
+                <p>Με την αναβάθμιση εφαρμόζονται οι τιμές αγοράς της νέας κατηγορίας ανά προϊόν, ποιότητα και διαλογή, όπως δημοσιεύονται από τη διαχείριση.</p>
+            }
+            else
+            {
+                <p>Βρίσκεστε στην ανώτερη διαθέσιμη κατηγορία συνεργασίας. Οι τιμές σας συνεχίζουν να ενημερώνονται ανά προϊόν, ποιότητα και διαλογή.</p>
+            }
         </div>
+        <div class="category-requirements">
+            <span><i class="fa-solid fa-clipboard-check"></i> Ποιοτικά κριτήρια</span>
+            <p>@qualityRequirements</p>
+            <small>Η τελική αξιολόγηση επιβεβαιώνεται από την υπεύθυνη ομάδα συνεργασιών.</small>
+        </div>
+    </section>
+
+    <div class="section-title producer-section-heading">
+        <div>
+            <small>ΤΙΜΕΣ ΠΑΡΑΓΩΓΟΥ</small>
+            <h2>Τι αγοράζουμε και πόσο λαμβάνετε</h2>
+        </div>
+        <div class="rule"></div>
+        <span class="pill-metric"><strong>@displayedPriceCount</strong> ενεργές τιμές</span>
+    </div>
+    <section class="producer-price-panel" data-producer-prices>
+        <div class="producer-filter-bar">
+            <label class="delivery-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="search" placeholder="Αναζήτηση προϊόντος, ποιότητας ή μεγέθους" data-price-search />
+            </label>
+            <label class="producer-filter-select">
+                <span>Πηγή τιμής</span>
+                <select data-price-source>
+                    <option value="all">Όλες</option>
+                    <option value="personal">Προσωπικές προσφορές</option>
+                    <option value="catalog">Τιμοκατάλογος</option>
+                </select>
+            </label>
+            <span class="producer-filter-count" data-price-count>@displayedPriceCount εγγραφές</span>
+        </div>
+        <div class="table-wrap producer-price-table-wrap">
+            <table class="data-table pro producer-price-table">
+                <thead>
+                    <tr><th>Προϊόν · ποιότητα / μέγεθος</th><th>Κατηγορία τιμής</th><th>Ποσότητα</th><th>Ισχύς</th><th class="right">Τιμή που λαμβάνετε</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var offer in activeProducerOffers)
+                    {
+                        <tr data-price-row data-source="personal" data-search="@offer.Product.ToLowerInvariant() προσωπική προσφορά">
+                            <td><strong>@offer.Product</strong><small>Εξατομικευμένη προσφορά λογαριασμού</small></td>
+                            <td><span class="price-source-badge personal"><i class="fa-solid fa-user-check"></i> Προσωπική</span></td>
+                            <td class="num">@offer.TargetQuantity.ToString("N0") kg</td>
+                            <td>έως @offer.ValidUntil.ToString("dd/MM/yyyy")</td>
+                            <td class="right"><strong class="producer-buy-price">@offer.BuyPricePerUnit.ToString("N3") €/kg</strong></td>
+                        </tr>
+                    }
+                    @foreach (var price in relevantAdminPrices)
+                    {
+                        <tr data-price-row data-source="catalog" data-search="@price.ProductName.ToLowerInvariant() τιμοκατάλογος">
+                            <td><strong>@price.ProductName</strong><small>Τιμή ανά δηλωμένη ποιότητα ή διαλογή</small></td>
+                            <td><span class="price-source-badge catalog"><i class="fa-solid fa-list-check"></i> Τιμοκατάλογος</span></td>
+                            <td>—</td>
+                            <td>@price.EffectiveFrom.ToString("dd/MM/yyyy")@(price.EffectiveTo.HasValue ? $" – {price.EffectiveTo.Value:dd/MM/yyyy}" : " και μετά")</td>
+                            <td class="right"><strong class="producer-buy-price">@price.Price.ToString("N3") €/@price.Unit</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="producer-table-empty" data-price-empty hidden><i class="fa-solid fa-filter-circle-xmark"></i> Δεν βρέθηκαν τιμές με αυτά τα φίλτρα.</div>
+        @if (displayedPriceCount == 0)
+        {
+            <div class="portal-empty compact"><i class="fa-solid fa-tags"></i><span>Δεν υπάρχει ακόμη ενεργή τιμή για τα προϊόντα σας. Η νέα τιμή θα εμφανιστεί εδώ μόλις δημοσιευτεί.</span></div>
+        }
+        <footer><i class="fa-solid fa-circle-info"></i> Εμφανίζονται αποκλειστικά οι τιμές αγοράς που ισχύουν για τον δικό σας λογαριασμό και τα δηλωμένα προϊόντα σας.</footer>
+    </section>
+
+    <div class="producer-chart-grid collaboration-chart-grid">
+        <article class="producer-chart-card">
+            <header><div><small>ΤΙΜΕΣ ΑΓΟΡΑΣ</small><h2>Εξέλιξη τιμής ανά συμφωνία</h2></div><span><i class="fa-solid fa-chart-line"></i> €/kg</span></header>
+            <div class="producer-chart-canvas producer-chart-canvas-wide"><canvas data-producer-chart="price-history" data-labels='@JsonSerializer.Serialize(priceHistoryDeals.Select(x => x.CreatedAt.ToString("dd/MM")).ToArray())' data-values='@JsonSerializer.Serialize(priceHistoryDeals.Select(x => x.BuyPricePerUnit).ToArray())'></canvas></div>
+        </article>
+        <article class="producer-chart-card">
+            <header><div><small>ΠΑΡΑΓΩΓΙΚΟ ΜΕΙΓΜΑ</small><h2>Δηλωμένος όγκος ανά προϊόν</h2></div><span><i class="fa-solid fa-chart-pie"></i> kg</span></header>
+            <div class="producer-chart-canvas producer-chart-canvas-wide"><canvas data-producer-chart="production-mix" data-labels='@JsonSerializer.Serialize(productionMix.Select(x => x.Product).ToArray())' data-values='@JsonSerializer.Serialize(productionMix.Select(x => x.Quantity).ToArray())'></canvas></div>
+        </article>
     </div>
 
-    <div class="section-title">
+    <div class="section-title producer-section-heading">
         <h2>Όροι λογαριασμού</h2>
         <div class="rule"></div>
     </div>
-    <div class="kpi-pro-grid" style="grid-template-columns:repeat(3,1fr)">
-        <article class="kpi-pro">
+    <div class="producer-account-terms">
+        <article>
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-clock"></i></span><span>Όροι πληρωμής</span></div>
-            <div style="font-size:20px;font-weight:650;color:var(--ink-900);margin-top:12px">@p.PaymentTerms</div>
+            <strong>@p.PaymentTerms</strong>
         </article>
-        <article class="kpi-pro">
+        <article>
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-headset"></i></span><span>Υπεύθυνος</span></div>
-            <div style="font-size:20px;font-weight:650;color:var(--ink-900);margin-top:12px">@p.AccountManager</div>
+            <strong>@p.AccountManager</strong>
         </article>
-        <article class="kpi-pro">
+        <article>
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-rotate"></i></span><span>Τελευταία ενημέρωση</span></div>
-            <div style="font-size:20px;font-weight:650;color:var(--ink-900);margin-top:12px">@(p.UpdatedAt?.ToString("dd/MM/yyyy") ?? "—")</div>
+            <strong>@(p.UpdatedAt?.ToString("dd/MM/yyyy") ?? "—")</strong>
         </article>
     </div>
 }
 
-@* FINANCES — 4 KPIs + ledger *@
+@* FINANCES — producer-facing value, payments, charts and searchable ledger *@
 @if (page == "finances")
 {
-    <div class="kpi-pro-grid">
-        <article class="kpi-pro hero-card">
-            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-scale-balanced"></i></span><span>Καθαρή οικονομική ροή</span></div>
-            <div class="kpi-pro-value @(f.NetCashFlow < 0 ? "negative" : "")">@f.NetCashFlow.ToString("N0") <span class="unit">€</span></div>
-            <div class="kpi-pro-sub">Έσοδα − Έξοδα</div>
+    <div class="producer-stat-strip finance-stats">
+        <article class="kpi-pro emphasis">
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-sack-dollar"></i></span><span>Αξία παραδόσεων</span></div>
+            <div class="kpi-pro-value">@f.DeliveryRevenue.ToString("N0") <span class="unit">€</span></div>
+            <div class="kpi-pro-sub">Συνολική αξία της παραγωγής που παραδόθηκε</div>
         </article>
         <article class="kpi-pro">
-            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-arrow-trend-up"></i></span><span>Λοιπά έσοδα</span></div>
-            <div class="kpi-pro-value" style="color:var(--success)">+@f.OtherIncome.ToString("N0") <span class="unit">€</span></div>
-        </article>
-        <article class="kpi-pro">
-            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-arrow-trend-down"></i></span><span>Έξοδα</span></div>
-            <div class="kpi-pro-value" style="color:var(--danger)">−@f.Expenses.ToString("N0") <span class="unit">€</span></div>
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-circle-check"></i></span><span>Πληρωμένο ποσό</span></div>
+            <div class="kpi-pro-value">@logistics.Paid.ToString("N0") <span class="unit">€</span></div>
+            <div class="kpi-pro-sub">Ποσό που έχει ήδη εξοφληθεί</div>
         </article>
         <article class="kpi-pro">
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-hourglass-half"></i></span><span>Ανοιχτό υπόλοιπο</span></div>
-            <div class="kpi-pro-value @(logistics.Outstanding > 0 ? "" : "")" style="color:@(logistics.Outstanding > 0 ? "var(--warning)" : "var(--ink-900)")">@logistics.Outstanding.ToString("N0") <span class="unit">€</span></div>
+            <div class="kpi-pro-value">@logistics.Outstanding.ToString("N0") <span class="unit">€</span></div>
+            <div class="kpi-pro-sub">Προς εξόφληση σύμφωνα με τους όρους σας</div>
+        </article>
+        <article class="kpi-pro">
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-tag"></i></span><span>Μέση τιμή αγοράς</span></div>
+            <div class="kpi-pro-value">@f.AverageDeliveryPrice.ToString("N3") <span class="unit">€/kg</span></div>
+            <div class="kpi-pro-sub">Με βάση τις ολοκληρωμένες παραδόσεις</div>
         </article>
     </div>
 
-    <div class="section-title">
-        <h2>Αναλυτικές κινήσεις</h2>
+    <div class="producer-chart-grid finance-chart-grid">
+        <article class="producer-chart-card">
+            <header><div><small>ΟΙΚΟΝΟΜΙΚΗ ΡΟΗ</small><h2>Αξίες ανά μήνα</h2></div><span><i class="fa-solid fa-chart-column"></i> τελευταίο εξάμηνο</span></header>
+            <div class="producer-chart-canvas producer-chart-canvas-wide"><canvas data-producer-chart="finance-flow" data-labels='@JsonSerializer.Serialize(chartLabels)' data-income='@JsonSerializer.Serialize(financeIncome)' data-expenses='@JsonSerializer.Serialize(financeExpenses)'></canvas></div>
+            <footer><span><i class="chart-key income"></i> Πιστώσεις παραγωγού</span><span><i class="chart-key expense"></i> Λοιπές χρεώσεις</span></footer>
+        </article>
+        <article class="producer-chart-card producer-payment-chart">
+            <header><div><small>ΕΞΟΦΛΗΣΗ</small><h2>Κατάσταση πληρωμών</h2></div><span><i class="fa-solid fa-wallet"></i> τρέχουσα εικόνα</span></header>
+            <div class="producer-doughnut-wrap">
+                <div class="producer-chart-canvas producer-chart-canvas-round">
+                    <canvas data-producer-chart="finance-status" data-paid="@logistics.Paid.ToString(CultureInfo.InvariantCulture)" data-outstanding="@logistics.Outstanding.ToString(CultureInfo.InvariantCulture)"></canvas>
+                    <div class="producer-chart-center"><strong>@paidPct%</strong><span>εξοφλημένο</span></div>
+                </div>
+                <dl><div><dt>Πληρωμένα</dt><dd>@logistics.Paid.ToString("N0") €</dd></div><div><dt>Υπόλοιπο</dt><dd>@logistics.Outstanding.ToString("N0") €</dd></div></dl>
+            </div>
+        </article>
+    </div>
+
+    <div class="section-title producer-section-heading">
+        <div><small>ΑΝΑΛΥΤΙΚΗ ΚΑΡΤΕΛΑ</small><h2>Κινήσεις λογαριασμού</h2></div>
         <div class="rule"></div>
         <a class="more" asp-action="TransactionsCsv"><i class="fa-solid fa-file-csv"></i> Εξαγωγή CSV</a>
     </div>
-    <div class="table-wrap">
-        <table class="data-table pro">
-            <thead>
-                <tr>
-                    <th>Ημερομηνία</th>
-                    <th>Τύπος</th>
-                    <th>Κατηγορία</th>
-                    <th>Περιγραφή</th>
-                    <th class="right">Ποσό</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var entry in Model.FinancialEntries.OrderByDescending(x => x.EntryDate))
-                {
-                    <tr>
-                        <td>@entry.EntryDate.ToString("dd/MM/yyyy")</td>
-                        <td><span class="finance-direction @(entry.Type == FinancialEntryType.Expense ? "expense" : "income")"><i class="fa-solid @(entry.Type == FinancialEntryType.Expense ? "fa-arrow-down" : "fa-arrow-up")"></i> @(entry.Type == FinancialEntryType.Expense ? "Έξοδο" : "Έσοδο")</span></td>
-                        <td>@FinancialCategoryName(entry.Category)</td>
-                        <td><strong>@entry.Description</strong></td>
-                        <td class="right num @(entry.Type == FinancialEntryType.Expense ? "neg" : "pos")">@(entry.Type == FinancialEntryType.Expense ? "−" : "+")@entry.Amount.ToString("N2") €</td>
-                    </tr>
-                }
-                @if (Model.FinancialEntries.Count == 0)
-                {
-                    <tr><td colspan="5"><div class="portal-empty compact"><i class="fa-solid fa-receipt"></i><span>Δεν υπάρχουν κινήσεις.</span></div></td></tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    <section class="finance-ledger-panel" data-finance-ledger data-page-size="8">
+        <div class="producer-filter-bar finance-filter-bar">
+            <label class="delivery-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Αναζήτηση περιγραφής ή αναφοράς" data-finance-search /></label>
+            <label class="producer-filter-select"><span>Κατηγορία</span><select data-finance-category><option value="all">Όλες</option><option value="ProductSale">Αξία παραγωγής</option><option value="Bonus">Πρόσθετη αξία</option><option value="Supplies">Εφόδια</option><option value="Transport">Μεταφορικά</option><option value="Services">Υπηρεσίες</option><option value="Adjustment">Τακτοποίηση</option><option value="Other">Άλλο</option></select></label>
+            <label class="producer-filter-select"><span>Τύπος</span><select data-finance-type><option value="all">Όλοι</option><option value="Income">Πίστωση</option><option value="Expense">Χρέωση</option></select></label>
+            <label class="producer-filter-select"><span>Περίοδος</span><select data-finance-period><option value="all">Όλο το ιστορικό</option><option value="30">30 ημέρες</option><option value="90">90 ημέρες</option><option value="365">12 μήνες</option></select></label>
+            <span class="producer-filter-count" data-finance-count>@visibleFinancialEntries.Count κινήσεις</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table pro producer-finance-table">
+                <thead><tr><th>Ημερομηνία</th><th>Κίνηση</th><th>Κατηγορία</th><th>Περιγραφή / αναφορά</th><th class="right">Ποσό</th></tr></thead>
+                <tbody>
+                    @foreach (var entry in visibleFinancialEntries)
+                    {
+                        <tr data-finance-row data-search="@($"{FinancialDescription(entry)} {entry.ReferenceNumber}").ToLowerInvariant()" data-category="@entry.Category" data-type="@entry.Type" data-date="@entry.EntryDate.ToString("yyyy-MM-dd")">
+                            <td>@entry.EntryDate.ToString("dd/MM/yyyy")</td>
+                            <td><span class="finance-direction @(entry.Type == FinancialEntryType.Expense ? "expense" : "income")"><i class="fa-solid @(entry.Type == FinancialEntryType.Expense ? "fa-arrow-down" : "fa-arrow-up")"></i> @(entry.Type == FinancialEntryType.Expense ? "Χρέωση" : "Πίστωση")</span></td>
+                            <td>@FinancialCategoryName(entry.Category)</td>
+                            <td><strong>@FinancialDescription(entry)</strong>@if (!string.IsNullOrWhiteSpace(entry.ReferenceNumber)){<small>@entry.ReferenceNumber</small>}</td>
+                            <td class="right num @(entry.Type == FinancialEntryType.Expense ? "neg" : "pos")">@(entry.Type == FinancialEntryType.Expense ? "−" : "+")@entry.Amount.ToString("N2") €</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="producer-table-empty" data-finance-empty hidden><i class="fa-solid fa-filter-circle-xmark"></i> Δεν υπάρχουν κινήσεις για τα επιλεγμένα φίλτρα.</div>
+        @if (visibleFinancialEntries.Count == 0)
+        {
+            <div class="portal-empty compact"><i class="fa-solid fa-receipt"></i><span>Δεν υπάρχουν κινήσεις λογαριασμού.</span></div>
+        }
+        <div class="delivery-pagination"><button type="button" data-finance-prev aria-label="Προηγούμενη σελίδα"><i class="fa-solid fa-chevron-left"></i></button><span data-finance-page>Σελίδα 1 από 1</span><button type="button" data-finance-next aria-label="Επόμενη σελίδα"><i class="fa-solid fa-chevron-right"></i></button></div>
+        <footer class="finance-privacy-note"><i class="fa-solid fa-lock"></i> Η καρτέλα εμφανίζει μόνο τις αξίες, τις πληρωμές και τις νόμιμες χρεώσεις που αφορούν τον δικό σας λογαριασμό.</footer>
+    </section>
 }
 
 @* PRODUCTION — 3 KPIs + declarations + deliveries + form *@

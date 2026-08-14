@@ -54,7 +54,7 @@ public sealed class DatabaseSeeder(AgroUnionDbContext db, UserManager<Applicatio
             new ProducerCollaborationProfile
             {
                 ProducerUserId = producer.Id, Category = ProducerCategory.Advanced, NextCategory = ProducerCategory.Premium,
-                CategoryProgressPercent = 72, UpgradeRequirements = "Παράδοση ακόμη 8.000 kg πιστοποιημένου προϊόντος, συνέπεια ποιότητας σε 2 διαδοχικές παραλαβές και ολοκλήρωση της πιστοποίησης ολοκληρωμένης διαχείρισης.",
+                CategoryProgressPercent = 72, UpgradeRequirements = "Συνέπεια ποιότητας σε 2 διαδοχικές παραλαβές και ολοκλήρωση της πιστοποίησης ολοκληρωμένης διαχείρισης.",
                 CommissionRate = 2.25m, BonusRate = 1.50m, RelationshipStartDate = new DateOnly(2024, 3, 18),
                 AccountManager = "Ελένη Παπαδοπούλου", PaymentTerms = "Εξόφληση εντός 30 ημερών από την έκδοση τιμολογίου.",
                 InternalNotes = "Σταθερή ποιότητα και άμεση ανταπόκριση στις παραλαβές.", UpdatedByUserId = admin.Id
@@ -62,7 +62,7 @@ public sealed class DatabaseSeeder(AgroUnionDbContext db, UserManager<Applicatio
             new ProducerCollaborationProfile
             {
                 ProducerUserId = producer2.Id, Category = ProducerCategory.Standard, NextCategory = ProducerCategory.Advanced,
-                CategoryProgressPercent = 45, UpgradeRequirements = "Ελάχιστη ετήσια παράδοση 15.000 kg και πλήρης φάκελος πιστοποιήσεων.",
+                CategoryProgressPercent = 45, UpgradeRequirements = "Πλήρης φάκελος πιστοποιήσεων και συνέπεια ποιότητας στις παραλαβές.",
                 CommissionRate = 1.50m, BonusRate = 0.50m, RelationshipStartDate = new DateOnly(2025, 1, 10),
                 AccountManager = "Ελένη Παπαδοπούλου", PaymentTerms = "Εξόφληση εντός 45 ημερών.", UpdatedByUserId = admin.Id
             });

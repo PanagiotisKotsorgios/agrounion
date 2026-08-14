@@ -1929,6 +1929,67 @@ em{font-style:normal;color:inherit}
 @media(max-width:1100px){.kpi-pro-grid.producer-overview-kpis{grid-template-columns:repeat(2,1fr)}.producer-chart-grid{grid-template-columns:1fr}.producer-payment-chart .producer-doughnut-wrap{grid-template-columns:190px minmax(200px,1fr);align-items:center}.producer-payment-chart .producer-doughnut-wrap dl{border-top:0}}
 @media(max-width:600px){.kpi-pro-grid.producer-overview-kpis{grid-template-columns:1fr}.producer-chart-card{padding:18px}.producer-chart-card>header>span{display:none}.producer-chart-canvas-wide{height:220px}.producer-payment-chart .producer-doughnut-wrap{grid-template-columns:1fr}.producer-payment-chart .producer-doughnut-wrap dl{border-top:1px solid var(--line)}.delivery-table-tools{align-items:stretch;flex-direction:column}.delivery-detail-body{padding:20px}.delivery-detail-grid{grid-template-columns:1fr}.delivery-detail-grid>div.full{grid-column:auto}}
 
+/* Producer collaboration and financial command center */
+.collaboration-command{margin-bottom:18px}
+.collaboration-command .relationship-tier{min-width:280px;text-align:left;background:rgba(255,255,255,.085);backdrop-filter:blur(8px)}
+.collaboration-command .tier-symbol{margin:0 0 12px}
+.collaboration-command .tier-progress-head{gap:16px}.collaboration-command .tier-progress-head b{color:#fff;font-weight:650}
+.producer-stat-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 18px}
+.producer-stat-strip .kpi-pro{min-height:126px;padding:17px 18px;gap:9px;border-top:3px solid transparent;box-shadow:var(--shadow-sm)}
+.producer-stat-strip .kpi-pro.emphasis{border-top-color:var(--green-700);background:linear-gradient(145deg,#fff 0%,var(--green-50) 100%)}
+.producer-stat-strip .kpi-pro-label{font-size:9px}.producer-stat-strip .kpi-pro-label .lb-ic{width:30px;height:30px;border-radius:7px;font-size:11px}
+.producer-stat-strip .kpi-pro-value{font-size:clamp(23px,2vw,30px)}
+.producer-stat-strip .kpi-pro-value .unit{font-size:.44em;color:var(--ink-500)}
+.producer-stat-strip .kpi-pro-sub{font-size:10px;line-height:1.45;color:var(--ink-500)}
+.category-program{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:0;margin:0 0 32px;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
+.category-program-copy{padding:27px 30px}.category-program .eyebrow{display:block;color:var(--green-700);font-size:9px;font-weight:750;letter-spacing:.14em}
+.category-program h2{margin:7px 0 13px;font-size:21px}.category-program p{margin:0 0 9px;color:var(--ink-600);font-size:13px;line-height:1.68}
+.category-program p strong{color:var(--green-800)}
+.category-requirements{display:flex;flex-direction:column;justify-content:center;padding:25px 27px;background:var(--green-900);color:#fff}
+.category-requirements>span{display:flex;align-items:center;gap:8px;color:var(--brass-300);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.category-requirements p{margin:11px 0;color:rgba(255,255,255,.87)}.category-requirements small{color:rgba(255,255,255,.55);font-size:9px;line-height:1.5}
+.producer-section-heading{margin-top:28px}.producer-section-heading>div:first-child{display:flex;flex-direction:column;gap:2px}
+.producer-section-heading>div:first-child>small{color:var(--green-700);font-size:8px;font-weight:750;letter-spacing:.14em}.producer-section-heading>div:first-child h2{margin:0}
+.producer-price-panel,.finance-ledger-panel{margin-bottom:26px;background:#fff;border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-sm)}
+.producer-filter-bar{display:flex;align-items:end;gap:10px;padding:13px 14px;background:var(--paper-50);border-bottom:1px solid var(--line)}
+.producer-filter-bar .delivery-search{margin-right:auto}.producer-filter-select{display:flex;flex-direction:column;gap:4px;min-width:150px}
+.producer-filter-select>span{color:var(--ink-500);font-size:8px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.producer-filter-select select{min-height:38px;padding:8px 30px 8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink-800);font:inherit;font-size:10px}
+.producer-filter-select select:focus{outline:0;border-color:var(--green-600);box-shadow:0 0 0 3px rgba(56,105,68,.1)}
+.producer-filter-count{align-self:center;color:var(--ink-500);font-size:9px;font-weight:650;white-space:nowrap}
+.producer-price-table-wrap,.finance-ledger-panel .table-wrap{border:0;border-radius:0;box-shadow:none;margin:0}
+.producer-price-table td:first-child strong,.producer-finance-table td:nth-child(4) strong{display:block;color:var(--ink-900)}
+.producer-price-table td:first-child small,.producer-finance-table td:nth-child(4) small{display:block;margin-top:4px;color:var(--ink-500);font-size:9px}
+.price-source-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:650;white-space:nowrap}
+.price-source-badge.personal{background:var(--green-50);color:var(--green-800)}.price-source-badge.catalog{background:var(--paper-200);color:var(--ink-700)}
+.producer-buy-price{font-family:var(--mono);font-size:14px;color:var(--green-800);white-space:nowrap}
+.producer-price-panel>footer,.finance-privacy-note{display:flex;align-items:flex-start;gap:8px;padding:11px 14px;border-top:1px solid var(--line);background:var(--green-50);color:var(--ink-600);font-size:9px;line-height:1.45}
+.producer-price-panel>footer i,.finance-privacy-note i{margin-top:2px;color:var(--green-700)}
+.producer-table-empty{display:flex;align-items:center;justify-content:center;gap:9px;padding:29px;background:#fff;color:var(--ink-500);font-size:11px}.producer-table-empty[hidden]{display:none}
+.producer-table-empty i{color:var(--green-700)}
+.collaboration-chart-grid,.finance-chart-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:28px}
+.chart-key.income{background:var(--green-700)}.chart-key.expense{background:var(--brass-500)}
+.producer-account-terms{display:grid;grid-template-columns:1.5fr 1fr .75fr;gap:12px;margin-bottom:10px}
+.producer-account-terms article{padding:19px 20px;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-sm)}
+.producer-account-terms .kpi-pro-label{font-size:9px}.producer-account-terms .kpi-pro-label .lb-ic{width:30px;height:30px}
+.producer-account-terms article>strong{display:block;margin-top:12px;color:var(--ink-900);font-size:14px;line-height:1.5}
+.finance-filter-bar{align-items:end}.finance-filter-bar .delivery-search{min-width:250px}
+.producer-finance-table [data-finance-row][hidden],.producer-price-table [data-price-row][hidden]{display:none}
+.finance-ledger-panel .delivery-pagination{border:0;border-top:1px solid var(--line);border-radius:0;background:var(--paper-50)}
+.admin-price-guidance{display:flex;align-items:flex-start;gap:12px;margin:-6px 0 14px;padding:13px 15px;border:1px solid var(--line);border-left:3px solid var(--green-700);border-radius:var(--r);background:var(--green-50)}
+.admin-price-guidance>i{margin-top:2px;color:var(--green-700)}.admin-price-guidance>div{display:flex;flex-direction:column;gap:3px}.admin-price-guidance strong{font-size:11px}.admin-price-guidance span{color:var(--ink-500);font-size:9px;line-height:1.45}
+.admin-category-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px 20px 0}
+.admin-category-summary>div{display:flex;flex-direction:column;gap:4px;padding:16px;border:1px solid var(--line);border-left:3px solid var(--green-700);border-radius:var(--r);background:var(--green-50)}
+.admin-category-summary small,.admin-category-limits header small{color:var(--green-700);font-size:8px;font-weight:750;letter-spacing:.12em}.admin-category-summary strong{font-size:20px;color:var(--ink-900)}.admin-category-summary span{color:var(--ink-500);font-size:9px}
+.workspace-form .field.internal-field{padding:10px;border:1px dashed var(--brass-500);border-radius:7px;background:rgba(181,139,69,.06)}
+.admin-category-limits{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 20px 20px;padding-top:18px;border-top:1px solid var(--line)}
+.admin-category-limits header{grid-column:1/-1;display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:3px}.admin-category-limits header>div{display:flex;flex-direction:column;gap:3px}.admin-category-limits header strong{font-size:14px}.admin-category-limits header>span{padding:5px 8px;border-radius:999px;background:var(--paper-100);color:var(--ink-500);font-size:8px;font-weight:650}
+.admin-category-limit{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--r);background:#fff}.admin-category-limit>b{width:30px;height:30px;display:grid;place-items:center;flex:none;border-radius:50%;background:var(--green-900);color:#fff;font-size:13px}.admin-category-limit>span{display:flex;flex-direction:column;gap:3px;min-width:0}.admin-category-limit strong{font-size:9px;line-height:1.3}.admin-category-limit small{color:var(--ink-500);font-size:7px;white-space:nowrap}
+@media(max-width:1180px){.producer-stat-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-filter-bar{flex-wrap:wrap}.finance-filter-bar .delivery-search{width:100%;min-width:100%}.finance-filter-bar .producer-filter-count{margin-left:auto}}
+@media(max-width:1180px){.admin-category-limits{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.category-program{grid-template-columns:1fr}.collaboration-chart-grid,.finance-chart-grid{grid-template-columns:1fr}.producer-account-terms{grid-template-columns:1fr 1fr}.producer-filter-bar{flex-wrap:wrap}.producer-filter-bar .delivery-search{width:100%;margin:0}.producer-filter-select{flex:1;min-width:140px}.producer-filter-count{margin-left:auto}.admin-category-limits{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.collaboration-command .relationship-tier{min-width:0}.producer-stat-strip{grid-template-columns:1fr 1fr}.producer-stat-strip .kpi-pro{padding:14px;min-height:118px}.producer-stat-strip .kpi-pro-value{font-size:21px}.category-program-copy,.category-requirements{padding:21px}.producer-account-terms{grid-template-columns:1fr}.producer-filter-select{width:100%;flex:none}.producer-filter-count{width:100%;text-align:right}.producer-price-table,.producer-finance-table{min-width:760px}.admin-category-summary,.admin-category-limits{grid-template-columns:1fr}.admin-category-limits header{align-items:flex-start;flex-direction:column}}
+
 /* Alerts strip */
 .alerts-strip{
   display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:32px;

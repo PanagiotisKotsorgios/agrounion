@@ -330,7 +330,14 @@ public sealed class AgroUnionService(
             db.ProducerCollaborationProfiles.Add(profile);
         }
         profile.Category = request.Category;
-        profile.NextCategory = request.NextCategory;
+        profile.NextCategory = request.Category switch
+        {
+            ProducerCategory.Developing => ProducerCategory.Standard,
+            ProducerCategory.Standard => ProducerCategory.Advanced,
+            ProducerCategory.Advanced => ProducerCategory.Premium,
+            ProducerCategory.Premium => ProducerCategory.Strategic,
+            _ => null
+        };
         profile.CategoryProgressPercent = request.CategoryProgressPercent;
         profile.UpgradeRequirements = request.UpgradeRequirements.Trim();
         profile.CommissionRate = request.CommissionRate;

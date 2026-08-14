@@ -230,6 +230,77 @@
     renderRows();
   });
 
+  document.querySelectorAll('[data-producer-prices]').forEach(panel => {
+    const rows = [...panel.querySelectorAll('[data-price-row]')];
+    const search = panel.querySelector('[data-price-search]');
+    const source = panel.querySelector('[data-price-source]');
+    const count = panel.querySelector('[data-price-count]');
+    const empty = panel.querySelector('[data-price-empty]');
+    const render = () => {
+      const term = (search?.value || '').trim().toLocaleLowerCase('el-GR');
+      const selectedSource = source?.value || 'all';
+      let visible = 0;
+      rows.forEach(row => {
+        const matchesTerm = !term || (row.dataset.search || '').includes(term);
+        const matchesSource = selectedSource === 'all' || row.dataset.source === selectedSource;
+        row.hidden = !(matchesTerm && matchesSource);
+        if (!row.hidden) visible += 1;
+      });
+      if (count) count.textContent = visible + (visible === 1 ? ' εγγραφή' : ' εγγραφές');
+      if (empty) empty.hidden = visible > 0 || rows.length === 0;
+    };
+    search?.addEventListener('input', render);
+    source?.addEventListener('change', render);
+    render();
+  });
+
+  document.querySelectorAll('[data-finance-ledger]').forEach(panel => {
+    const rows = [...panel.querySelectorAll('[data-finance-row]')];
+    const search = panel.querySelector('[data-finance-search]');
+    const category = panel.querySelector('[data-finance-category]');
+    const type = panel.querySelector('[data-finance-type]');
+    const period = panel.querySelector('[data-finance-period]');
+    const count = panel.querySelector('[data-finance-count]');
+    const empty = panel.querySelector('[data-finance-empty]');
+    const pageLabel = panel.querySelector('[data-finance-page]');
+    const previous = panel.querySelector('[data-finance-prev]');
+    const next = panel.querySelector('[data-finance-next]');
+    const pageSize = Number(panel.dataset.pageSize) || 8;
+    let currentPage = 1;
+
+    const filteredRows = () => {
+      const term = (search?.value || '').trim().toLocaleLowerCase('el-GR');
+      const selectedCategory = category?.value || 'all';
+      const selectedType = type?.value || 'all';
+      const days = period?.value === 'all' ? 0 : Number(period?.value || 0);
+      const cutoff = days ? new Date(Date.now() - days * 86400000) : null;
+      return rows.filter(row => {
+        const rowDate = new Date((row.dataset.date || '') + 'T00:00:00');
+        return (!term || (row.dataset.search || '').includes(term))
+          && (selectedCategory === 'all' || row.dataset.category === selectedCategory)
+          && (selectedType === 'all' || row.dataset.type === selectedType)
+          && (!cutoff || rowDate >= cutoff);
+      });
+    };
+    const render = () => {
+      const filtered = filteredRows();
+      const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      currentPage = Math.min(currentPage, pages);
+      const start = (currentPage - 1) * pageSize;
+      rows.forEach(row => { row.hidden = true; });
+      filtered.slice(start, start + pageSize).forEach(row => { row.hidden = false; });
+      if (count) count.textContent = filtered.length + (filtered.length === 1 ? ' κίνηση' : ' κινήσεις');
+      if (empty) empty.hidden = filtered.length > 0 || rows.length === 0;
+      if (pageLabel) pageLabel.textContent = 'Σελίδα ' + currentPage + ' από ' + pages;
+      if (previous) previous.disabled = currentPage <= 1;
+      if (next) next.disabled = currentPage >= pages;
+    };
+    [search, category, type, period].forEach(control => control?.addEventListener(control === search ? 'input' : 'change', () => { currentPage = 1; render(); }));
+    previous?.addEventListener('click', () => { currentPage -= 1; render(); });
+    next?.addEventListener('click', () => { currentPage += 1; render(); });
+    render();
+  });
+
   if (window.Chart) {
     const chartFont = getComputedStyle(document.documentElement).getPropertyValue('--sans').trim() || 'IBM Plex Sans';
     const gridColor = 'rgba(45, 63, 52, .09)';
@@ -265,6 +336,43 @@
     });
 
     document.querySelectorAll('[data-producer-chart="payments"]').forEach(canvas => {
+      new window.Chart(canvas, {
+        type:'doughnut',
+        data:{labels:['Πληρωμένα','Υπόλοιπο'],datasets:[{data:[Number(canvas.dataset.paid)||0,Number(canvas.dataset.outstanding)||0],backgroundColor:['#1f5b39','#d8c49c'],borderWidth:0,hoverOffset:4}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'76%',animation:{animateRotate:true,duration:1200,easing:'easeOutQuart'},plugins:{legend:{display:false},tooltip:{padding:11,bodyFont:{family:chartFont},callbacks:{label:item=>item.label + ': ' + Number(item.raw).toLocaleString('el-GR') + ' €'}}}}
+      });
+    });
+
+    document.querySelectorAll('[data-producer-chart="price-history"]').forEach(canvas => {
+      const values = parseChartData(canvas, 'values');
+      const context = canvas.getContext('2d');
+      const gradient = context.createLinearGradient(0, 0, 0, 250);
+      gradient.addColorStop(0, 'rgba(31, 91, 57, .23)');
+      gradient.addColorStop(1, 'rgba(31, 91, 57, .01)');
+      new window.Chart(canvas, {
+        type:'line',
+        data:{labels:parseChartData(canvas, 'labels'),datasets:[{label:'Τιμή αγοράς',data:values,borderColor:'#1f5b39',backgroundColor:gradient,borderWidth:2.4,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:'#fff',pointBorderColor:'#1f5b39',pointBorderWidth:2,tension:.3,fill:true}]},
+        options:{responsive:true,maintainAspectRatio:false,animation:{duration:1150,easing:'easeOutQuart'},plugins:{legend:{display:false},tooltip:{padding:12,bodyFont:{family:chartFont},callbacks:{label:item=>'Τιμή: ' + Number(item.raw).toLocaleString('el-GR',{minimumFractionDigits:3}) + ' €/kg'}}},scales:{x:{grid:{display:false},ticks:{color:tickColor,font:{family:chartFont,size:10}}},y:{beginAtZero:false,grid:{color:gridColor},ticks:{color:tickColor,font:{family:chartFont,size:9},callback:value=>Number(value).toLocaleString('el-GR') + ' €'}}}}
+      });
+    });
+
+    document.querySelectorAll('[data-producer-chart="production-mix"]').forEach(canvas => {
+      new window.Chart(canvas, {
+        type:'doughnut',
+        data:{labels:parseChartData(canvas, 'labels'),datasets:[{data:parseChartData(canvas, 'values'),backgroundColor:['#1f5b39','#b58b45','#6d8d77','#d8c49c','#354b3c','#a7b5a9'],borderColor:'#fff',borderWidth:3,hoverOffset:5}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'62%',animation:{animateRotate:true,duration:1200,easing:'easeOutQuart'},plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'rectRounded',boxWidth:8,padding:16,color:tickColor,font:{family:chartFont,size:10}}},tooltip:{padding:12,bodyFont:{family:chartFont},callbacks:{label:item=>item.label + ': ' + Number(item.raw).toLocaleString('el-GR') + ' kg'}}}}
+      });
+    });
+
+    document.querySelectorAll('[data-producer-chart="finance-flow"]').forEach(canvas => {
+      new window.Chart(canvas, {
+        type:'bar',
+        data:{labels:parseChartData(canvas, 'labels'),datasets:[{label:'Πιστώσεις',data:parseChartData(canvas, 'income'),backgroundColor:'rgba(31,91,57,.82)',borderRadius:5,maxBarThickness:28},{label:'Χρεώσεις',data:parseChartData(canvas, 'expenses'),backgroundColor:'rgba(181,139,69,.7)',borderRadius:5,maxBarThickness:28}]},
+        options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},animation:{duration:1050,easing:'easeOutQuart'},plugins:{legend:{display:false},tooltip:{padding:12,bodyFont:{family:chartFont},callbacks:{label:item=>item.dataset.label + ': ' + Number(item.raw).toLocaleString('el-GR') + ' €'}}},scales:{x:{stacked:false,grid:{display:false},ticks:{color:tickColor,font:{family:chartFont,size:10}}},y:{beginAtZero:true,grid:{color:gridColor},ticks:{color:tickColor,font:{family:chartFont,size:9},callback:value=>Number(value).toLocaleString('el-GR') + ' €'}}}}
+      });
+    });
+
+    document.querySelectorAll('[data-producer-chart="finance-status"]').forEach(canvas => {
       new window.Chart(canvas, {
         type:'doughnut',
         data:{labels:['Πληρωμένα','Υπόλοιπο'],datasets:[{data:[Number(canvas.dataset.paid)||0,Number(canvas.dataset.outstanding)||0],backgroundColor:['#1f5b39','#d8c49c'],borderWidth:0,hoverOffset:4}]},

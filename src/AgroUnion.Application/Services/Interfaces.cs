@@ -63,6 +63,8 @@ public interface IAgroUnionService
     Task DeletePartnerDocumentAsync(Guid id, string adminUserId, CancellationToken ct = default);
     Task<Guid> AddPartnerInvoiceAsync(string producerUserId, PartnerInvoiceRequest request, string adminUserId, CancellationToken ct = default);
     Task DeletePartnerInvoiceAsync(Guid id, string adminUserId, CancellationToken ct = default);
+    Task<PartnerFileAccessDto> GetPartnerDocumentFileAsync(Guid id, string requesterUserId, bool isAdmin, CancellationToken ct = default);
+    Task<PartnerFileAccessDto> GetPartnerInvoiceFileAsync(Guid id, string requesterUserId, bool isAdmin, CancellationToken ct = default);
     Task<Guid> AddPartnerFinancialEntryAsync(string producerUserId, PartnerFinancialEntryRequest request, string adminUserId, CancellationToken ct = default);
     Task DeletePartnerFinancialEntryAsync(Guid id, string adminUserId, CancellationToken ct = default);
     Task<Guid> SaveProducerDeliveryAsync(string producerUserId, Guid? id, ProducerDeliveryRequest request, string adminUserId, CancellationToken ct = default);

@@ -146,6 +146,7 @@ public sealed class PartnerDocumentForm : ProducerAdminForm
     public string Title { get; set; } = "";
     public string ReferenceNumber { get; set; } = "";
     public string? FileUrl { get; set; }
+    public IFormFile? PdfFile { get; set; }
     public DateOnly IssueDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     public DateOnly? ExpiryDate { get; set; }
     public string? Notes { get; set; }
@@ -164,6 +165,7 @@ public sealed class PartnerInvoiceForm : ProducerAdminForm
     public PartnerInvoiceStatus Status { get; set; } = PartnerInvoiceStatus.Issued;
     public string Description { get; set; } = "";
     public string? FileUrl { get; set; }
+    public IFormFile? PdfFile { get; set; }
     public PartnerInvoiceRequest ToRequest() => new(Direction, InvoiceNumber, IssueDate, DueDate, NetAmount, VatAmount, PaidAmount, Status, Description, FileUrl);
 }
 public sealed class PartnerFinancialEntryForm : ProducerAdminForm

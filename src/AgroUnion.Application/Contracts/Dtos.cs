@@ -37,6 +37,7 @@ public sealed record ProducerCollaborationProfileDto(
     DateTime? UpdatedAt);
 public sealed record PartnerDocumentDto(Guid Id, PartnerDocumentType Type, string Title, string ReferenceNumber, string? FileUrl, DateOnly IssueDate, DateOnly? ExpiryDate, string? Notes, bool IsVisibleToPartner);
 public sealed record PartnerInvoiceDto(Guid Id, PartnerInvoiceDirection Direction, string InvoiceNumber, DateOnly IssueDate, DateOnly? DueDate, decimal NetAmount, decimal VatAmount, decimal TotalAmount, decimal PaidAmount, decimal OutstandingAmount, PartnerInvoiceStatus Status, string Description, string? FileUrl);
+public sealed record PartnerFileAccessDto(string StorageKey, string DownloadName);
 public sealed record PartnerFinancialEntryDto(Guid Id, DateOnly EntryDate, FinancialEntryType Type, FinancialEntryCategory Category, decimal Amount, string Description, string? ReferenceNumber, Guid? PartnerInvoiceId);
 public sealed record ProducerFinancialSummaryDto(decimal DeclaredProduction, decimal DeliveredProduction, decimal AverageDeliveryPrice, decimal DeliveryRevenue, decimal OtherIncome, decimal Expenses, decimal NetCashFlow, decimal ReceivableFromAgroUnion, decimal PayableToAgroUnion);
 public sealed record ProducerDeliveryDto(

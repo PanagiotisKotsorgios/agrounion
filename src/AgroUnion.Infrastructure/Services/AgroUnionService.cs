@@ -407,6 +407,26 @@ public sealed class AgroUnionService(
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<PartnerFileAccessDto> GetPartnerDocumentFileAsync(Guid id, string requesterUserId, bool isAdmin, CancellationToken ct = default)
+    {
+        var item = await db.PartnerDocuments.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new KeyNotFoundException("Το έγγραφο δεν βρέθηκε.");
+        if (!isAdmin && (item.UserId != requesterUserId || !item.IsVisibleToPartner)) throw new UnauthorizedAccessException("Δεν έχετε πρόσβαση σε αυτό το έγγραφο.");
+        if (string.IsNullOrWhiteSpace(item.FileUrl) || !item.FileUrl.StartsWith("partner-files/", StringComparison.OrdinalIgnoreCase))
+            throw new KeyNotFoundException("Δεν υπάρχει διαθέσιμο PDF για αυτό το έγγραφο.");
+        return new PartnerFileAccessDto(item.FileUrl, $"{SafeFileName(item.ReferenceNumber)}.pdf");
+    }
+
+    public async Task<PartnerFileAccessDto> GetPartnerInvoiceFileAsync(Guid id, string requesterUserId, bool isAdmin, CancellationToken ct = default)
+    {
+        var item = await db.PartnerInvoices.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new KeyNotFoundException("Το τιμολόγιο δεν βρέθηκε.");
+        if (!isAdmin && item.UserId != requesterUserId) throw new UnauthorizedAccessException("Δεν έχετε πρόσβαση σε αυτό το τιμολόγιο.");
+        if (string.IsNullOrWhiteSpace(item.FileUrl) || !item.FileUrl.StartsWith("partner-files/", StringComparison.OrdinalIgnoreCase))
+            throw new KeyNotFoundException("Δεν υπάρχει διαθέσιμο PDF για αυτό το τιμολόγιο.");
+        return new PartnerFileAccessDto(item.FileUrl, $"{SafeFileName(item.InvoiceNumber)}.pdf");
+    }
+
     public async Task<Guid> AddPartnerFinancialEntryAsync(string producerUserId, PartnerFinancialEntryRequest request, string adminUserId, CancellationToken ct = default)
     {
         await EnsureProducerAsync(producerUserId);
@@ -632,6 +652,13 @@ public sealed class AgroUnionService(
         if (string.IsNullOrWhiteSpace(value)) return;
         if (!Uri.TryCreate(value.Trim(), UriKind.RelativeOrAbsolute, out var uri) || (uri.IsAbsoluteUri && uri.Scheme is not ("http" or "https")))
             throw new ValidationException("Ο σύνδεσμος αρχείου πρέπει να είναι έγκυρο URL http/https ή σχετική διαδρομή.");
+    }
+
+    private static string SafeFileName(string value)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var safe = new string(value.Where(x => !invalid.Contains(x)).ToArray()).Trim();
+        return string.IsNullOrWhiteSpace(safe) ? "agro-union-file" : safe;
     }
 
     private async Task<IReadOnlyList<ContractDto>> ContractsFor(string userId, CancellationToken ct) => await db.Contracts.Where(x => x.UserId == userId)

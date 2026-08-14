@@ -6,6 +6,7 @@ using AgroUnion.Application.Services;
 using AgroUnion.Domain.Entities;
 using AgroUnion.Infrastructure;
 using AgroUnion.Infrastructure.Persistence;
+using AgroUnion.Web.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IValidator<InterestApplicationRequest>, InterestAppli
 builder.Services.AddScoped<IValidator<ContactRequest>, ContactRequestValidator>();
 builder.Services.AddScoped<IValidator<ProductionRequest>, ProductionRequestValidator>();
 builder.Services.AddScoped<IValidator<CounterOfferRequest>, CounterOfferValidator>();
+builder.Services.AddSingleton<PartnerFileStore>();
 
 builder.Services.AddControllersWithViews(options => options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute()));
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 262_144_000);

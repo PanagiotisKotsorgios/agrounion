@@ -4,6 +4,7 @@ using AgroUnion.Application.Contracts;
 using AgroUnion.Application.Services;
 using AgroUnion.Domain.Entities;
 using AgroUnion.Web.ViewModels;
+using AgroUnion.Web.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AgroUnion.Web.Controllers;
 
 [Authorize, Route("portal")]
-public sealed class PortalController(IAgroUnionService service, IEmailAdministrationService emailAdministration, IPartnerMarketplaceService marketplace, ILogger<PortalController> logger) : Controller
+public sealed class PortalController(IAgroUnionService service, IEmailAdministrationService emailAdministration, PartnerFileStore fileStore, ILogger<PortalController> logger) : Controller
 {
     private static readonly HashSet<string> ProducerPages = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -41,11 +42,7 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     }
 
     [HttpGet("marketplace")]
-    public async Task<IActionResult> Marketplace(string? role, string? region, string? product, string? search, CancellationToken ct)
-    {
-        ViewData["PortalPage"] = "marketplace";
-        return View("Dashboard", await marketplace.GetMarketplaceAsync(UserId, role, region, product, search, ct));
-    }
+    public IActionResult Marketplace() => MarketplaceUnavailable();
 
     [HttpPost("support")]
     public async Task<IActionResult> SubmitDashboardSupport(DashboardSupportForm form, CancellationToken ct)
@@ -82,24 +79,19 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     }
 
     [Authorize(Policy = "FarmerOnly"), HttpPost("marketplace/production")]
-    public async Task<IActionResult> SaveMarketplaceProduction(PartnerProductionListingForm form, CancellationToken ct) =>
-        await RunMarketplace(async () => await marketplace.SaveProductionListingAsync(UserId, form.ToRequest(), ct), "Η μη δεσμευμένη παραγωγή δημοσιεύτηκε στο δίκτυο.");
+    public IActionResult SaveMarketplaceProduction(PartnerProductionListingForm form) => MarketplaceUnavailable();
 
     [Authorize(Policy = "FarmerOnly"), HttpPost("marketplace/production/{id:guid}/status")]
-    public async Task<IActionResult> SetMarketplaceProductionStatus(Guid id, bool active, CancellationToken ct) =>
-        await RunMarketplace(async () => await marketplace.SetProductionListingActiveAsync(UserId, id, active, ct), active ? "Η προσφορά παραγωγής ενεργοποιήθηκε." : "Η προσφορά παραγωγής αποσύρθηκε.");
+    public IActionResult SetMarketplaceProductionStatus(Guid id, bool active) => MarketplaceUnavailable();
 
     [Authorize(Policy = "BuyerOnly"), HttpPost("marketplace/demand")]
-    public async Task<IActionResult> CreateMarketplaceDemand(PartnerBuyingRequestForm form, CancellationToken ct) =>
-        await RunMarketplace(async () => await marketplace.CreateBuyingRequestAsync(UserId, form.ToRequest(), ct), "Η ζήτηση αγοράς δημοσιεύτηκε στο δίκτυο.");
+    public IActionResult CreateMarketplaceDemand(PartnerBuyingRequestForm form) => MarketplaceUnavailable();
 
     [Authorize(Policy = "BuyerOnly"), HttpPost("marketplace/demand/{id:guid}/status")]
-    public async Task<IActionResult> SetMarketplaceDemandStatus(Guid id, bool active, CancellationToken ct) =>
-        await RunMarketplace(async () => await marketplace.SetBuyingRequestActiveAsync(UserId, id, active, ct), active ? "Η ζήτηση ενεργοποιήθηκε." : "Η ζήτηση έκλεισε.");
+    public IActionResult SetMarketplaceDemandStatus(Guid id, bool active) => MarketplaceUnavailable();
 
     [HttpPost("marketplace/inquiries")]
-    public async Task<IActionResult> SendMarketplaceInquiry(PartnerMarketplaceInquiryForm form, CancellationToken ct) =>
-        await RunMarketplace(async () => await marketplace.SendInquiryAsync(UserId, form.ToRequest(), ct), "Το ενδιαφέρον στάλθηκε στον συνεργάτη και καταγράφηκε στην πλατφόρμα.");
+    public IActionResult SendMarketplaceInquiry(PartnerMarketplaceInquiryForm form) => MarketplaceUnavailable();
 
     [Authorize(Policy = "AdminOnly"), HttpPost("email/settings")]
     public async Task<IActionResult> SaveEmailSettings(BrevoSettingsForm form, CancellationToken ct) =>
@@ -148,7 +140,11 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     public async Task<IActionResult> DeleteProduction(Guid id, CancellationToken ct) => await Run(async () => await service.DeleteProductionAsync(UserId, id, ct), "Η δήλωση διαγράφηκε.", producerPage: "production");
 
     [Authorize(Policy = "FarmerOnly"), HttpPost("supply/join")]
-    public async Task<IActionResult> JoinSupply(SupplyParticipationForm form, CancellationToken ct) => await Run(async () => await service.JoinSupplyOrderAsync(UserId, form.OrderId, new(form.Quantity), ct), "Η συμμετοχή σας καταχωρίστηκε.", producerPage: "offers");
+    public IActionResult JoinSupply(SupplyParticipationForm form)
+    {
+        TempData["Info"] = "Η συμμετοχή σε συλλογικές προμήθειες θα είναι σύντομα διαθέσιμη.";
+        return RedirectToAction(nameof(ProducerPage), new { page = "offers" });
+    }
 
     [Authorize(Policy = "BuyerOnly"), HttpPost("offer/counter")]
     public async Task<IActionResult> CounterOffer(CounterOfferForm form, CancellationToken ct) => await Run(async () => await service.SubmitCounterOfferAsync(UserId, form.OfferId, new(form.PricePerUnit, form.Quantity), ct), "Η αντιπροσφορά υποβλήθηκε.");
@@ -224,21 +220,109 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     public async Task<IActionResult> DeleteAdminProduction(Guid id, string producerUserId, CancellationToken ct) =>
         await Run(async () => await service.DeleteProductionAsync(producerUserId, id, ct), "Η δήλωση παραγωγής διαγράφηκε.", producerUserId);
 
-    [Authorize(Policy = "AdminOnly"), HttpPost("producer-workspace/documents")]
-    public async Task<IActionResult> AddPartnerDocument(PartnerDocumentForm form, CancellationToken ct) =>
-        await Run(async () => await service.AddPartnerDocumentAsync(form.ProducerUserId, form.ToRequest(), UserId, ct), "Το έγγραφο προστέθηκε στον φάκελο του παραγωγού.", form.ProducerUserId);
+    [Authorize(Policy = "AdminOnly"), HttpPost("producer-workspace/documents"), RequestSizeLimit(21 * 1024 * 1024)]
+    public async Task<IActionResult> AddPartnerDocument(PartnerDocumentForm form, CancellationToken ct)
+    {
+        string? storageKey = null;
+        try
+        {
+            storageKey = await fileStore.SavePdfAsync(form.PdfFile, "documents", ct);
+            if (storageKey is null) throw new InvalidOperationException("Επιλέξτε το αρχείο PDF του εγγράφου.");
+            form.FileUrl = storageKey;
+            await service.AddPartnerDocumentAsync(form.ProducerUserId, form.ToRequest(), UserId, ct);
+            TempData["Success"] = "Το έγγραφο PDF προστέθηκε με ασφάλεια στον φάκελο του παραγωγού.";
+        }
+        catch (Exception ex) when (ex is ValidationException or InvalidOperationException or KeyNotFoundException)
+        {
+            fileStore.Delete(storageKey);
+            logger.LogWarning(ex, "Partner document upload failed");
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index), new { producerId = form.ProducerUserId });
+    }
 
     [Authorize(Policy = "AdminOnly"), HttpPost("producer-workspace/documents/{id:guid}/delete")]
-    public async Task<IActionResult> DeletePartnerDocument(Guid id, string producerUserId, CancellationToken ct) =>
-        await Run(async () => await service.DeletePartnerDocumentAsync(id, UserId, ct), "Το έγγραφο διαγράφηκε.", producerUserId);
+    public async Task<IActionResult> DeletePartnerDocument(Guid id, string producerUserId, CancellationToken ct)
+    {
+        try
+        {
+            PartnerFileAccessDto? access = null;
+            try { access = await service.GetPartnerDocumentFileAsync(id, UserId, true, ct); } catch (KeyNotFoundException) { }
+            await service.DeletePartnerDocumentAsync(id, UserId, ct);
+            if (access is not null) fileStore.Delete(access.StorageKey);
+            TempData["Success"] = "Το έγγραφο διαγράφηκε.";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+        {
+            logger.LogWarning(ex, "Partner document deletion failed");
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index), new { producerId = producerUserId });
+    }
 
-    [Authorize(Policy = "AdminOnly"), HttpPost("producer-workspace/invoices")]
-    public async Task<IActionResult> AddPartnerInvoice(PartnerInvoiceForm form, CancellationToken ct) =>
-        await Run(async () => await service.AddPartnerInvoiceAsync(form.ProducerUserId, form.ToRequest(), UserId, ct), "Το τιμολόγιο καταχωρίστηκε.", form.ProducerUserId);
+    [Authorize(Policy = "AdminOnly"), HttpPost("producer-workspace/invoices"), RequestSizeLimit(21 * 1024 * 1024)]
+    public async Task<IActionResult> AddPartnerInvoice(PartnerInvoiceForm form, CancellationToken ct)
+    {
+        string? storageKey = null;
+        try
+        {
+            storageKey = await fileStore.SavePdfAsync(form.PdfFile, "invoices", ct);
+            if (storageKey is null) throw new InvalidOperationException("Επιλέξτε το αρχείο PDF του τιμολογίου.");
+            form.FileUrl = storageKey;
+            await service.AddPartnerInvoiceAsync(form.ProducerUserId, form.ToRequest(), UserId, ct);
+            TempData["Success"] = "Το τιμολόγιο και το PDF καταχωρίστηκαν με ασφάλεια.";
+        }
+        catch (Exception ex) when (ex is ValidationException or InvalidOperationException or KeyNotFoundException)
+        {
+            fileStore.Delete(storageKey);
+            logger.LogWarning(ex, "Partner invoice upload failed");
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index), new { producerId = form.ProducerUserId });
+    }
 
     [Authorize(Policy = "AdminOnly"), HttpPost("producer-workspace/invoices/{id:guid}/delete")]
-    public async Task<IActionResult> DeletePartnerInvoice(Guid id, string producerUserId, CancellationToken ct) =>
-        await Run(async () => await service.DeletePartnerInvoiceAsync(id, UserId, ct), "Το τιμολόγιο διαγράφηκε.", producerUserId);
+    public async Task<IActionResult> DeletePartnerInvoice(Guid id, string producerUserId, CancellationToken ct)
+    {
+        try
+        {
+            PartnerFileAccessDto? access = null;
+            try { access = await service.GetPartnerInvoiceFileAsync(id, UserId, true, ct); } catch (KeyNotFoundException) { }
+            await service.DeletePartnerInvoiceAsync(id, UserId, ct);
+            if (access is not null) fileStore.Delete(access.StorageKey);
+            TempData["Success"] = "Το τιμολόγιο διαγράφηκε.";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+        {
+            logger.LogWarning(ex, "Partner invoice deletion failed");
+            TempData["Error"] = ex.Message;
+        }
+        return RedirectToAction(nameof(Index), new { producerId = producerUserId });
+    }
+
+    [HttpGet("documents/{id:guid}/file")]
+    public async Task<IActionResult> PartnerDocumentFile(Guid id, bool download, CancellationToken ct)
+    {
+        try
+        {
+            var access = await service.GetPartnerDocumentFileAsync(id, UserId, User.IsInRole(RoleNames.Admin), ct);
+            return File(fileStore.OpenRead(access.StorageKey), "application/pdf", download ? access.DownloadName : null, enableRangeProcessing: true);
+        }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (Exception ex) when (ex is KeyNotFoundException or FileNotFoundException) { return NotFound(); }
+    }
+
+    [HttpGet("invoices/{id:guid}/file")]
+    public async Task<IActionResult> PartnerInvoiceFile(Guid id, bool download, CancellationToken ct)
+    {
+        try
+        {
+            var access = await service.GetPartnerInvoiceFileAsync(id, UserId, User.IsInRole(RoleNames.Admin), ct);
+            return File(fileStore.OpenRead(access.StorageKey), "application/pdf", download ? access.DownloadName : null, enableRangeProcessing: true);
+        }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (Exception ex) when (ex is KeyNotFoundException or FileNotFoundException) { return NotFound(); }
+    }
 
     [Authorize(Policy = "AdminOnly"), HttpPost("producer-workspace/financial-entries")]
     public async Task<IActionResult> AddPartnerFinancialEntry(PartnerFinancialEntryForm form, CancellationToken ct) =>
@@ -273,11 +357,9 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
         return RedirectToAction(nameof(EmailAdministration));
     }
 
-    private async Task<IActionResult> RunMarketplace(Func<Task> action, string success)
+    private IActionResult MarketplaceUnavailable()
     {
-        try { await action(); TempData["Success"] = success; }
-        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or UnauthorizedAccessException)
-        { logger.LogWarning(ex, "Partner marketplace action failed"); TempData["Error"] = ex.Message; }
-        return RedirectToAction(nameof(Marketplace));
+        TempData["Info"] = "Η Αγορά Δικτύου βρίσκεται σε προετοιμασία και θα είναι σύντομα διαθέσιμη.";
+        return RedirectToAction(nameof(Index));
     }
 }

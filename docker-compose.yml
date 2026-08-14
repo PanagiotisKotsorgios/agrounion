@@ -46,10 +46,12 @@ services:
     volumes:
       - agro_logs:/app/logs
       - agro_releases:/app/App_Data/releases
+      - agro_partner_files:/app/App_Data/partner-files
       - agro_data_protection_keys:/app/.aspnet/DataProtection-Keys
 
 volumes:
   agro_mysql_data:
   agro_logs:
   agro_releases:
+  agro_partner_files:
   agro_data_protection_keys:

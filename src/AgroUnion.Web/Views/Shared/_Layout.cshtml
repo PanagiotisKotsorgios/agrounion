@@ -123,6 +123,10 @@
     {
         <div class="toast error" role="alert"><span><i class="fa-solid fa-exclamation"></i></span>@error<button type="button" aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button></div>
     }
+    @if (TempData["Info"] is string info)
+    {
+        <div class="toast info" role="status"><span><i class="fa-solid fa-circle-info"></i></span>@info<button type="button" aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button></div>
+    }
     @if (TempData["Invite"] is string invite)
     {
         <div class="toast invite" role="status"><span><i class="fa-solid fa-wand-magic-sparkles"></i></span>@invite<button type="button" aria-label="Κλείσιμο"><i class="fa-solid fa-xmark"></i></button></div>

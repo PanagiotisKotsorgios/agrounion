@@ -221,24 +221,24 @@
         <div class="workspace-columns">
             <details class="workspace-editor">
                 <summary><span><i class="fa-solid fa-folder-open"></i></span><div><strong>Έγγραφα</strong><small>@Model.Documents.Count καταχωρίσεις</small></div><i class="fa-solid fa-chevron-down"></i></summary>
-                <form class="workspace-form compact" asp-action="AddPartnerDocument" method="post">
+                <form class="workspace-form compact" asp-action="AddPartnerDocument" method="post" enctype="multipart/form-data">
                     <input type="hidden" name="ProducerUserId" value="@selected.Id" />
                     <div class="field"><label>Τύπος</label><select name="Type"><option value="ContractAnnex">Παράρτημα σύμβασης</option><option value="Certification">Πιστοποίηση</option><option value="TaxDocument">Φορολογικό έγγραφο</option><option value="DeliveryNote">Δελτίο αποστολής</option><option value="Statement">Κατάσταση συνεργασίας</option><option value="Other">Άλλο</option></select></div>
                     <div class="field"><label>Τίτλος</label><input name="Title" required /></div>
                     <div class="field"><label>Αριθμός αναφοράς</label><input name="ReferenceNumber" required /></div>
-                    <div class="field"><label>Σύνδεσμος αρχείου</label><input name="FileUrl" type="url" placeholder="https://..." /></div>
+                    <div class="field"><label>Αρχείο PDF</label><input name="PdfFile" type="file" accept="application/pdf,.pdf" required /><small>Έως 20 MB · ασφαλής πρόσβαση μόνο από εσάς και τον παραγωγό</small></div>
                     <div class="field"><label>Έκδοση</label><input name="IssueDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
                     <div class="field"><label>Λήξη</label><input name="ExpiryDate" type="date" /></div>
                     <div class="field full"><label>Σημείωση</label><textarea name="Notes"></textarea></div>
                     <label class="workspace-check full"><input name="IsVisibleToPartner" type="checkbox" value="true" checked /><span><i class="fa-solid fa-eye"></i> Ορατό στον παραγωγό</span></label>
                     <button class="workspace-save" type="submit"><i class="fa-solid fa-file-circle-plus"></i> Προσθήκη εγγράφου</button>
                 </form>
-                <div class="workspace-list">@foreach(var document in Model.Documents){<article><span class="list-icon"><i class="fa-solid fa-file-lines"></i></span><div><strong>@document.Title</strong><small>@document.ReferenceNumber · @document.IssueDate.ToString("dd/MM/yyyy")</small></div>@if(document.IsVisibleToPartner){<i class="fa-solid fa-eye" title="Ορατό"></i>}else{<i class="fa-solid fa-eye-slash" title="Κρυφό"></i>}<form asp-action="DeletePartnerDocument" asp-route-id="@document.Id" asp-route-producerUserId="@selected.Id" method="post"><button title="Διαγραφή" data-confirm="Να διαγραφεί το έγγραφο;"><i class="fa-solid fa-trash"></i></button></form></article>}</div>
+                <div class="workspace-list">@foreach(var document in Model.Documents){<article><span class="list-icon"><i class="fa-solid fa-file-lines"></i></span><div><strong>@document.Title</strong><small>@document.ReferenceNumber · @document.IssueDate.ToString("dd/MM/yyyy")</small></div>@if(document.IsVisibleToPartner){<i class="fa-solid fa-eye" title="Ορατό"></i>}else{<i class="fa-solid fa-eye-slash" title="Κρυφό"></i>}@if(!string.IsNullOrWhiteSpace(document.FileUrl)){<a asp-action="PartnerDocumentFile" asp-route-id="@document.Id" target="_blank" title="Προβολή PDF"><i class="fa-solid fa-file-pdf"></i></a>}<form asp-action="DeletePartnerDocument" asp-route-id="@document.Id" asp-route-producerUserId="@selected.Id" method="post"><button title="Διαγραφή" data-confirm="Να διαγραφεί το έγγραφο;"><i class="fa-solid fa-trash"></i></button></form></article>}</div>
             </details>
 
             <details class="workspace-editor">
                 <summary><span><i class="fa-solid fa-file-invoice-dollar"></i></span><div><strong>Τιμολόγια δύο κατευθύνσεων</strong><small>@Model.Invoices.Count καταχωρίσεις</small></div><i class="fa-solid fa-chevron-down"></i></summary>
-                <form class="workspace-form compact" asp-action="AddPartnerInvoice" method="post">
+                <form class="workspace-form compact" asp-action="AddPartnerInvoice" method="post" enctype="multipart/form-data">
                     <input type="hidden" name="ProducerUserId" value="@selected.Id" />
                     <div class="field"><label>Εκδότης</label><select name="Direction"><option value="FromProducer">Ο παραγωγός → AGRO UNION</option><option value="FromAgroUnion">AGRO UNION → παραγωγός</option></select></div>
                     <div class="field"><label>Αριθμός τιμολογίου</label><input name="InvoiceNumber" required /></div>
@@ -249,10 +249,10 @@
                     <div class="field"><label>Εξοφλημένο (€)</label><input name="PaidAmount" type="number" min="0" step=".01" /></div>
                     <div class="field"><label>Κατάσταση</label><select name="Status"><option value="Issued">Εκδόθηκε</option><option value="PartiallyPaid">Μερικώς εξοφλημένο</option><option value="Paid">Εξοφλημένο</option><option value="Overdue">Ληξιπρόθεσμο</option><option value="Draft">Προσχέδιο</option><option value="Cancelled">Ακυρωμένο</option></select></div>
                     <div class="field full"><label>Περιγραφή</label><input name="Description" /></div>
-                    <div class="field full"><label>Σύνδεσμος PDF</label><input name="FileUrl" type="url" placeholder="https://..." /></div>
+                    <div class="field full"><label>Τιμολόγιο PDF</label><input name="PdfFile" type="file" accept="application/pdf,.pdf" required /><small>Έως 20 MB · το αρχείο παραμένει ιδιωτικό στον λογαριασμό του παραγωγού</small></div>
                     <button class="workspace-save" type="submit"><i class="fa-solid fa-plus"></i> Καταχώριση τιμολογίου</button>
                 </form>
-                <div class="workspace-list">@foreach(var invoice in Model.Invoices){<article><span class="list-icon"><i class="fa-solid @(invoice.Direction==PartnerInvoiceDirection.FromProducer?"fa-arrow-right-to-bracket":"fa-arrow-right-from-bracket")"></i></span><div><strong>@invoice.InvoiceNumber · @invoice.TotalAmount.ToString("N2") €</strong><small>@(invoice.Direction==PartnerInvoiceDirection.FromProducer?"Παραγωγός → AGRO UNION":"AGRO UNION → Παραγωγός") · υπόλοιπο @invoice.OutstandingAmount.ToString("N2") €</small></div><span class="status">@InvoiceStatusName(invoice.Status)</span><form asp-action="DeletePartnerInvoice" asp-route-id="@invoice.Id" asp-route-producerUserId="@selected.Id" method="post"><button title="Διαγραφή" data-confirm="Να διαγραφεί το τιμολόγιο;"><i class="fa-solid fa-trash"></i></button></form></article>}</div>
+                <div class="workspace-list">@foreach(var invoice in Model.Invoices){<article><span class="list-icon"><i class="fa-solid @(invoice.Direction==PartnerInvoiceDirection.FromProducer?"fa-arrow-right-to-bracket":"fa-arrow-right-from-bracket")"></i></span><div><strong>@invoice.InvoiceNumber · @invoice.TotalAmount.ToString("N2") €</strong><small>@(invoice.Direction==PartnerInvoiceDirection.FromProducer?"Παραγωγός → AGRO UNION":"AGRO UNION → Παραγωγός") · υπόλοιπο @invoice.OutstandingAmount.ToString("N2") €</small></div><span class="status">@InvoiceStatusName(invoice.Status)</span>@if(!string.IsNullOrWhiteSpace(invoice.FileUrl)){<a asp-action="PartnerInvoiceFile" asp-route-id="@invoice.Id" target="_blank" title="Προβολή PDF"><i class="fa-solid fa-file-pdf"></i></a>}<form asp-action="DeletePartnerInvoice" asp-route-id="@invoice.Id" asp-route-producerUserId="@selected.Id" method="post"><button title="Διαγραφή" data-confirm="Να διαγραφεί το τιμολόγιο;"><i class="fa-solid fa-trash"></i></button></form></article>}</div>
             </details>
         </div>
 

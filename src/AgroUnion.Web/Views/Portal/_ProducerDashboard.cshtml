@@ -18,9 +18,9 @@
     string FinancialDescription(AgroUnion.Application.Contracts.PartnerFinancialEntryDto entry) => entry.Category == FinancialEntryCategory.Bonus
         ? entry.Description.Replace("Bonus", "Πρόσθετη αξία", StringComparison.OrdinalIgnoreCase)
         : entry.Description;
-    string DealStatusName(DealStatus value) => value switch { DealStatus.Proposed => "Προς επιβεβαίωση", DealStatus.BuySideConfirmed => "Επιβεβαιώθηκε από εσάς", DealStatus.SellSideConfirmed => "Επιβεβαιώθηκε από αγοραστή", DealStatus.Completed => "Ολοκληρώθηκε", DealStatus.Cancelled => "Ακυρώθηκε", _ => value.ToString() };
     string ProductionStatusName(ProductionStatus value) => value switch { ProductionStatus.Available => "Διαθέσιμη", ProductionStatus.Reserved => "Δεσμευμένη", ProductionStatus.Sold => "Παραδόθηκε", _ => value.ToString() };
     string ContractStatusName(ContractStatus value) => value switch { ContractStatus.Draft => "Προσχέδιο", ContractStatus.Active => "Ενεργή", ContractStatus.Terminated => "Ολοκληρωμένη", _ => value.ToString() };
+    string ContractSubjectName(ContractSubject value) => value switch { ContractSubject.Sale => "Διάθεση παραγωγής", ContractSubject.Supply => "Προμήθεια εφοδίων", _ => value.ToString() };
     string LogisticsStatusName(DeliveryLogisticsStatus value) => value switch { DeliveryLogisticsStatus.Scheduled => "Προγραμματισμένο", DeliveryLogisticsStatus.InTransit => "Σε μεταφορά", DeliveryLogisticsStatus.Weighed => "Ζυγίστηκε", DeliveryLogisticsStatus.Delivered => "Παραδόθηκε", DeliveryLogisticsStatus.Settled => "Εκκαθαρίστηκε", DeliveryLogisticsStatus.Cancelled => "Ακυρώθηκε", _ => value.ToString() };
     string PaymentStatusName(DeliveryPaymentStatus value) => value switch { DeliveryPaymentStatus.Pending => "Σε αναμονή", DeliveryPaymentStatus.PartiallyPaid => "Μερική πληρωμή", DeliveryPaymentStatus.Paid => "Εξοφλημένο", DeliveryPaymentStatus.OnHold => "Σε αναστολή", _ => value.ToString() };
 
@@ -130,6 +130,26 @@
     var financeExpenses = chartMonths.Select(month => visibleFinancialEntries
         .Where(x => x.EntryDate.Year == month.Year && x.EntryDate.Month == month.Month && x.Type == FinancialEntryType.Expense)
         .Sum(x => x.Amount)).ToArray();
+    var declaredRemaining = Math.Max(0, f.DeclaredProduction - f.DeliveredProduction);
+    var availableProduction = Model.Declarations.Where(x => x.Status == ProductionStatus.Available).Sum(x => x.Quantity);
+    var productionProducts = Model.Declarations.Select(x => x.Product).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToArray();
+    var declaredByProduct = productionProducts.Select(product => Model.Declarations.Where(x => x.Product.Equals(product, StringComparison.OrdinalIgnoreCase)).Sum(x => x.Quantity)).ToArray();
+    var deliveredByProduct = productionProducts.Select(product => Model.DeliveryRecords.Where(x => x.Product.Equals(product, StringComparison.OrdinalIgnoreCase) && x.Status != DeliveryLogisticsStatus.Cancelled).Sum(x => x.AcceptedWeight)).ToArray();
+    var productionStatusLabels = Enum.GetValues<ProductionStatus>().Select(ProductionStatusName).ToArray();
+    var productionStatusValues = Enum.GetValues<ProductionStatus>().Select(status => Model.Declarations.Count(x => x.Status == status)).ToArray();
+    var logisticsLoadedByMonth = chartMonths.Select(month => Model.DeliveryRecords.Where(x => x.ScheduledPickupAt.Year == month.Year && x.ScheduledPickupAt.Month == month.Month && x.Status != DeliveryLogisticsStatus.Cancelled).Sum(x => x.NetWeight)).ToArray();
+    var logisticsAcceptedByMonth = chartMonths.Select(month => Model.DeliveryRecords.Where(x => x.ScheduledPickupAt.Year == month.Year && x.ScheduledPickupAt.Month == month.Month && x.Status != DeliveryLogisticsStatus.Cancelled).Sum(x => x.AcceptedWeight)).ToArray();
+    var logisticsRejectedByMonth = chartMonths.Select(month => Model.DeliveryRecords.Where(x => x.ScheduledPickupAt.Year == month.Year && x.ScheduledPickupAt.Month == month.Month && x.Status != DeliveryLogisticsStatus.Cancelled).Sum(x => x.RejectedWeight)).ToArray();
+    var invoiceStatuses = Enum.GetValues<PartnerInvoiceStatus>();
+    var invoiceStatusLabels = invoiceStatuses.Select(InvoiceStatusName).ToArray();
+    var invoiceStatusValues = invoiceStatuses.Select(status => Model.Invoices.Count(x => x.Status == status)).ToArray();
+    var documentStatuses = new[] { "Ενεργά", "Λήγουν σύντομα", "Έληξαν" };
+    var documentStatusValues = new[]
+    {
+        Model.Documents.Count(x => !x.ExpiryDate.HasValue || x.ExpiryDate.Value > soonDo),
+        expiringDocs,
+        Model.Documents.Count(x => x.ExpiryDate.HasValue && x.ExpiryDate.Value < todayDo)
+    };
 }
 
 @* OVERVIEW — minimal, focused on 4 KPIs, recent deliveries, activity *@
@@ -640,44 +660,75 @@
     </section>
 }
 
-@* PRODUCTION — 3 KPIs + declarations + deliveries + form *@
+@* PRODUCTION — analytical declarations and deliveries workspace *@
 @if (page == "production")
 {
-    <div class="kpi-pro-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-pro-grid producer-compact-kpis">
         <article class="kpi-pro">
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-wheat-awn"></i></span><span>Δηλωμένη παραγωγή</span></div>
             <div class="kpi-pro-value">@f.DeclaredProduction.ToString("N0") <span class="unit">kg</span></div>
             <div class="kpi-pro-sub"><strong>@Model.Declarations.Count</strong> δηλώσεις</div>
         </article>
         <article class="kpi-pro">
-            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-truck-ramp-box"></i></span><span>Παραδοτέο</span></div>
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-truck-ramp-box"></i></span><span>Παραδόθηκε</span></div>
             <div class="kpi-pro-value">@f.DeliveredProduction.ToString("N0") <span class="unit">kg</span></div>
             <div class="kpi-pro-progress"><i style="width:@deliveryPct%"></i></div>
+        </article>
+        <article class="kpi-pro">
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-box-open"></i></span><span>Υπόλοιπο δηλώσεων</span></div>
+            <div class="kpi-pro-value">@declaredRemaining.ToString("N0") <span class="unit">kg</span></div>
+            <div class="kpi-pro-sub"><strong>@availableProduction.ToString("N0") kg</strong> διαθέσιμα</div>
         </article>
         <article class="kpi-pro">
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-euro-sign"></i></span><span>Μέση τιμή</span></div>
             <div class="kpi-pro-value">@f.AverageDeliveryPrice.ToString("N3") <span class="unit">€/kg</span></div>
         </article>
+        <article class="kpi-pro">
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-scale-balanced"></i></span><span>Αποδεκτό βάρος</span></div>
+            <div class="kpi-pro-value">@logistics.AcceptedWeight.ToString("N0") <span class="unit">kg</span></div>
+            <div class="kpi-pro-sub">Απορρίψεις <strong>@logistics.RejectedWeight.ToString("N0") kg</strong></div>
+        </article>
+        <article class="kpi-pro">
+            <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-wallet"></i></span><span>Πληρωτέα αξία</span></div>
+            <div class="kpi-pro-value">@logistics.NetPayable.ToString("N0") <span class="unit">€</span></div>
+            <div class="kpi-pro-sub"><strong>@logistics.Paid.ToString("N0") €</strong> πληρώθηκαν</div>
+        </article>
     </div>
 
-    <div class="section-title">
-        <h2>Δηλώσεις παραγωγής</h2>
+    <div class="producer-chart-grid producer-analysis-grid">
+        <article class="producer-chart-card"><header><div><small>ΟΓΚΟΣ ΑΝΑ ΠΡΟΪΟΝ</small><h3>Δηλωμένο και παραδομένο</h3></div><i class="fa-solid fa-chart-column"></i></header><div class="producer-chart-canvas"><canvas data-producer-chart="production-volume" data-labels='@JsonSerializer.Serialize(productionProducts)' data-declared='@JsonSerializer.Serialize(declaredByProduct)' data-delivered='@JsonSerializer.Serialize(deliveredByProduct)'></canvas></div></article>
+        <article class="producer-chart-card"><header><div><small>ΚΑΤΑΣΤΑΣΗ ΔΗΛΩΣΕΩΝ</small><h3>Τρέχουσα κατανομή</h3></div><i class="fa-solid fa-chart-pie"></i></header><div class="producer-chart-canvas"><canvas data-producer-chart="production-status" data-labels='@JsonSerializer.Serialize(productionStatusLabels)' data-values='@JsonSerializer.Serialize(productionStatusValues)'></canvas></div></article>
+    </div>
+
+    <div class="section-title producer-section-heading">
+        <div><small>ΜΗΤΡΩΟ ΠΑΡΑΓΩΓΗΣ</small><h2>Δηλώσεις παραγωγής</h2></div>
         <div class="rule"></div>
         <a class="more" href="#new-declaration"><i class="fa-solid fa-plus"></i> Νέα δήλωση</a>
     </div>
-    <div class="table-wrap">
-        <table class="data-table pro">
+    <section class="record-browser" data-record-browser data-page-size="6">
+        <div class="record-filter-bar">
+            <label class="record-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Προϊόν, ποιότητα ή περιοχή" data-record-search /></label>
+            <label><span>Προϊόν</span><select data-record-filter="product"><option value="all">Όλα</option>@foreach(var product in productionProducts){<option value="@product">@product</option>}</select></label>
+            <label><span>Κατάσταση</span><select data-record-filter="status"><option value="all">Όλες</option>@foreach(var status in Enum.GetValues<ProductionStatus>()){<option value="@status">@ProductionStatusName(status)</option>}</select></label>
+            <span class="record-count" data-record-count>@Model.Declarations.Count εγγραφές</span>
+        </div>
+        <div class="table-wrap">
+        <table class="data-table pro clickable-table">
             <thead><tr><th>Προϊόν</th><th class="right">Ποσότητα</th><th>Ποιότητα</th><th>Διαθεσιμότητα</th><th>Κατάσταση</th><th></th></tr></thead>
             <tbody>
                 @foreach (var d in Model.Declarations)
                 {
-                    <tr>
-                        <td><strong>@d.Product</strong></td>
+                    var relatedLoads = Model.DeliveryRecords.Where(x => x.ProductionDeclarationId == d.Id && x.Status != DeliveryLogisticsStatus.Cancelled).ToList();
+                    var declarationDelivered = relatedLoads.Sum(x => x.AcceptedWeight);
+                    var declarationRemaining = Math.Max(0, d.Quantity - declarationDelivered);
+                    <tr data-record-row data-record-detail data-detail-modal="production-declaration-detail" data-search="@($"{d.Product} {d.QualityGrade} {d.Region}").ToLowerInvariant()" data-product="@d.Product" data-status="@d.Status"
+                        data-detail-title="@d.Product" data-detail-reference="@d.Id" data-detail-quantity="@d.Quantity.ToString("N3") @d.Unit" data-detail-quality="@d.QualityGrade" data-detail-region="@d.Region" data-detail-availability="@d.AvailableFrom.ToString("dd/MM/yyyy") – @d.AvailableTo.ToString("dd/MM/yyyy")" data-detail-status="@ProductionStatusName(d.Status)" data-detail-delivered="@declarationDelivered.ToString("N3") @d.Unit" data-detail-remaining="@declarationRemaining.ToString("N3") @d.Unit" data-detail-routes="@relatedLoads.Count">
+                        <td><strong>@d.Product</strong><small>@d.Region</small></td>
                         <td class="right num">@d.Quantity.ToString("N0") @d.Unit</td>
                         <td>@d.QualityGrade</td>
                         <td>@d.AvailableFrom.ToString("dd/MM")–@d.AvailableTo.ToString("dd/MM")</td>
                         <td><span class="status-pill @d.Status.ToString().ToLowerInvariant()">@ProductionStatusName(d.Status)</span></td>
-                        <td>@if (d.Status == ProductionStatus.Available){<form asp-action="DeleteProduction" asp-route-id="@d.Id" method="post" style="margin:0"><button class="icon-delete" data-confirm="Να διαγραφεί;"><i class="fa-solid fa-trash"></i></button></form>}</td>
+                        <td><span class="row-open"><i class="fa-solid fa-chevron-right"></i></span>@if (d.Status == ProductionStatus.Available){<form asp-action="DeleteProduction" asp-route-id="@d.Id" method="post" style="margin:0"><button class="icon-delete" data-confirm="Να διαγραφεί;"><i class="fa-solid fa-trash"></i></button></form>}</td>
                     </tr>
                 }
                 @if (Model.Declarations.Count == 0)
@@ -686,34 +737,39 @@
                 }
             </tbody>
         </table>
-    </div>
+        </div>
+        <div class="producer-table-empty" data-record-empty hidden><i class="fa-solid fa-filter-circle-xmark"></i> Δεν υπάρχουν δηλώσεις για τα επιλεγμένα φίλτρα.</div>
+        <div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page>Σελίδα 1 από 1</span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+    </section>
 
-    <div class="section-title">
-        <h2>Παραδόσεις προς AGRO UNION</h2>
+    <div class="section-title producer-section-heading">
+        <div><small>ΕΚΤΕΛΕΣΗ ΣΥΜΦΩΝΙΩΝ</small><h2>Παραδόσεις προς AGRO UNION</h2></div>
         <div class="rule"></div>
     </div>
-    <div class="table-wrap">
-        <table class="data-table pro">
-            <thead><tr><th>Ημερομηνία</th><th>Προϊόν</th><th class="right">Ποσότητα</th><th class="right">Τιμή</th><th>Κατάσταση</th><th></th></tr></thead>
+    <section class="record-browser" data-record-browser data-page-size="6">
+        <div class="record-filter-bar"><label class="record-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Δρομολόγιο, προϊόν ή εργοστάσιο" data-record-search /></label><label><span>Κατάσταση</span><select data-record-filter="status"><option value="all">Όλες</option>@foreach(var status in Enum.GetValues<DeliveryLogisticsStatus>()){<option value="@status">@LogisticsStatusName(status)</option>}</select></label><span class="record-count" data-record-count>@Model.DeliveryRecords.Count παραδόσεις</span></div>
+        <div class="table-wrap"><table class="data-table pro clickable-table">
+            <thead><tr><th>Δρομολόγιο</th><th>Προϊόν</th><th class="right">Αποδεκτό βάρος</th><th class="right">Τιμή παραγωγού</th><th class="right">Πληρωτέο</th><th>Κατάσταση</th></tr></thead>
             <tbody>
-                @foreach (var d in Model.Deals)
+                @foreach (var d in Model.DeliveryRecords.OrderByDescending(x => x.ScheduledPickupAt))
                 {
-                    <tr>
-                        <td>@d.CreatedAt.ToString("dd/MM/yyyy")</td>
-                        <td><strong>@d.Product</strong></td>
-                        <td class="right num">@d.Quantity.ToString("N0") kg</td>
-                        <td class="right num sensitive">@d.BuyPricePerUnit.ToString("N3") €</td>
-                        <td><span class="status-pill @(d.Status == DealStatus.Proposed ? "proposed" : d.Status.ToString().ToLowerInvariant())">@DealStatusName(d.Status)</span></td>
-                        <td>@if (d.Status == DealStatus.Proposed || d.Status == DealStatus.SellSideConfirmed){<form asp-action="ConfirmBuy" asp-route-id="@d.Id" method="post" style="margin:0"><button class="btn btn-sm"><i class="fa-solid fa-check"></i> Επιβεβαίωση</button></form>}</td>
+                    <tr data-record-row data-record-detail data-detail-modal="production-delivery-detail" data-search="@($"{d.RouteNumber} {d.Product} {d.FactoryName} {d.LotNumber}").ToLowerInvariant()" data-status="@d.Status"
+                        data-detail-title="@d.RouteNumber" data-detail-product="@d.Product" data-detail-quality="@d.QualityGrade" data-detail-lot="@(d.LotNumber ?? "—")" data-detail-date="@d.ScheduledPickupAt.ToString("dd/MM/yyyy HH:mm")" data-detail-factory="@d.FactoryName" data-detail-route="@d.OriginAddress → @d.DestinationAddress" data-detail-loaded="@d.NetWeight.ToString("N3") @d.WeightUnit" data-detail-accepted="@d.AcceptedWeight.ToString("N3") @d.WeightUnit" data-detail-rejected="@d.RejectedWeight.ToString("N3") @d.WeightUnit" data-detail-price="@d.UnitPrice.ToString("N4") €/@d.WeightUnit" data-detail-payable="@d.NetPayableAmount.ToString("N2") €" data-detail-paid="@d.PaidAmount.ToString("N2") €" data-detail-outstanding="@d.OutstandingAmount.ToString("N2") €" data-detail-status="@LogisticsStatusName(d.Status)">
+                        <td><strong>@d.RouteNumber</strong><small>@d.ScheduledPickupAt.ToString("dd/MM/yyyy")</small></td><td><strong>@d.Product</strong><small>@d.FactoryName</small></td><td class="right num">@d.AcceptedWeight.ToString("N0") @d.WeightUnit</td><td class="right num sensitive">@d.UnitPrice.ToString("N4") €/@d.WeightUnit</td><td class="right num">@d.NetPayableAmount.ToString("N2") €</td><td><span class="status-pill @d.Status.ToString().ToLowerInvariant()">@LogisticsStatusName(d.Status)</span></td>
                     </tr>
                 }
-                @if (Model.Deals.Count == 0)
+                @if (Model.DeliveryRecords.Count == 0)
                 {
                     <tr><td colspan="6"><div class="portal-empty compact"><i class="fa-solid fa-truck-ramp-box"></i><span>Καμία παράδοση.</span></div></td></tr>
                 }
             </tbody>
-        </table>
-    </div>
+        </table></div><div class="producer-table-empty" data-record-empty hidden>Δεν υπάρχουν παραδόσεις για τα επιλεγμένα φίλτρα.</div><div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page>Σελίδα 1 από 1</span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+    </section>
+
+    @if (pendingDeals > 0)
+    {
+        <div class="producer-action-panel"><div><small>ΑΠΑΙΤΕΙΤΑΙ ΕΝΕΡΓΕΙΑ</small><strong>@pendingDeals συμφωνίες αναμένουν επιβεβαίωση</strong></div>@foreach(var deal in Model.Deals.Where(x => x.Status == DealStatus.Proposed || x.Status == DealStatus.SellSideConfirmed)){<form asp-action="ConfirmBuy" asp-route-id="@deal.Id" method="post"><span>@deal.Product · @deal.Quantity.ToString("N0") kg · @deal.BuyPricePerUnit.ToString("N3") €/kg</span><button class="btn btn-sm"><i class="fa-solid fa-check"></i> Επιβεβαίωση</button></form>}</div>
+    }
 
     <div class="privacy-note" style="margin-top:20px">
         <i class="fa-solid fa-lock"></i>
@@ -733,12 +789,15 @@
             <button class="workspace-save"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση</button>
         </form>
     </details>
+
+    <div class="dashboard-modal" id="production-declaration-detail" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog record-detail-dialog" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-wheat-awn"></i></span><div><small>ΑΝΑΛΥΣΗ ΔΗΛΩΣΗΣ</small><h2 data-record-field="title">Δήλωση παραγωγής</h2><p>Πλήρης εικόνα δηλωμένης και παραδομένης ποσότητας.</p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><div class="record-detail-grid"><div><small>Κωδικός</small><strong data-record-field="reference"></strong></div><div><small>Κατάσταση</small><strong data-record-field="status"></strong></div><div><small>Δηλωμένη ποσότητα</small><strong data-record-field="quantity"></strong></div><div><small>Παραδόθηκε</small><strong data-record-field="delivered"></strong></div><div><small>Υπόλοιπο</small><strong data-record-field="remaining"></strong></div><div><small>Δρομολόγια</small><strong data-record-field="routes"></strong></div><div><small>Ποιότητα</small><strong data-record-field="quality"></strong></div><div><small>Περιοχή</small><strong data-record-field="region"></strong></div><div class="wide"><small>Διαθεσιμότητα</small><strong data-record-field="availability"></strong></div></div></section></div>
+    <div class="dashboard-modal" id="production-delivery-detail" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog record-detail-dialog" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-truck-ramp-box"></i></span><div><small>ΠΑΡΑΔΟΣΗ ΠΡΟΣ AGRO UNION</small><h2 data-record-field="title">Παράδοση</h2><p data-record-field="route"></p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><div class="record-detail-grid"><div><small>Προϊόν</small><strong data-record-field="product"></strong></div><div><small>Ποιότητα</small><strong data-record-field="quality"></strong></div><div><small>Παρτίδα</small><strong data-record-field="lot"></strong></div><div><small>Παραλαβή</small><strong data-record-field="date"></strong></div><div class="wide"><small>Εργοστάσιο παραλαβής</small><strong data-record-field="factory"></strong></div><div><small>Φορτώθηκε</small><strong data-record-field="loaded"></strong></div><div><small>Αποδεκτό</small><strong data-record-field="accepted"></strong></div><div><small>Απόρριψη</small><strong data-record-field="rejected"></strong></div><div><small>Τιμή παραγωγού</small><strong data-record-field="price"></strong></div><div><small>Καθαρό πληρωτέο</small><strong data-record-field="payable"></strong></div><div><small>Πληρώθηκε</small><strong data-record-field="paid"></strong></div><div><small>Υπόλοιπο</small><strong data-record-field="outstanding"></strong></div><div><small>Κατάσταση</small><strong data-record-field="status"></strong></div></div></section></div>
 }
 
-@* LOGISTICS — 4 KPIs + delivery cards *@
+@* LOGISTICS — searchable operational history *@
 @if (page == "logistics")
 {
-    <div class="kpi-pro-grid">
+    <div class="kpi-pro-grid producer-compact-kpis">
         <article class="kpi-pro">
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-route"></i></span><span>Δρομολόγια</span></div>
             <div class="kpi-pro-value">@logistics.TotalRoutes</div>
@@ -761,20 +820,37 @@
             <div class="kpi-pro-value" style="color:@(logistics.Outstanding > 0 ? "var(--warning)" : "var(--ink-900)")">@logistics.Outstanding.ToString("N0") <span class="unit">€</span></div>
             <div class="kpi-pro-progress @(logistics.Outstanding > 0 ? "brass" : "")"><i style="width:@paidPct%"></i></div>
         </article>
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-weight-hanging"></i></span><span>Φορτωμένο βάρος</span></div><div class="kpi-pro-value">@logistics.GrossCollectedWeight.ToString("N0") <span class="unit">kg</span></div><div class="kpi-pro-sub">Καθαρό πριν έλεγχο <strong>@Model.DeliveryRecords.Sum(x => x.NetWeight).ToString("N0") kg</strong></div></article>
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-money-check-dollar"></i></span><span>Πληρώθηκε</span></div><div class="kpi-pro-value">@logistics.Paid.ToString("N0") <span class="unit">€</span></div><div class="kpi-pro-progress"><i style="width:@paidPct%"></i></div></article>
     </div>
 
-    <div class="section-title">
-        <h2>Αναλυτικό ιστορικό φορτίων</h2>
+    <div class="producer-chart-grid producer-analysis-grid">
+        <article class="producer-chart-card"><header><div><small>ΡΟΗ ΦΟΡΤΙΩΝ · 6 ΜΗΝΕΣ</small><h3>Φόρτωση, αποδοχή και απορρίψεις</h3></div><i class="fa-solid fa-chart-column"></i></header><div class="producer-chart-canvas"><canvas data-producer-chart="logistics-weight" data-labels='@JsonSerializer.Serialize(chartLabels)' data-loaded='@JsonSerializer.Serialize(logisticsLoadedByMonth)' data-accepted='@JsonSerializer.Serialize(logisticsAcceptedByMonth)' data-rejected='@JsonSerializer.Serialize(logisticsRejectedByMonth)'></canvas></div></article>
+        <article class="producer-chart-card"><header><div><small>ΟΙΚΟΝΟΜΙΚΗ ΕΚΚΑΘΑΡΙΣΗ</small><h3>Πληρωμένο και ανοιχτό υπόλοιπο</h3></div><i class="fa-solid fa-chart-pie"></i></header><div class="producer-chart-canvas"><canvas data-producer-chart="logistics-payment" data-labels='@JsonSerializer.Serialize(new[]{"Πληρώθηκε","Ανοιχτό υπόλοιπο"})' data-values='@JsonSerializer.Serialize(new[]{logistics.Paid,logistics.Outstanding})'></canvas></div></article>
+    </div>
+
+    <div class="section-title producer-section-heading">
+        <div><small>ΕΠΙΧΕΙΡΗΣΙΑΚΗ ΚΑΡΤΕΛΑ</small><h2>Αναλυτικό ιστορικό φορτίων</h2></div>
         <div class="rule"></div>
     </div>
-    <div class="producer-delivery-records">
+    <section class="record-browser logistics-browser" data-record-browser data-page-size="5">
+        <div class="record-filter-bar">
+            <label class="record-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Δρομολόγιο, προϊόν, παρτίδα, εργοστάσιο" data-record-search /></label>
+            <label><span>Κατάσταση</span><select data-record-filter="status"><option value="all">Όλες</option>@foreach(var status in Enum.GetValues<DeliveryLogisticsStatus>()){<option value="@status">@LogisticsStatusName(status)</option>}</select></label>
+            <label><span>Πληρωμή</span><select data-record-filter="payment"><option value="all">Όλες</option>@foreach(var status in Enum.GetValues<DeliveryPaymentStatus>()){<option value="@status">@PaymentStatusName(status)</option>}</select></label>
+            <label><span>Περίοδος</span><select data-record-period><option value="all">Όλο το ιστορικό</option><option value="30">30 ημέρες</option><option value="90">90 ημέρες</option><option value="365">12 μήνες</option></select></label>
+            <span class="record-count" data-record-count>@Model.DeliveryRecords.Count φορτία</span>
+        </div>
+        <div class="producer-delivery-records">
         @if (Model.DeliveryRecords.Count == 0)
         {
             <div class="portal-empty"><i class="fa-solid fa-truck-ramp-box"></i><strong>Δεν έχουν καταχωριστεί ακόμη παραλαβές</strong><span>Μόλις η διαχείριση προγραμματίσει ένα δρομολόγιο, θα εμφανιστεί εδώ.</span></div>
         }
         @foreach (var item in Model.DeliveryRecords.OrderByDescending(x => x.ScheduledPickupAt))
         {
-            <article class="producer-delivery-card status-@item.Status.ToString().ToLowerInvariant()">
+            <article class="producer-delivery-card status-@item.Status.ToString().ToLowerInvariant()" data-record-row data-record-detail data-detail-modal="logistics-detail-modal" tabindex="0"
+                data-search="@($"{item.RouteNumber} {item.Product} {item.Variety} {item.QualityGrade} {item.LotNumber} {item.FactoryName} {item.OriginAddress} {item.DestinationAddress} {item.DriverName} {item.VehiclePlate}").ToLowerInvariant()" data-status="@item.Status" data-payment="@item.PaymentStatus" data-date="@item.ScheduledPickupAt.ToString("yyyy-MM-dd")"
+                data-detail-title="@item.RouteNumber" data-detail-status="@LogisticsStatusName(item.Status)" data-detail-payment="@PaymentStatusName(item.PaymentStatus)" data-detail-product="@item.Product" data-detail-variety="@(item.Variety ?? "—")" data-detail-quality="@item.QualityGrade" data-detail-lot="@(item.LotNumber ?? "—")" data-detail-factory="@item.FactoryName" data-detail-origin="@item.OriginAddress" data-detail-destination="@item.DestinationAddress" data-detail-scheduled="@item.ScheduledPickupAt.ToString("dd/MM/yyyy HH:mm")" data-detail-loadedat="@(item.LoadedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")" data-detail-deliveredat="@(item.DeliveredAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")" data-detail-carrier="@item.CarrierName" data-detail-driver="@item.DriverName" data-detail-vehicle="@item.VehiclePlate @(item.TrailerPlate is null ? "" : $"/ {item.TrailerPlate}")" data-detail-gross="@item.GrossWeight.ToString("N3") @item.WeightUnit" data-detail-tare="@item.TareWeight.ToString("N3") @item.WeightUnit" data-detail-net="@item.NetWeight.ToString("N3") @item.WeightUnit" data-detail-rejected="@item.RejectedWeight.ToString("N3") @item.WeightUnit" data-detail-accepted="@item.AcceptedWeight.ToString("N3") @item.WeightUnit" data-detail-weighing="@($"{item.WeighbridgeName} · {item.WeighingSlipNumber}")" data-detail-dispatch="@(item.DispatchNoteNumber ?? "—")" data-detail-receipt="@(item.DeliveryReceiptNumber ?? "—")" data-detail-agreement="@item.AgreementReference" data-detail-price="@item.UnitPrice.ToString("N4") €/@item.WeightUnit" data-detail-base="@item.BaseAmount.ToString("N2") €" data-detail-payable="@item.NetPayableAmount.ToString("N2") €" data-detail-paid="@item.PaidAmount.ToString("N2") €" data-detail-outstanding="@item.OutstandingAmount.ToString("N2") €" data-detail-due="@(item.PaymentDueDate?.ToString("dd/MM/yyyy") ?? "—")" data-detail-notes="@(item.LoadNotes ?? "—")">
                 <header>
                     <span class="delivery-truck-icon"><i class="fa-solid fa-truck-fast"></i></span>
                     <div>
@@ -800,19 +876,27 @@
                     <div><small>Καθαρό πληρωτέο</small><strong>@item.NetPayableAmount.ToString("N2") €</strong></div>
                     <div class="@(item.OutstandingAmount > 0 ? "outstanding" : "paid")"><small>Υπόλοιπο</small><strong>@item.OutstandingAmount.ToString("N2") €</strong></div>
                 </div>
+                <footer class="delivery-card-foot"><span><i class="fa-solid fa-industry"></i> @item.FactoryName</span><button type="button">Πλήρη στοιχεία <i class="fa-solid fa-arrow-right"></i></button></footer>
             </article>
         }
-    </div>
+        </div>
+        <div class="producer-table-empty" data-record-empty hidden><i class="fa-solid fa-filter-circle-xmark"></i> Δεν βρέθηκαν φορτία για τα επιλεγμένα φίλτρα.</div>
+        <div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page>Σελίδα 1 από 1</span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+    </section>
+
+    <div class="dashboard-modal" id="logistics-detail-modal" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog record-detail-dialog record-detail-wide" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-truck-fast"></i></span><div><small>ΠΛΗΡΗΣ ΚΑΡΤΕΛΑ ΦΟΡΤΙΟΥ</small><h2 data-record-field="title"></h2><p><span data-record-field="status"></span> · <span data-record-field="payment"></span></p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><div class="record-detail-sections"><section><h3>Προϊόν & προορισμός</h3><div class="record-detail-grid"><div><small>Προϊόν</small><strong data-record-field="product"></strong></div><div><small>Ποικιλία</small><strong data-record-field="variety"></strong></div><div><small>Ποιότητα</small><strong data-record-field="quality"></strong></div><div><small>Παρτίδα</small><strong data-record-field="lot"></strong></div><div class="wide"><small>Εργοστάσιο</small><strong data-record-field="factory"></strong></div><div class="wide"><small>Από</small><strong data-record-field="origin"></strong></div><div class="wide"><small>Προς</small><strong data-record-field="destination"></strong></div></div></section><section><h3>Χρόνοι & μεταφορά</h3><div class="record-detail-grid"><div><small>Προγραμματισμός</small><strong data-record-field="scheduled"></strong></div><div><small>Φόρτωση</small><strong data-record-field="loadedat"></strong></div><div><small>Παράδοση</small><strong data-record-field="deliveredat"></strong></div><div><small>Μεταφορέας</small><strong data-record-field="carrier"></strong></div><div><small>Οδηγός</small><strong data-record-field="driver"></strong></div><div><small>Όχημα / ρυμουλκό</small><strong data-record-field="vehicle"></strong></div></div></section><section><h3>Ζύγιση & παραστατικά</h3><div class="record-detail-grid"><div><small>Μικτό</small><strong data-record-field="gross"></strong></div><div><small>Απόβαρο</small><strong data-record-field="tare"></strong></div><div><small>Καθαρό</small><strong data-record-field="net"></strong></div><div><small>Απόρριψη</small><strong data-record-field="rejected"></strong></div><div><small>Αποδεκτό</small><strong data-record-field="accepted"></strong></div><div><small>Ζυγολόγιο</small><strong data-record-field="weighing"></strong></div><div><small>Δελτίο αποστολής</small><strong data-record-field="dispatch"></strong></div><div><small>Απόδειξη παραλαβής</small><strong data-record-field="receipt"></strong></div></div></section><section><h3>Τιμή & εξόφληση</h3><div class="record-detail-grid"><div><small>Συμφωνία</small><strong data-record-field="agreement"></strong></div><div><small>Τιμή παραγωγού</small><strong data-record-field="price"></strong></div><div><small>Αξία παραγωγής</small><strong data-record-field="base"></strong></div><div><small>Καθαρό πληρωτέο</small><strong data-record-field="payable"></strong></div><div><small>Πληρώθηκε</small><strong data-record-field="paid"></strong></div><div><small>Υπόλοιπο</small><strong data-record-field="outstanding"></strong></div><div><small>Ημερομηνία εξόφλησης</small><strong data-record-field="due"></strong></div><div class="wide"><small>Σημειώσεις φορτίου</small><strong data-record-field="notes"></strong></div></div></section></div></section></div>
 }
 
-@* INVOICES — 3 KPIs + list *@
+@* INVOICES — secure PDF archive *@
 @if (page == "invoices")
 {
     var invSum = Model.Invoices.Sum(x => x.TotalAmount);
     var invPaid = Model.Invoices.Sum(x => x.PaidAmount);
     var invOpen = Model.Invoices.Sum(x => x.OutstandingAmount);
 
-    <div class="kpi-pro-grid" style="grid-template-columns:repeat(3,1fr)">
+    var invPdfCount = Model.Invoices.Count(x => !string.IsNullOrWhiteSpace(x.FileUrl));
+    var overdueValue = Model.Invoices.Where(x => x.Status == PartnerInvoiceStatus.Overdue).Sum(x => x.OutstandingAmount);
+    <div class="kpi-pro-grid producer-compact-kpis">
         <article class="kpi-pro">
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-file-invoice-dollar"></i></span><span>Συνολική αξία</span></div>
             <div class="kpi-pro-value">@invSum.ToString("N0") <span class="unit">€</span></div>
@@ -830,20 +914,31 @@
             <div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-hourglass"></i></span><span>Ανοιχτό υπόλοιπο</span></div>
             <div class="kpi-pro-value @(invOpen > 0 ? "negative" : "")">@invOpen.ToString("N0") <span class="unit">€</span></div>
         </article>
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-triangle-exclamation"></i></span><span>Ληξιπρόθεσμα</span></div><div class="kpi-pro-value @(overdueValue > 0 ? "negative" : "")">@overdueValue.ToString("N0") <span class="unit">€</span></div><div class="kpi-pro-sub"><strong>@overdueInvoices</strong> παραστατικά</div></article>
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-file-pdf"></i></span><span>Αρχεία PDF</span></div><div class="kpi-pro-value">@invPdfCount</div><div class="kpi-pro-sub">ασφαλή αρχεία</div></article>
     </div>
 
-    <div class="section-title">
-        <h2>Παραστατικά</h2>
+    <div class="producer-chart-grid producer-analysis-grid invoice-analysis-grid">
+        <article class="producer-chart-card"><header><div><small>ΚΑΤΑΣΤΑΣΗ ΠΑΡΑΣΤΑΤΙΚΩΝ</small><h3>Κατανομή αρχείου</h3></div><i class="fa-solid fa-chart-pie"></i></header><div class="producer-chart-canvas"><canvas data-producer-chart="invoice-status" data-labels='@JsonSerializer.Serialize(invoiceStatusLabels)' data-values='@JsonSerializer.Serialize(invoiceStatusValues)'></canvas></div></article>
+        <article class="invoice-security-card"><i class="fa-solid fa-shield-halved"></i><div><small>ΙΔΙΩΤΙΚΟ ΑΡΧΕΙΟ</small><h3>Ασφαλής πρόσβαση στα PDF</h3><p>Κάθε αρχείο προβάλλεται μόνο μέσα από τον δικό σας λογαριασμό. Δεν δημοσιεύεται σε κοινόχρηστο σύνδεσμο.</p></div></article>
+    </div>
+
+    <div class="section-title producer-section-heading">
+        <div><small>ΟΙΚΟΝΟΜΙΚΟ ΑΡΧΕΙΟ</small><h2>Παραστατικά</h2></div>
         <div class="rule"></div>
     </div>
-    <div class="invoice-list">
+    <section class="record-browser" data-record-browser data-page-size="7">
+        <div class="record-filter-bar"><label class="record-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Αριθμός ή περιγραφή παραστατικού" data-record-search /></label><label><span>Κατεύθυνση</span><select data-record-filter="direction"><option value="all">Όλες</option><option value="FromProducer">Εσείς → AGRO UNION</option><option value="FromAgroUnion">AGRO UNION → Εσείς</option></select></label><label><span>Κατάσταση</span><select data-record-filter="status"><option value="all">Όλες</option>@foreach(var status in invoiceStatuses){<option value="@status">@InvoiceStatusName(status)</option>}</select></label><label><span>Περίοδος</span><select data-record-period><option value="all">Όλο το ιστορικό</option><option value="30">30 ημέρες</option><option value="90">90 ημέρες</option><option value="365">12 μήνες</option></select></label><span class="record-count" data-record-count>@Model.Invoices.Count παραστατικά</span></div>
+        <div class="invoice-list">
         @if (Model.Invoices.Count == 0)
         {
             <div class="portal-empty"><i class="fa-regular fa-file-lines"></i><strong>Δεν υπάρχουν τιμολόγια</strong><span>Θα εμφανιστούν μόλις καταχωριστούν.</span></div>
         }
         @foreach (var invoice in Model.Invoices.OrderByDescending(x => x.IssueDate))
         {
-            <article class="invoice-row">
+            var invoiceFileUrl = Url.Action("PartnerInvoiceFile", "Portal", new { id = invoice.Id });
+            var invoiceDownloadUrl = Url.Action("PartnerInvoiceFile", "Portal", new { id = invoice.Id, download = true });
+            <article class="invoice-row" data-record-row data-record-detail data-detail-modal="invoice-detail-modal" tabindex="0" data-search="@($"{invoice.InvoiceNumber} {invoice.Description}").ToLowerInvariant()" data-direction="@invoice.Direction" data-status="@invoice.Status" data-date="@invoice.IssueDate.ToString("yyyy-MM-dd")" data-detail-title="@invoice.InvoiceNumber" data-detail-direction="@(invoice.Direction == PartnerInvoiceDirection.FromProducer ? "Εσείς → AGRO UNION" : "AGRO UNION → Εσείς")" data-detail-description="@invoice.Description" data-detail-issue="@invoice.IssueDate.ToString("dd/MM/yyyy")" data-detail-due="@(invoice.DueDate?.ToString("dd/MM/yyyy") ?? "—")" data-detail-net="@invoice.NetAmount.ToString("N2") €" data-detail-vat="@invoice.VatAmount.ToString("N2") €" data-detail-total="@invoice.TotalAmount.ToString("N2") €" data-detail-paid="@invoice.PaidAmount.ToString("N2") €" data-detail-outstanding="@invoice.OutstandingAmount.ToString("N2") €" data-detail-status="@InvoiceStatusName(invoice.Status)" data-detail-file="@(string.IsNullOrWhiteSpace(invoice.FileUrl) ? "" : invoiceFileUrl)" data-detail-download="@(string.IsNullOrWhiteSpace(invoice.FileUrl) ? "" : invoiceDownloadUrl)">
                 <span class="invoice-direction @(invoice.Direction == PartnerInvoiceDirection.FromProducer ? "outgoing" : "incoming")"><i class="fa-solid @(invoice.Direction == PartnerInvoiceDirection.FromProducer ? "fa-arrow-up" : "fa-arrow-down")"></i></span>
                 <div><small>@(invoice.Direction == PartnerInvoiceDirection.FromProducer ? "Εσείς → AGRO UNION" : "AGRO UNION → Εσείς")</small><strong>@invoice.InvoiceNumber</strong><span>@invoice.Description</span></div>
                 <div><small>Έκδοση</small><strong>@invoice.IssueDate.ToString("dd/MM/yyyy")</strong></div>
@@ -851,25 +946,34 @@
                 <div><small>Υπόλοιπο</small><strong>@invoice.OutstandingAmount.ToString("N2") €</strong><span class="invoice-status status-@invoice.Status.ToString().ToLowerInvariant()">@InvoiceStatusName(invoice.Status)</span></div>
                 @if (!string.IsNullOrWhiteSpace(invoice.FileUrl))
                 {
-                    <a class="document-link" href="@invoice.FileUrl" target="_blank" rel="noopener" title="Άνοιγμα"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                    <button class="document-link" type="button" data-file-preview="@invoiceFileUrl" data-file-download="@invoiceDownloadUrl" title="Προεπισκόπηση PDF"><i class="fa-solid fa-file-pdf"></i></button>
                 }
             </article>
         }
-    </div>
+        </div><div class="producer-table-empty" data-record-empty hidden>Δεν υπάρχουν παραστατικά για τα επιλεγμένα φίλτρα.</div><div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page>Σελίδα 1 από 1</span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+    </section>
+
+    <div class="dashboard-modal" id="invoice-detail-modal" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog record-detail-dialog" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span><div><small data-record-field="direction"></small><h2 data-record-field="title"></h2><p data-record-field="description"></p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><div class="record-detail-grid"><div><small>Έκδοση</small><strong data-record-field="issue"></strong></div><div><small>Λήξη</small><strong data-record-field="due"></strong></div><div><small>Καθαρή αξία</small><strong data-record-field="net"></strong></div><div><small>ΦΠΑ</small><strong data-record-field="vat"></strong></div><div><small>Σύνολο</small><strong data-record-field="total"></strong></div><div><small>Εξοφλήθηκε</small><strong data-record-field="paid"></strong></div><div><small>Υπόλοιπο</small><strong data-record-field="outstanding"></strong></div><div><small>Κατάσταση</small><strong data-record-field="status"></strong></div></div><footer class="record-detail-actions"><button type="button" data-record-preview hidden><i class="fa-regular fa-eye"></i> Προεπισκόπηση PDF</button><a data-record-download hidden><i class="fa-solid fa-download"></i> Λήψη PDF</a></footer></section></div>
+    <div class="dashboard-modal" id="pdf-preview-modal" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog pdf-preview-dialog" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-file-pdf"></i></span><div><small>ΑΣΦΑΛΗΣ ΠΡΟΕΠΙΣΚΟΠΗΣΗ</small><h2>Έγγραφο PDF</h2></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><iframe data-pdf-preview title="Προεπισκόπηση PDF"></iframe><footer class="pdf-preview-actions"><a data-pdf-download><i class="fa-solid fa-download"></i> Λήψη αρχείου</a></footer></section></div>
 }
 
-@* DOCUMENTS — contract + documents grid *@
+@* DOCUMENTS — secure producer archive *@
 @if (page == "documents")
 {
-    <div class="pill-row">
-        <span class="pill-metric"><i class="fa-solid fa-file-signature"></i> <strong>@Model.Contracts.Count</strong> συμβάσεις</span>
-        <span class="pill-metric info"><i class="fa-solid fa-folder"></i> <strong>@Model.Documents.Count</strong> έγγραφα</span>
-        @if (expiringDocs > 0)
-        {
-            <span class="pill-metric warning"><i class="fa-solid fa-clock"></i> <strong>@expiringDocs</strong> λήγουν σύντομα</span>
-        }
+    var documentPdfCount = Model.Documents.Count(x => !string.IsNullOrWhiteSpace(x.FileUrl));
+    var activeContracts = Model.Contracts.Count(x => x.Status == ContractStatus.Active);
+    var expiredDocs = Model.Documents.Count(x => x.ExpiryDate.HasValue && x.ExpiryDate.Value < todayDo);
+    <div class="kpi-pro-grid producer-compact-kpis document-kpis">
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-file-signature"></i></span><span>Συμβάσεις</span></div><div class="kpi-pro-value">@Model.Contracts.Count</div><div class="kpi-pro-sub"><strong>@activeContracts</strong> ενεργές</div></article>
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-folder-open"></i></span><span>Έγγραφα φακέλου</span></div><div class="kpi-pro-value">@Model.Documents.Count</div><div class="kpi-pro-sub"><strong>@documentPdfCount</strong> PDF διαθέσιμα</div></article>
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-clock"></i></span><span>Λήγουν σύντομα</span></div><div class="kpi-pro-value">@expiringDocs</div><div class="kpi-pro-sub">εντός 60 ημερών</div></article>
+        <article class="kpi-pro"><div class="kpi-pro-label"><span class="lb-ic"><i class="fa-solid fa-circle-exclamation"></i></span><span>Έληξαν</span></div><div class="kpi-pro-value @(expiredDocs > 0 ? "negative" : "")">@expiredDocs</div><div class="kpi-pro-sub">χρειάζονται ανανέωση</div></article>
     </div>
-    <div class="document-grid">
+
+    <div class="producer-chart-grid producer-analysis-grid document-analysis-grid"><article class="producer-chart-card"><header><div><small>ΕΛΕΓΧΟΣ ΙΣΧΥΟΣ</small><h3>Κατάσταση εγγράφων</h3></div><i class="fa-solid fa-chart-pie"></i></header><div class="producer-chart-canvas"><canvas data-producer-chart="document-status" data-labels='@JsonSerializer.Serialize(documentStatuses)' data-values='@JsonSerializer.Serialize(documentStatusValues)'></canvas></div></article><article class="invoice-security-card"><i class="fa-solid fa-lock"></i><div><small>ΠΡΟΣΩΠΙΚΟΣ ΦΑΚΕΛΟΣ</small><h3>Αρχεία μόνο για τον λογαριασμό σας</h3><p>Η διαχείριση αναρτά συμβάσεις, πιστοποιήσεις και συνοδευτικά PDF. Η πρόσβαση ελέγχεται σε κάθε προβολή και λήψη.</p></div></article></div>
+
+    <div class="section-title producer-section-heading"><div><small>ΣΥΜΒΑΤΙΚΟ ΠΛΑΙΣΙΟ</small><h2>Συμβάσεις</h2></div><div class="rule"></div></div>
+    <div class="contract-register">
         @foreach (var contract in Model.Contracts)
         {
             <article class="document-tile contract-tile">
@@ -877,32 +981,47 @@
                 <div>
                     <small>Σύμβαση · @ContractStatusName(contract.Status)</small>
                     <h3>@contract.ContractNumber</h3>
-                    <p>@contract.PricingTerms</p>
-                    <footer><span><i class="fa-solid fa-calendar"></i> @contract.StartDate.ToString("dd/MM/yyyy")</span></footer>
+                    <p>@ContractSubjectName(contract.Subject)</p>
+                    <div class="contract-terms"><span><small>Τιμολόγηση</small>@contract.PricingTerms</span><span><small>Ποσότητα</small>@contract.QuantityTerms</span></div>
+                    <footer><span><i class="fa-solid fa-calendar"></i> @contract.StartDate.ToString("dd/MM/yyyy")</span>@if(contract.EndDate.HasValue){<span>έως @contract.EndDate.Value.ToString("dd/MM/yyyy")</span>}</footer>
                 </div>
             </article>
         }
+        @if(Model.Contracts.Count == 0){<div class="portal-empty compact"><i class="fa-regular fa-file-lines"></i><span>Δεν υπάρχει καταχωρισμένη σύμβαση.</span></div>}
+    </div>
+
+    <div class="section-title producer-section-heading"><div><small>ΑΣΦΑΛΗΣ ΒΙΒΛΙΟΘΗΚΗ</small><h2>Έγγραφα & πιστοποιήσεις</h2></div><div class="rule"></div></div>
+    <section class="record-browser" data-record-browser data-page-size="6">
+        <div class="record-filter-bar"><label class="record-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Τίτλος ή αριθμός αναφοράς" data-record-search /></label><label><span>Τύπος</span><select data-record-filter="type"><option value="all">Όλοι</option>@foreach(var type in Enum.GetValues<PartnerDocumentType>()){<option value="@type">@DocumentTypeName(type)</option>}</select></label><label><span>Ισχύς</span><select data-record-filter="validity"><option value="all">Όλα</option><option value="active">Ενεργά</option><option value="expiring">Λήγουν σύντομα</option><option value="expired">Έληξαν</option></select></label><span class="record-count" data-record-count>@Model.Documents.Count έγγραφα</span></div>
+        <div class="document-grid professional-documents">
         @foreach (var document in Model.Documents)
         {
-            <article class="document-tile">
+            var validity = document.ExpiryDate.HasValue && document.ExpiryDate.Value < todayDo ? "expired" : document.ExpiryDate.HasValue && document.ExpiryDate.Value <= soonDo ? "expiring" : "active";
+            var documentFileUrl = Url.Action("PartnerDocumentFile", "Portal", new { id = document.Id });
+            var documentDownloadUrl = Url.Action("PartnerDocumentFile", "Portal", new { id = document.Id, download = true });
+            <article class="document-tile" data-record-row data-record-detail data-detail-modal="document-detail-modal" tabindex="0" data-search="@($"{document.Title} {document.ReferenceNumber} {document.Notes}").ToLowerInvariant()" data-type="@document.Type" data-validity="@validity" data-date="@document.IssueDate.ToString("yyyy-MM-dd")" data-detail-title="@document.Title" data-detail-type="@DocumentTypeName(document.Type)" data-detail-reference="@document.ReferenceNumber" data-detail-issue="@document.IssueDate.ToString("dd/MM/yyyy")" data-detail-expiry="@(document.ExpiryDate?.ToString("dd/MM/yyyy") ?? "Χωρίς ημερομηνία λήξης")" data-detail-validity="@(validity == "expired" ? "Έληξε" : validity == "expiring" ? "Λήγει σύντομα" : "Ενεργό")" data-detail-notes="@(document.Notes ?? "Δεν υπάρχουν πρόσθετες σημειώσεις.")" data-detail-file="@(string.IsNullOrWhiteSpace(document.FileUrl) ? "" : documentFileUrl)" data-detail-download="@(string.IsNullOrWhiteSpace(document.FileUrl) ? "" : documentDownloadUrl)">
                 <span><i class="fa-solid fa-file-shield"></i></span>
                 <div>
-                    <small>@DocumentTypeName(document.Type)</small>
+                    <small>@DocumentTypeName(document.Type) · @document.ReferenceNumber</small>
                     <h3>@document.Title</h3>
                     <p>@document.Notes</p>
                     <footer>
                         <span><i class="fa-solid fa-calendar"></i> @document.IssueDate.ToString("dd/MM/yyyy")</span>
                         @if (document.ExpiryDate is { } expiry){<span>Λήξη @expiry.ToString("dd/MM/yyyy")</span>}
-                        @if (!string.IsNullOrWhiteSpace(document.FileUrl)){<a href="@document.FileUrl" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> Άνοιγμα</a>}
+                        @if (!string.IsNullOrWhiteSpace(document.FileUrl)){<button type="button" data-file-preview="@documentFileUrl" data-file-download="@documentDownloadUrl"><i class="fa-regular fa-eye"></i> Προβολή PDF</button>}
                     </footer>
                 </div>
             </article>
         }
-        @if (Model.Contracts.Count == 0 && Model.Documents.Count == 0)
+        @if (Model.Documents.Count == 0)
         {
             <div class="portal-empty" style="grid-column:1/-1"><i class="fa-regular fa-folder-open"></i><strong>Κανένα έγγραφο</strong><span>Θα εμφανιστούν εδώ.</span></div>
         }
-    </div>
+        </div><div class="producer-table-empty" data-record-empty hidden>Δεν υπάρχουν έγγραφα για τα επιλεγμένα φίλτρα.</div><div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page>Σελίδα 1 από 1</span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+    </section>
+
+    <div class="dashboard-modal" id="document-detail-modal" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog record-detail-dialog" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-file-shield"></i></span><div><small data-record-field="type"></small><h2 data-record-field="title"></h2><p data-record-field="reference"></p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><div class="record-detail-grid"><div><small>Έκδοση</small><strong data-record-field="issue"></strong></div><div><small>Λήξη</small><strong data-record-field="expiry"></strong></div><div><small>Κατάσταση ισχύος</small><strong data-record-field="validity"></strong></div><div class="wide"><small>Σημειώσεις</small><strong data-record-field="notes"></strong></div></div><footer class="record-detail-actions"><button type="button" data-record-preview hidden><i class="fa-regular fa-eye"></i> Προεπισκόπηση PDF</button><a data-record-download hidden><i class="fa-solid fa-download"></i> Λήψη PDF</a></footer></section></div>
+    <div class="dashboard-modal" id="pdf-preview-modal" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog pdf-preview-dialog" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-file-pdf"></i></span><div><small>ΑΣΦΑΛΗΣ ΠΡΟΕΠΙΣΚΟΠΗΣΗ</small><h2>Έγγραφο PDF</h2></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><iframe data-pdf-preview title="Προεπισκόπηση PDF"></iframe><footer class="pdf-preview-actions"><a data-pdf-download><i class="fa-solid fa-download"></i> Λήψη αρχείου</a></footer></section></div>
 }
 
 @* OFFERS — offers grid + supply orders *@
@@ -955,11 +1074,7 @@
                             <td>
                                 @if (s.Status == SupplyOrderStatus.Open)
                                 {
-                                    <form class="mini-form" asp-action="JoinSupply" method="post" style="margin:0">
-                                        <input type="hidden" name="OrderId" value="@s.Id" />
-                                        <input name="Quantity" type="number" step=".001" value="@s.MyQuantity" placeholder="kg" />
-                                        <button class="btn btn-sm"><i class="fa-solid fa-check"></i> Συμμετοχή</button>
-                                    </form>
+                                    <button class="btn btn-sm" type="button" data-dashboard-modal-open="participation-coming-soon"><i class="fa-regular fa-clock"></i> Συμμετοχή</button>
                                 }
                                 else
                                 {

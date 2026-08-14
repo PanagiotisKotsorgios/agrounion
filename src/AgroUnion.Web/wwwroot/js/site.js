@@ -181,6 +181,101 @@
     button.addEventListener('click', () => closeDashboardModal(modal));
   }));
 
+  const openPdfPreview = (url, downloadUrl, trigger) => {
+    if (!url) return;
+    const modal = document.getElementById('pdf-preview-modal');
+    if (!modal) return;
+    const frame = modal.querySelector('[data-pdf-preview]');
+    const download = modal.querySelector('[data-pdf-download]');
+    if (frame) frame.src = url;
+    if (download) download.href = downloadUrl || url;
+    openDashboardModal(modal, trigger);
+  };
+
+  document.querySelectorAll('[data-file-preview]').forEach(button => button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    openPdfPreview(button.dataset.filePreview, button.dataset.fileDownload, button);
+  }));
+
+  document.querySelectorAll('[data-record-browser]').forEach(panel => {
+    const rows = [...panel.querySelectorAll('[data-record-row]')];
+    const search = panel.querySelector('[data-record-search]');
+    const filters = [...panel.querySelectorAll('[data-record-filter]')];
+    const period = panel.querySelector('[data-record-period]');
+    const count = panel.querySelector('[data-record-count]');
+    const empty = panel.querySelector('[data-record-empty]');
+    const pageLabel = panel.querySelector('[data-record-page]');
+    const previous = panel.querySelector('[data-record-prev]');
+    const next = panel.querySelector('[data-record-next]');
+    const pageSize = Number(panel.dataset.pageSize) || 6;
+    let currentPage = 1;
+
+    const filteredRows = () => {
+      const term = (search?.value || '').trim().toLocaleLowerCase('el-GR');
+      const days = period?.value === 'all' || !period ? 0 : Number(period.value || 0);
+      const cutoff = days ? new Date(Date.now() - days * 86400000) : null;
+      return rows.filter(row => {
+        const matchesSearch = !term || (row.dataset.search || '').includes(term);
+        const matchesFilters = filters.every(filter => filter.value === 'all' || row.dataset[filter.dataset.recordFilter] === filter.value);
+        const rowDate = row.dataset.date ? new Date(row.dataset.date + 'T00:00:00') : null;
+        return matchesSearch && matchesFilters && (!cutoff || !rowDate || rowDate >= cutoff);
+      });
+    };
+    const render = () => {
+      const filtered = filteredRows();
+      const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      currentPage = Math.min(currentPage, pages);
+      const start = (currentPage - 1) * pageSize;
+      rows.forEach(row => { row.hidden = true; });
+      filtered.slice(start, start + pageSize).forEach(row => { row.hidden = false; });
+      if (count) count.textContent = filtered.length + (filtered.length === 1 ? ' εγγραφή' : ' εγγραφές');
+      if (empty) empty.hidden = filtered.length > 0 || rows.length === 0;
+      if (pageLabel) pageLabel.textContent = 'Σελίδα ' + currentPage + ' από ' + pages;
+      if (previous) previous.disabled = currentPage <= 1;
+      if (next) next.disabled = currentPage >= pages;
+    };
+    const showDetails = row => {
+      const modal = document.getElementById(row.dataset.detailModal || '');
+      if (!modal) return;
+      modal.querySelectorAll('[data-record-field]').forEach(field => {
+        field.textContent = row.dataset['detail' + field.dataset.recordField.charAt(0).toUpperCase() + field.dataset.recordField.slice(1)] || '—';
+      });
+      const preview = modal.querySelector('[data-record-preview]');
+      const download = modal.querySelector('[data-record-download]');
+      const fileUrl = row.dataset.detailFile || '';
+      const downloadUrl = row.dataset.detailDownload || fileUrl;
+      if (preview) {
+        preview.hidden = !fileUrl;
+        preview.dataset.previewUrl = fileUrl;
+        preview.dataset.downloadUrl = downloadUrl;
+      }
+      if (download) {
+        download.hidden = !downloadUrl;
+        if (downloadUrl) download.href = downloadUrl;
+      }
+      openDashboardModal(modal, row);
+    };
+
+    [search, period, ...filters].forEach(control => control?.addEventListener(control === search ? 'input' : 'change', () => { currentPage = 1; render(); }));
+    previous?.addEventListener('click', () => { currentPage -= 1; render(); });
+    next?.addEventListener('click', () => { currentPage += 1; render(); });
+    rows.forEach(row => {
+      row.addEventListener('click', event => {
+        if (event.target.closest('button,a,form,input,select,textarea,label')) return;
+        showDetails(row);
+      });
+      row.addEventListener('keydown', event => {
+        if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button,a,input,select,textarea')) { event.preventDefault(); showDetails(row); }
+      });
+    });
+    render();
+  });
+
+  document.querySelectorAll('[data-record-preview]').forEach(button => button.addEventListener('click', () => {
+    openPdfPreview(button.dataset.previewUrl, button.dataset.downloadUrl, button);
+  }));
+
   document.querySelectorAll('[data-delivery-table]').forEach(tablePanel => {
     const rows = [...tablePanel.querySelectorAll('[data-delivery-row]')];
     const search = tablePanel.querySelector('[data-delivery-search]');
@@ -426,6 +521,34 @@
         type:'doughnut',
         data:{labels:['Πληρωμένα','Υπόλοιπο'],datasets:[{data:[Number(canvas.dataset.paid)||0,Number(canvas.dataset.outstanding)||0],backgroundColor:['#1f5b39','#d8c49c'],borderWidth:0,hoverOffset:4}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'76%',animation:{animateRotate:true,duration:1200,easing:'easeOutQuart'},plugins:{legend:{display:false},tooltip:{padding:11,bodyFont:{family:chartFont},callbacks:{label:item=>item.label + ': ' + Number(item.raw).toLocaleString('el-GR') + ' €'}}}}
+      });
+    });
+
+    document.querySelectorAll('[data-producer-chart="production-volume"]').forEach(canvas => {
+      new window.Chart(canvas, {type:'bar',data:{labels:parseChartData(canvas,'labels'),datasets:[{label:'Δηλωμένο',data:parseChartData(canvas,'declared'),backgroundColor:'rgba(31,91,57,.82)',borderRadius:5,maxBarThickness:32},{label:'Παραδομένο',data:parseChartData(canvas,'delivered'),backgroundColor:'rgba(181,139,69,.72)',borderRadius:5,maxBarThickness:32}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100,easing:'easeOutQuart'},plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,color:tickColor,font:{family:chartFont,size:10}}},tooltip:{callbacks:{label:item=>item.dataset.label+': '+Number(item.raw).toLocaleString('el-GR')+' kg'}}},scales:{x:{grid:{display:false},ticks:{color:tickColor,font:{family:chartFont,size:10}}},y:{beginAtZero:true,grid:{color:gridColor},ticks:{color:tickColor,callback:value=>Number(value).toLocaleString('el-GR')+' kg'}}}}});
+    });
+
+    document.querySelectorAll('[data-producer-chart="logistics-weight"]').forEach(canvas => {
+      new window.Chart(canvas, {type:'bar',data:{labels:parseChartData(canvas,'labels'),datasets:[{label:'Φορτώθηκε',data:parseChartData(canvas,'loaded'),backgroundColor:'rgba(53,75,60,.55)',borderRadius:4},{label:'Αποδεκτό',data:parseChartData(canvas,'accepted'),backgroundColor:'rgba(31,91,57,.85)',borderRadius:4},{label:'Απόρριψη',data:parseChartData(canvas,'rejected'),backgroundColor:'rgba(181,139,69,.8)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,color:tickColor,font:{family:chartFont,size:10}}},tooltip:{callbacks:{label:item=>item.dataset.label+': '+Number(item.raw).toLocaleString('el-GR')+' kg'}}},scales:{x:{grid:{display:false},ticks:{color:tickColor}},y:{beginAtZero:true,grid:{color:gridColor},ticks:{color:tickColor}}}}});
+    });
+
+    ['production-status','logistics-payment','invoice-status','document-status'].forEach(chartName => {
+      document.querySelectorAll(`[data-producer-chart="${chartName}"]`).forEach(canvas => {
+        new window.Chart(canvas, {
+          type:'doughnut',
+          data:{
+            labels:parseChartData(canvas,'labels'),
+            datasets:[{data:parseChartData(canvas,'values'),backgroundColor:['#1f5b39','#b58b45','#6d8d77','#d8c49c','#354b3c','#a7b5a9'],borderColor:'#fff',borderWidth:3,hoverOffset:5}]
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,cutout:'66%',
+            animation:{animateRotate:true,duration:1200,easing:'easeOutQuart'},
+            plugins:{
+              legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'rectRounded',boxWidth:8,padding:13,color:tickColor,font:{family:chartFont,size:9}}},
+              tooltip:{padding:11,bodyFont:{family:chartFont}}
+            }
+          }
+        });
       });
     });
   }

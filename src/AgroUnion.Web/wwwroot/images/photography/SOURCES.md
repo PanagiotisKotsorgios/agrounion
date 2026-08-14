@@ -2,7 +2,7 @@
 
 The following locally stored images are used on the public homepage:
 
-- `hero-network.jpg` — [Unsplash image supplied for the homepage hero](https://images.unsplash.com/photo-1594771804886-a933bb2d609b)
+- `hero-network-olive.jpg` — [Unsplash image supplied for the homepage hero](https://images.unsplash.com/photo-1627920768905-575535d6dd2e)
 - `gallery-production.jpg` — [İbrahim Yazgan / Pexels](https://www.pexels.com/photo/farmers-harvesting-olives-with-tractor-in-orchard-29505930/)
 - `gallery-coordination.jpg` — [Hakan Yalcin / Unsplash](https://unsplash.com/photos/green-leaf-0eaMn1aLfNs)
 - `gallery-market.jpg` — [Roberta Sorge / Unsplash](https://unsplash.com/photos/clear-glass-cruet-bottle-uOBApnN_K7w)

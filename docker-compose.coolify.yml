@@ -8,7 +8,7 @@ services:
       MYSQL_PASSWORD: ${SERVICE_PASSWORD_64_MYSQL}
       MYSQL_ROOT_PASSWORD: ${SERVICE_PASSWORD_64_MYSQLROOT}
     volumes:
-      - agro_mysql_data:/var/lib/mysql
+      - agro_mysql_production_data:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", 'mysqladmin ping -h 127.0.0.1 -uroot --password="$${MYSQL_ROOT_PASSWORD}"']
       interval: 5s
@@ -50,7 +50,7 @@ services:
       - agro_data_protection_keys:/app/.aspnet/DataProtection-Keys
 
 volumes:
-  agro_mysql_data:
+  agro_mysql_production_data:
   agro_logs:
   agro_releases:
   agro_data_protection_keys:

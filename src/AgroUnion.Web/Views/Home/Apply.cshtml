@@ -2,7 +2,7 @@
 @using AgroUnion.Domain.Entities
 @{ ViewData["Title"] = "Αίτηση συνεργασίας"; }
 
-<section class="hero-photo" style="--hero-img:url(/images/photography/hero-modern-office.jpg);min-height:min(620px,72vh);padding:96px 0 88px">
+<section class="hero-photo apply-hero" style="--hero-img:url(/images/photography/hero-modern-office.jpg)">
     <div class="container-wide">
         <div class="overline">Γίνετε μέρος του δικτύου</div>
         <h1>Η επόμενη συνεργασία<br />ξεκινά εδώ.</h1>
@@ -10,26 +10,11 @@
     </div>
 </section>
 
-<section class="section">
+<section class="section apply-section">
     <div class="container">
-        <div class="split">
-            <aside class="aside">
-                <div class="overline">Τι ακολουθεί</div>
-                <h2 style="margin-top:12px">Απλά βήματα. Ανθρώπινη επαφή.</h2>
-                <div class="stack-lg mt-6">
-                    <div class="alert" style="align-items:flex-start"><i class="fa-solid fa-paper-plane"></i><span><strong>01 · Υποβάλλετε την αίτηση</strong><br /><span class="text-muted">Τα στοιχεία φτάνουν άμεσα στην ομάδα μας.</span></span></div>
-                    <div class="alert" style="align-items:flex-start"><i class="fa-solid fa-phone-volume"></i><span><strong>02 · Επικοινωνούμε μαζί σας</strong><br /><span class="text-muted">Συζητάμε προσωπικά την ανάγκη και τις δυνατότητες.</span></span></div>
-                    <div class="alert" style="align-items:flex-start"><i class="fa-solid fa-file-signature"></i><span><strong>03 · Ορίζουμε τη συνεργασία</strong><br /><span class="text-muted">Δημιουργούμε λογαριασμό και καθαρή σύμβαση.</span></span></div>
-                </div>
-                <div class="alert info mt-8">
-                    <i class="fa-solid fa-lock"></i>
-                    <span><strong>Τα στοιχεία σας προστατεύονται.</strong><br />Χρησιμοποιούνται αποκλειστικά για την αξιολόγηση του αιτήματός σας.</span>
-                </div>
-            </aside>
-
-            <div>
-                <div class="form-card" style="grid-template-columns:1fr">
-                    <div>
+        <div class="apply-layout">
+                <div class="form-card apply-form-card">
+                    <div class="apply-form-heading">
                         <div class="overline">Νέα αίτηση</div>
                         <h2 style="margin-top:8px">Στοιχεία συνεργασίας</h2>
                         <p class="text-muted">Όλα τα πεδία με αστερίσκο είναι απαραίτητα.</p>
@@ -47,7 +32,7 @@
                             </div>
                         </div>
 
-                        <div class="field" style="grid-column:1/-1">
+                        <div class="field">
                             <label asp-for="FullNameOrCompany" class="field-label">Ονοματεπώνυμο / Επωνυμία *</label>
                             <input asp-for="FullNameOrCompany" class="form-input" placeholder="π.χ. Γεώργιος Παπαδάκης" />
                             <span asp-validation-for="FullNameOrCompany" class="field-error"></span>
@@ -63,6 +48,12 @@
                             <label asp-for="Phone" class="field-label">Τηλέφωνο *</label>
                             <input asp-for="Phone" class="form-input" placeholder="+30 69..." />
                             <span asp-validation-for="Phone" class="field-error"></span>
+                        </div>
+
+                        <div class="field">
+                            <label asp-for="Email" class="field-label">Email *</label>
+                            <input asp-for="Email" class="form-input" type="email" placeholder="name@example.gr" />
+                            <span asp-validation-for="Email" class="field-error"></span>
                         </div>
 
                         <div class="field" style="grid-column:1/-1">
@@ -89,14 +80,8 @@
                         </div>
 
                         <div class="field" style="grid-column:1/-1">
-                            <label asp-for="Email" class="field-label">Email *</label>
-                            <input asp-for="Email" class="form-input" type="email" placeholder="name@example.gr" />
-                            <span asp-validation-for="Email" class="field-error"></span>
-                        </div>
-
-                        <div class="field" style="grid-column:1/-1">
                             <label asp-for="Message" class="field-label">Σύντομο μήνυμα <small>Προαιρετικό</small></label>
-                            <textarea asp-for="Message" class="form-textarea" rows="4" placeholder="Πείτε μας λίγα λόγια για τη συνεργασία που αναζητάτε."></textarea>
+                            <textarea asp-for="Message" class="form-textarea" rows="3" placeholder="Πείτε μας λίγα λόγια για τη συνεργασία που αναζητάτε."></textarea>
                         </div>
 
                         <div class="honeypot" aria-hidden="true"><input asp-for="Website" tabindex="-1" autocomplete="off" /></div>
@@ -106,7 +91,22 @@
                         <button class="btn btn-lg" type="submit" style="grid-column:1/-1;justify-self:start"><i class="fa-solid fa-paper-plane"></i> Υποβολή αίτησης <i class="fa-solid fa-arrow-right"></i></button>
                     </form>
                 </div>
-            </div>
+
+            <aside class="apply-followup">
+                <div class="apply-followup-heading">
+                    <div class="overline">Τι ακολουθεί</div>
+                    <h2>Απλά βήματα. Ανθρώπινη επαφή.</h2>
+                </div>
+                <div class="apply-steps">
+                    <div class="alert"><i class="fa-solid fa-paper-plane"></i><span><strong>01 · Υποβάλλετε την αίτηση</strong><br /><span class="text-muted">Τα στοιχεία φτάνουν άμεσα στην ομάδα μας.</span></span></div>
+                    <div class="alert"><i class="fa-solid fa-phone-volume"></i><span><strong>02 · Επικοινωνούμε μαζί σας</strong><br /><span class="text-muted">Συζητάμε προσωπικά την ανάγκη και τις δυνατότητες.</span></span></div>
+                    <div class="alert"><i class="fa-solid fa-file-signature"></i><span><strong>03 · Ορίζουμε τη συνεργασία</strong><br /><span class="text-muted">Δημιουργούμε λογαριασμό και καθαρή σύμβαση.</span></span></div>
+                </div>
+                <div class="alert info apply-privacy">
+                    <i class="fa-solid fa-lock"></i>
+                    <span><strong>Τα στοιχεία σας προστατεύονται.</strong><br />Χρησιμοποιούνται αποκλειστικά για την αξιολόγηση του αιτήματός σας.</span>
+                </div>
+            </aside>
         </div>
     </div>
 </section>

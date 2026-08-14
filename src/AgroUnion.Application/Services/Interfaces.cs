@@ -37,6 +37,13 @@ public interface IAgroUnionService
     Task<AdminDashboardDto> GetAdminDashboardAsync(string? producerUserId = null, CancellationToken ct = default);
     Task<ProducerDashboardDto> GetProducerDashboardAsync(string userId, CancellationToken ct = default);
     Task<BuyerDashboardDto> GetBuyerDashboardAsync(string userId, bool isCompany, CancellationToken ct = default);
+    Task<AccountProfileDto> GetAccountProfileAsync(string userId, CancellationToken ct = default);
+    Task<AccountPreferenceDto> GetAccountPreferencesAsync(string userId, CancellationToken ct = default);
+    Task<string> GetAccountDisplayNameAsync(string userId, CancellationToken ct = default);
+    Task UpdateAccountProfileAsync(string userId, AccountProfileUpdateRequest request, CancellationToken ct = default);
+    Task UpdateAccountPreferencesAsync(string userId, AccountPreferenceUpdateRequest request, CancellationToken ct = default);
+    Task ChangeOwnPasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken ct = default);
+    Task<string> ExportAccountStatisticsCsvAsync(string userId, CancellationToken ct = default);
     Task<ApprovalResult> ApproveApplicationAsync(Guid id, string adminUserId, CancellationToken ct = default);
     Task UpdateApplicationAsync(Guid id, ApplicationStatus status, string? notes, string adminUserId, CancellationToken ct = default);
     Task<Guid> SaveProductionAsync(string producerUserId, Guid? id, ProductionRequest request, CancellationToken ct = default);

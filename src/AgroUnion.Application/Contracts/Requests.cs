@@ -33,6 +33,8 @@ public sealed record PickupRequest(DateTime ScheduledDate, string TransportDetai
 public sealed record ProducerProfileRequest(ProducerCategory Category, ProducerCategory? NextCategory, int CategoryProgressPercent, string UpgradeRequirements, decimal CommissionRate, decimal BonusRate, DateOnly RelationshipStartDate, string AccountManager, string PaymentTerms, string? InternalNotes);
 public sealed record PartnerDocumentRequest(PartnerDocumentType Type, string Title, string ReferenceNumber, string? FileUrl, DateOnly IssueDate, DateOnly? ExpiryDate, string? Notes, bool IsVisibleToPartner);
 public sealed record PartnerInvoiceRequest(PartnerInvoiceDirection Direction, string InvoiceNumber, DateOnly IssueDate, DateOnly? DueDate, decimal NetAmount, decimal VatAmount, decimal PaidAmount, PartnerInvoiceStatus Status, string Description, string? FileUrl);
+public sealed record AccountProfileUpdateRequest(string FullNameOrCompany, string Region, string? PhoneNumber);
+public sealed record AccountPreferenceUpdateRequest(bool EmailNotifications, bool DeliveryNotifications, bool CompactDashboard, string DateFormat);
 public sealed record PartnerFinancialEntryRequest(DateOnly EntryDate, FinancialEntryType Type, FinancialEntryCategory Category, decimal Amount, string Description, string? ReferenceNumber, Guid? PartnerInvoiceId);
 public sealed record ProducerDeliveryRequest(
     Guid? ProductionDeclarationId,

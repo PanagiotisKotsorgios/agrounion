@@ -1,0 +1,88 @@
+@model AgroUnion.Application.Contracts.AccountProfileDto
+@using AgroUnion.Domain.Entities
+@{
+    string RoleName(string value) => value switch { RoleNames.Admin => "Διαχείριση", RoleNames.Producer => "Παραγωγός", RoleNames.Trader => "Έμπορος", RoleNames.Company => "Εταιρεία", _ => "Συνεργάτης" };
+    string AuditActionName(string value) => value switch
+    {
+        "Login" => "Σύνδεση",
+        "Logout" => "Αποσύνδεση",
+        "ProfileUpdated" => "Προσωπικά στοιχεία",
+        "PreferencesUpdated" => "Ρυθμίσεις",
+        "PasswordChanged" => "Κωδικός πρόσβασης",
+        "StatisticsExported" => "Εξαγωγή δεδομένων",
+        _ => value
+    };
+    var initial = string.IsNullOrWhiteSpace(Model.FullNameOrCompany) ? "?" : Model.FullNameOrCompany[..1].ToUpperInvariant();
+}
+
+<section class="account-profile-shell @(Model.Preferences.CompactDashboard ? "compact" : "")">
+    <article class="account-identity-card">
+        <div class="account-identity-avatar">@initial</div>
+        <div class="account-identity-main">
+            <small>ΕΠΑΛΗΘΕΥΜΕΝΟΣ ΛΟΓΑΡΙΑΣΜΟΣ AGRO UNION</small>
+            <h2>@Model.FullNameOrCompany</h2>
+            <p>@Model.Email · @RoleName(Model.Role)</p>
+        </div>
+        <div class="account-identity-meta">
+            <span><i class="fa-solid fa-location-dot"></i> @Model.Region</span>
+            <span><i class="fa-regular fa-calendar"></i> Μέλος από @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+            <span class="verified"><i class="fa-solid fa-shield-check"></i> @(Model.EmailConfirmed ? "Επαληθευμένο email" : "Εκκρεμεί επαλήθευση")</span>
+        </div>
+    </article>
+
+    <div class="account-stat-grid">
+        @foreach (var statistic in Model.Statistics)
+        {
+            <article><span><i class="fa-solid @statistic.Icon"></i></span><div><small>@statistic.Label</small><strong>@statistic.Value</strong></div></article>
+        }
+    </div>
+
+    <div class="account-settings-grid">
+        <article class="account-panel">
+            <header><span><i class="fa-regular fa-address-card"></i></span><div><small>ΠΡΟΣΩΠΙΚΑ ΣΤΟΙΧΕΙΑ</small><h3>Στοιχεία λογαριασμού</h3><p>Τα στοιχεία χρησιμοποιούνται στις συμβάσεις και στην επικοινωνία με την ομάδα.</p></div></header>
+            <form class="account-form" asp-controller="Portal" asp-action="UpdateProfile" method="post">
+                <label class="wide"><span>Ονοματεπώνυμο / επωνυμία</span><input name="FullNameOrCompany" value="@Model.FullNameOrCompany" minlength="2" maxlength="180" required /></label>
+                <label><span>Email σύνδεσης</span><input value="@Model.Email" type="email" readonly /><small>Για αλλαγή email επικοινωνήστε με τη διαχείριση.</small></label>
+                <label><span>Τηλέφωνο</span><input name="PhoneNumber" value="@Model.PhoneNumber" type="tel" maxlength="30" autocomplete="tel" placeholder="π.χ. 698 000 0000" /></label>
+                <label class="wide"><span>Περιοχή</span><input name="Region" value="@Model.Region" minlength="2" maxlength="120" required /></label>
+                <button type="submit"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση στοιχείων</button>
+            </form>
+        </article>
+
+        <article class="account-panel">
+            <header><span><i class="fa-solid fa-sliders"></i></span><div><small>ΠΡΟΤΙΜΗΣΕΙΣ</small><h3>Ρυθμίσεις Portal</h3><p>Ελέγξτε τις ειδοποιήσεις και τον τρόπο παρουσίασης του λογαριασμού.</p></div></header>
+            <form class="account-form preference-form" asp-controller="Portal" asp-action="UpdateProfilePreferences" method="post">
+                <label class="account-toggle"><input name="EmailNotifications" type="checkbox" value="true" checked="@Model.Preferences.EmailNotifications" /><span><i></i><b>Ειδοποιήσεις μέσω email<small>Οικονομικές κινήσεις, έγγραφα και σημαντικές ενημερώσεις.</small></b></span></label>
+                <label class="account-toggle"><input name="DeliveryNotifications" type="checkbox" value="true" checked="@Model.Preferences.DeliveryNotifications" /><span><i></i><b>Ενημερώσεις δρομολογίων<small>Μεταβολές σε φόρτωση, παράδοση, ζύγιση και πληρωμή.</small></b></span></label>
+                <label class="account-toggle"><input name="CompactDashboard" type="checkbox" value="true" checked="@Model.Preferences.CompactDashboard" /><span><i></i><b>Συμπαγής προβολή<small>Μικρότερες αποστάσεις και περισσότερες πληροφορίες ανά οθόνη.</small></b></span></label>
+                <label class="wide"><span>Μορφή ημερομηνίας</span><select name="DateFormat"><option value="dd/MM/yyyy" selected="@(Model.Preferences.DateFormat == "dd/MM/yyyy")">Ημέρα / Μήνας / Έτος</option><option value="yyyy-MM-dd" selected="@(Model.Preferences.DateFormat == "yyyy-MM-dd")">Έτος – Μήνας – Ημέρα</option></select></label>
+                <button type="submit"><i class="fa-solid fa-check"></i> Αποθήκευση ρυθμίσεων</button>
+            </form>
+        </article>
+
+        <article class="account-panel security-panel">
+            <header><span><i class="fa-solid fa-key"></i></span><div><small>ΑΣΦΑΛΕΙΑ</small><h3>Αλλαγή κωδικού</h3><p>Χρησιμοποιήστε έναν ισχυρό, μοναδικό κωδικό που δεν χρησιμοποιείτε αλλού.</p></div></header>
+            <form class="account-form password-form" asp-controller="Portal" asp-action="ChangeProfilePassword" method="post">
+                <label class="wide"><span>Τρέχων κωδικός</span><input name="CurrentPassword" type="password" autocomplete="current-password" required /></label>
+                <label><span>Νέος κωδικός</span><input name="NewPassword" type="password" autocomplete="new-password" minlength="10" required /></label>
+                <label><span>Επιβεβαίωση νέου κωδικού</span><input name="ConfirmPassword" type="password" autocomplete="new-password" minlength="10" required /></label>
+                <div class="password-guidance wide"><i class="fa-solid fa-circle-info"></i><span>Τουλάχιστον 10 χαρακτήρες, κεφαλαίο, πεζό, αριθμός και ειδικός χαρακτήρας.</span></div>
+                <button type="submit"><i class="fa-solid fa-shield-halved"></i> Αλλαγή κωδικού</button>
+            </form>
+        </article>
+
+        <article class="account-panel export-panel">
+            <header><span><i class="fa-solid fa-file-export"></i></span><div><small>ΔΕΔΟΜΕΝΑ ΛΟΓΑΡΙΑΣΜΟΥ</small><h3>Εξαγωγή στατιστικών</h3><p>Κατεβάστε συγκεντρωτικό CSV με τα βασικά στοιχεία και τους δείκτες του λογαριασμού σας.</p></div></header>
+            <div class="account-export-body"><i class="fa-solid fa-chart-column"></i><div><strong>Προσωπική αναφορά λογαριασμού</strong><span>Περιλαμβάνει στοιχεία συνεργασίας και συνοπτικά στατιστικά. Η εξαγωγή καταγράφεται στο audit log.</span></div></div>
+            <a class="account-export-button" asp-controller="Portal" asp-action="ProfileStatisticsCsv"><i class="fa-solid fa-download"></i> Εξαγωγή CSV</a>
+        </article>
+    </div>
+
+    <div class="section-title producer-section-heading"><div><small>ΙΣΤΟΡΙΚΟ ΑΣΦΑΛΕΙΑΣ</small><h2>Audit log λογαριασμού</h2></div><div class="rule"></div></div>
+    <section class="record-browser account-audit-browser" data-record-browser data-page-size="8">
+        <div class="record-filter-bar"><label class="record-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Αναζήτηση ενέργειας ή περιγραφής" data-record-search /></label><label><span>Ενέργεια</span><select data-record-filter="action"><option value="all">Όλες</option>@foreach(var action in Model.AuditLog.Select(x => x.Action).Distinct()){<option value="@action">@AuditActionName(action)</option>}</select></label><label><span>Περίοδος</span><select data-record-period><option value="all">Όλο το ιστορικό</option><option value="30">30 ημέρες</option><option value="90">90 ημέρες</option><option value="365">12 μήνες</option></select></label><span class="record-count" data-record-count>@Model.AuditLog.Count ενέργειες</span></div>
+        <div class="table-wrap"><table class="data-table pro"><thead><tr><th>Ημερομηνία</th><th>Ενέργεια</th><th>Περιγραφή</th><th>Κατάσταση</th></tr></thead><tbody>@foreach(var entry in Model.AuditLog){<tr data-record-row data-search="@($"{AuditActionName(entry.Action)} {entry.Details}").ToLowerInvariant()" data-action="@entry.Action" data-date="@entry.Timestamp.ToString("yyyy-MM-dd")"><td><strong>@entry.Timestamp.ToLocalTime().ToString("dd/MM/yyyy")</strong><small>@entry.Timestamp.ToLocalTime().ToString("HH:mm")</small></td><td><span class="audit-action"><i class="fa-solid fa-fingerprint"></i> @AuditActionName(entry.Action)</span></td><td>@entry.Details</td><td><span class="status-pill active"><i class="fa-solid fa-check"></i> Καταγράφηκε</span></td></tr>}</tbody></table></div>
+        @if(Model.AuditLog.Count == 0){<div class="portal-empty compact"><i class="fa-solid fa-fingerprint"></i><span>Το προσωπικό ιστορικό ενεργειών θα εμφανιστεί εδώ.</span></div>}
+        <div class="producer-table-empty" data-record-empty hidden>Δεν υπάρχουν ενέργειες για τα επιλεγμένα φίλτρα.</div><div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page>Σελίδα 1 από 1</span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+    </section>
+</section>

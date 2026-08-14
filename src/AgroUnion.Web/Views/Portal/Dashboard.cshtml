@@ -7,6 +7,7 @@
     var adminPage = (ViewData["AdminPage"] as string ?? "overview").ToLowerInvariant();
     var portalPage = (ViewData["PortalPage"] as string ?? "overview").ToLowerInvariant();
     var isMarketplace = portalPage == "marketplace";
+    var isProfile = portalPage == "profile";
     var pageTitle = producerPage switch
     {
         "collaboration" => "Η συνεργασία μου",
@@ -29,15 +30,21 @@
         "offers" => "Ενεργές προτάσεις και προμήθειες.",
         _ => "Η συνολική εικόνα της συνεργασίας σας."
     };
-    ViewData["Title"] = isMarketplace ? "Αγορά Δικτύου" : adminPage == "email" ? "Email & Newsletter" : User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
+    ViewData["Title"] = isProfile ? "Προφίλ & ρυθμίσεις" : isMarketplace ? "Αγορά Δικτύου" : adminPage == "email" ? "Email & Newsletter" : User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
 
-    var mobileCrumb = User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
+    var mobileCrumb = isProfile ? "Προφίλ" : User.IsInRole(RoleNames.Producer) ? pageTitle : "Portal";
     var name = User.Identity?.Name ?? "";
-    var userInitial = string.IsNullOrEmpty(name) ? "?" : name.Substring(0, 1).ToUpperInvariant();
     var hourNow = DateTime.Now.Hour;
     var greeting = (hourNow < 12) ? "Καλημέρα" : "Καλησπέρα";
     var atIdx = name.IndexOf((char)64);
-    var displayName = (atIdx > 0) ? name.Substring(0, atIdx) : name;
+    var fallbackDisplayName = (atIdx > 0) ? name.Substring(0, atIdx) : name;
+    var displayName = Model switch
+    {
+        AccountProfileDto account => account.FullNameOrCompany,
+        ProducerDashboardDto producerAccount => producerAccount.Profile.ProducerName,
+        _ => ViewData["AccountDisplayName"] as string ?? fallbackDisplayName
+    };
+    var userInitial = string.IsNullOrEmpty(displayName) ? "?" : displayName.Substring(0, 1).ToUpperInvariant();
     var returnPath = $"{Context.Request.Path}{Context.Request.QueryString}";
 }
 
@@ -90,7 +97,7 @@
     </section>
 </div>
 
-<div class="portal-shell">
+<div class="portal-shell @((ViewData["CompactDashboard"] as bool? ?? false) ? "compact-dashboard" : "")">
     <aside class="portal-sidebar" aria-label="Πλοήγηση portal">
         <div class="portal-user">
             <span>@userInitial</span>
@@ -113,8 +120,6 @@
                 <a class="@(producerPage == "offers" ? "active" : "")" asp-action="ProducerPage" asp-route-page="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
                 <button class="portal-nav-action" type="button" data-dashboard-modal-open="marketplace-coming-soon"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου <small>Σύντομα</small></button>
                 <a class="@(producerPage == "documents" ? "active" : "")" asp-action="ProducerPage" asp-route-page="documents"><i class="fa-solid fa-folder-open"></i> Έγγραφα</a>
-                <div class="portal-nav-section">Πλατφόρμα</div>
-                <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-code-branch"></i> Εκδόσεις</a>
             }
             else if (User.IsInRole(RoleNames.Admin))
             {
@@ -146,7 +151,7 @@
             }
         </nav>
         <div class="portal-sidebar-foot">
-            <a asp-controller="Account" asp-action="ChangePassword"><i class="fa-solid fa-shield-halved"></i> Ασφάλεια</a>
+            <a class="@(isProfile ? "active" : "")" asp-controller="Portal" asp-action="Profile"><i class="fa-solid fa-user-gear"></i> Προφίλ</a>
             <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0">
                 <button class="portal-sidebar-logout" type="submit"><i class="fa-solid fa-arrow-right-from-bracket"></i> Αποσύνδεση</button>
             </form>
@@ -159,7 +164,7 @@
             <div class="toolbar-actions">
                 <button class="toolbar-btn" type="button" data-dashboard-modal-open="dashboard-help-modal"><i class="fa-regular fa-circle-question"></i> Βοήθεια</button>
                 <button class="toolbar-btn" type="button" data-dashboard-modal-open="dashboard-contact-modal"><i class="fa-regular fa-envelope"></i> Επικοινωνία</button>
-                <a class="toolbar-user" asp-controller="Account" asp-action="ChangePassword">
+                <a class="toolbar-user" asp-controller="Portal" asp-action="Profile">
                     <span class="av">@userInitial</span>
                     <span>@displayName<span class="role">· @role</span></span>
                 </a>
@@ -168,13 +173,17 @@
 
         <header class="exec-header" id="overview">
             <div class="exec-copy">
-                <small>@(isMarketplace ? "Ιδιωτικό δίκτυο συνεργατών" : adminPage == "email" ? "Κεντρική επικοινωνία" : User.IsInRole(RoleNames.Producer) ? "Λογαριασμός παραγωγού" : User.IsInRole(RoleNames.Admin) ? "Διαχείριση" : "Portal συνεργατών")</small>
-                <h1>@(isMarketplace ? "Αγορά Δικτύου" : adminPage == "email" ? "Email & Newsletter" : $"{greeting}, {displayName}.")</h1>
-                <p>@(isMarketplace ? "Παραγωγή, ζήτηση και επαφές αποκλειστικά μεταξύ ενεργών συνεργατών της AGRO UNION." : adminPage == "email" ? "Ρυθμίσεις Brevo, συνδρομητές και ελεγχόμενες μαζικές αποστολές από ένα σημείο." : User.IsInRole(RoleNames.Producer) ? pageDescription : "Η συγκεντρωτική εικόνα του δικτύου σας.")</p>
+                <small>@(isProfile ? "Προσωπικός λογαριασμός" : isMarketplace ? "Ιδιωτικό δίκτυο συνεργατών" : adminPage == "email" ? "Κεντρική επικοινωνία" : User.IsInRole(RoleNames.Producer) ? "Λογαριασμός παραγωγού" : User.IsInRole(RoleNames.Admin) ? "Διαχείριση" : "Portal συνεργατών")</small>
+                <h1>@(isProfile ? "Προφίλ & ρυθμίσεις" : isMarketplace ? "Αγορά Δικτύου" : adminPage == "email" ? "Email & Newsletter" : $"{greeting}, {displayName}.")</h1>
+                <p>@(isProfile ? "Διαχειριστείτε τα προσωπικά στοιχεία, την ασφάλεια, τις προτιμήσεις και τα δεδομένα του λογαριασμού σας." : isMarketplace ? "Παραγωγή, ζήτηση και επαφές αποκλειστικά μεταξύ ενεργών συνεργατών της AGRO UNION." : adminPage == "email" ? "Ρυθμίσεις Brevo, συνδρομητές και ελεγχόμενες μαζικές αποστολές από ένα σημείο." : User.IsInRole(RoleNames.Producer) ? pageDescription : "Η συγκεντρωτική εικόνα του δικτύου σας.")</p>
             </div>
         </header>
 
-        @if (Model is AdminDashboardDto admin)
+        @if (Model is AccountProfileDto accountProfile)
+        {
+            @await Html.PartialAsync("_AccountProfile", accountProfile)
+        }
+        else if (Model is AdminDashboardDto admin)
         {
             @await Html.PartialAsync("_AdminDashboard", admin)
         }

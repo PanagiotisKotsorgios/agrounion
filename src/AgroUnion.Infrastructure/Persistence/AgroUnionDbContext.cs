@@ -26,6 +26,7 @@ public sealed class AgroUnionDbContext(DbContextOptions<AgroUnionDbContext> opti
     public DbSet<ProducerDeliveryRecord> ProducerDeliveryRecords => Set<ProducerDeliveryRecord>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<UserPortalPreference> UserPortalPreferences => Set<UserPortalPreference>();
     public DbSet<PlatformRelease> PlatformReleases => Set<PlatformRelease>();
     public DbSet<PlatformReleaseAsset> PlatformReleaseAssets => Set<PlatformReleaseAsset>();
     public DbSet<EmailProviderSetting> EmailProviderSettings => Set<EmailProviderSetting>();
@@ -58,6 +59,8 @@ public sealed class AgroUnionDbContext(DbContextOptions<AgroUnionDbContext> opti
         builder.Entity<ProducerDeliveryRecord>().HasIndex(x => new { x.ProducerUserId, x.ScheduledPickupAt });
         builder.Entity<ProducerDeliveryRecord>().HasIndex(x => new { x.ProducerUserId, x.Status, x.PaymentStatus });
         builder.Entity<PriceListItem>().HasIndex(x => new { x.Category, x.ProductName, x.EffectiveFrom });
+        builder.Entity<UserPortalPreference>().HasIndex(x => x.UserId).IsUnique();
+        builder.Entity<UserPortalPreference>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<SupplyOrderItem>()
             .HasOne(x => x.SupplyOrder).WithMany(x => x.Items)
             .HasForeignKey(x => x.SupplyOrderId).OnDelete(DeleteBehavior.Cascade);

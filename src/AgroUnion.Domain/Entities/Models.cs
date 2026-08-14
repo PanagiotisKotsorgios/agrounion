@@ -318,6 +318,16 @@ public sealed class Notification : Entity
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
+public sealed class UserPortalPreference : Entity
+{
+    [MaxLength(450)] public string UserId { get; set; } = string.Empty;
+    public bool EmailNotifications { get; set; } = true;
+    public bool DeliveryNotifications { get; set; } = true;
+    public bool CompactDashboard { get; set; }
+    [MaxLength(20)] public string DateFormat { get; set; } = "dd/MM/yyyy";
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
 public sealed class PlatformRelease : Entity
 {
     [MaxLength(40)] public string Version { get; set; } = string.Empty;

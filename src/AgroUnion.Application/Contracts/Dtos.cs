@@ -38,6 +38,21 @@ public sealed record ProducerCollaborationProfileDto(
 public sealed record PartnerDocumentDto(Guid Id, PartnerDocumentType Type, string Title, string ReferenceNumber, string? FileUrl, DateOnly IssueDate, DateOnly? ExpiryDate, string? Notes, bool IsVisibleToPartner);
 public sealed record PartnerInvoiceDto(Guid Id, PartnerInvoiceDirection Direction, string InvoiceNumber, DateOnly IssueDate, DateOnly? DueDate, decimal NetAmount, decimal VatAmount, decimal TotalAmount, decimal PaidAmount, decimal OutstandingAmount, PartnerInvoiceStatus Status, string Description, string? FileUrl);
 public sealed record PartnerFileAccessDto(string StorageKey, string DownloadName);
+public sealed record AccountPreferenceDto(bool EmailNotifications, bool DeliveryNotifications, bool CompactDashboard, string DateFormat);
+public sealed record AccountStatisticDto(string Label, string Value, string Icon);
+public sealed record AccountAuditDto(Guid Id, string Action, string Details, DateTime Timestamp);
+public sealed record AccountProfileDto(
+    string UserId,
+    string FullNameOrCompany,
+    string Email,
+    string? PhoneNumber,
+    string Region,
+    string Role,
+    DateTime CreatedAt,
+    bool EmailConfirmed,
+    AccountPreferenceDto Preferences,
+    IReadOnlyList<AccountStatisticDto> Statistics,
+    IReadOnlyList<AccountAuditDto> AuditLog);
 public sealed record PartnerFinancialEntryDto(Guid Id, DateOnly EntryDate, FinancialEntryType Type, FinancialEntryCategory Category, decimal Amount, string Description, string? ReferenceNumber, Guid? PartnerInvoiceId);
 public sealed record ProducerFinancialSummaryDto(decimal DeclaredProduction, decimal DeliveredProduction, decimal AverageDeliveryPrice, decimal DeliveryRevenue, decimal OtherIncome, decimal Expenses, decimal NetCashFlow, decimal ReceivableFromAgroUnion, decimal PayableToAgroUnion);
 public sealed record ProducerDeliveryDto(

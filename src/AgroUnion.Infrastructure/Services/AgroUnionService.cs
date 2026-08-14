@@ -114,6 +114,112 @@ public sealed class AgroUnionService(
         return new(volumes, offers, await ContractsFor(userId, ct), await TransactionsFor(userId, ct), await VisiblePriceItems(isCompany ? RoleNames.Company : RoleNames.Trader, ct), pickups, deals, isCompany);
     }
 
+    public async Task<AccountProfileDto> GetAccountProfileAsync(string userId, CancellationToken ct = default)
+    {
+        var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
+        var role = (await users.GetRolesAsync(user)).FirstOrDefault() ?? "Partner";
+        var preference = await db.UserPortalPreferences.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId, ct);
+        var preferences = new AccountPreferenceDto(preference?.EmailNotifications ?? true, preference?.DeliveryNotifications ?? true, preference?.CompactDashboard ?? false, preference?.DateFormat ?? "dd/MM/yyyy");
+
+        var declared = await db.ProductionDeclarations.Where(x => x.ProducerUserId == userId).SumAsync(x => (decimal?)x.Quantity, ct) ?? 0;
+        var deliveries = await db.ProducerDeliveryRecords.AsNoTracking().Where(x => x.ProducerUserId == userId && x.Status != DeliveryLogisticsStatus.Cancelled).ToListAsync(ct);
+        var transactionValue = await db.Transactions.Where(x => x.UserId == userId).SumAsync(x => (decimal?)(x.Quantity * x.UnitPrice), ct) ?? 0;
+        var statistics = new List<AccountStatisticDto>
+        {
+            new("Συμβάσεις", (await db.Contracts.CountAsync(x => x.UserId == userId, ct)).ToString("N0"), "fa-file-signature"),
+            new("Συναλλαγές", (await db.Transactions.CountAsync(x => x.UserId == userId, ct)).ToString("N0"), "fa-arrow-right-arrow-left"),
+            new("Αξία κινήσεων", $"{transactionValue:N2} €", "fa-chart-line")
+        };
+        if (role == RoleNames.Producer)
+        {
+            statistics.Insert(0, new("Δηλωμένη παραγωγή", $"{declared:N0} kg", "fa-wheat-awn"));
+            statistics.Add(new("Αποδεκτό βάρος", $"{deliveries.Sum(x => x.AcceptedWeight):N0} kg", "fa-weight-scale"));
+            statistics.Add(new("Καθαρό πληρωτέο", $"{deliveries.Sum(x => x.NetPayableAmount):N2} €", "fa-wallet"));
+        }
+
+        var audit = await db.AuditLogs.AsNoTracking()
+            .Where(x => x.UserId == userId && x.EntityName == "Account")
+            .OrderByDescending(x => x.Timestamp).Take(50)
+            .Select(x => new AccountAuditDto(x.Id, x.Action, x.Details, x.Timestamp)).ToListAsync(ct);
+        return new AccountProfileDto(user.Id, user.FullNameOrCompany, user.Email ?? string.Empty, user.PhoneNumber, user.Region, role, user.CreatedAt, user.EmailConfirmed, preferences, statistics, audit);
+    }
+
+    public async Task<AccountPreferenceDto> GetAccountPreferencesAsync(string userId, CancellationToken ct = default)
+    {
+        var preference = await db.UserPortalPreferences.AsNoTracking().SingleOrDefaultAsync(x => x.UserId == userId, ct);
+        return new AccountPreferenceDto(preference?.EmailNotifications ?? true, preference?.DeliveryNotifications ?? true, preference?.CompactDashboard ?? false, preference?.DateFormat ?? "dd/MM/yyyy");
+    }
+
+    public async Task<string> GetAccountDisplayNameAsync(string userId, CancellationToken ct = default) =>
+        await users.Users.Where(x => x.Id == userId).Select(x => x.FullNameOrCompany).SingleOrDefaultAsync(ct)
+        ?? throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
+
+    public async Task UpdateAccountProfileAsync(string userId, AccountProfileUpdateRequest request, CancellationToken ct = default)
+    {
+        var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
+        var fullName = request.FullNameOrCompany?.Trim() ?? string.Empty;
+        var region = request.Region?.Trim() ?? string.Empty;
+        var phone = CleanOptional(request.PhoneNumber);
+        if (fullName.Length is < 2 or > 180) throw new ValidationException("Το ονοματεπώνυμο ή η επωνυμία πρέπει να έχει 2–180 χαρακτήρες.");
+        if (region.Length is < 2 or > 120) throw new ValidationException("Η περιοχή πρέπει να έχει 2–120 χαρακτήρες.");
+        if (phone?.Length > 30) throw new ValidationException("Το τηλέφωνο δεν μπορεί να ξεπερνά τους 30 χαρακτήρες.");
+
+        var changes = new List<string>();
+        if (!string.Equals(user.FullNameOrCompany, fullName, StringComparison.Ordinal)) changes.Add("όνομα/επωνυμία");
+        if (!string.Equals(user.Region, region, StringComparison.Ordinal)) changes.Add("περιοχή");
+        if (!string.Equals(user.PhoneNumber, phone, StringComparison.Ordinal)) changes.Add("τηλέφωνο");
+        user.FullNameOrCompany = fullName;
+        user.Region = region;
+        user.PhoneNumber = phone;
+        var result = await users.UpdateAsync(user);
+        if (!result.Succeeded) throw new InvalidOperationException(string.Join(" ", result.Errors.Select(x => x.Description)));
+        db.AuditLogs.Add(new AuditLog { UserId = userId, Action = "ProfileUpdated", EntityName = "Account", EntityId = userId, Details = changes.Count == 0 ? "Αποθηκεύτηκε το προφίλ χωρίς μεταβολές." : $"Ενημερώθηκαν: {string.Join(", ", changes)}." });
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateAccountPreferencesAsync(string userId, AccountPreferenceUpdateRequest request, CancellationToken ct = default)
+    {
+        if (!await users.Users.AnyAsync(x => x.Id == userId, ct)) throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
+        if (request.DateFormat is not ("dd/MM/yyyy" or "yyyy-MM-dd")) throw new ValidationException("Η μορφή ημερομηνίας δεν είναι έγκυρη.");
+        var preference = await db.UserPortalPreferences.SingleOrDefaultAsync(x => x.UserId == userId, ct);
+        if (preference is null)
+        {
+            preference = new UserPortalPreference { UserId = userId };
+            db.UserPortalPreferences.Add(preference);
+        }
+        preference.EmailNotifications = request.EmailNotifications;
+        preference.DeliveryNotifications = request.DeliveryNotifications;
+        preference.CompactDashboard = request.CompactDashboard;
+        preference.DateFormat = request.DateFormat;
+        preference.UpdatedAtUtc = DateTime.UtcNow;
+        db.AuditLogs.Add(new AuditLog { UserId = userId, Action = "PreferencesUpdated", EntityName = "Account", EntityId = userId, Details = "Ενημερώθηκαν οι προτιμήσεις ειδοποιήσεων και εμφάνισης." });
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task ChangeOwnPasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken ct = default)
+    {
+        var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
+        var result = await users.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded) throw new ValidationException(string.Join(" ", result.Errors.Select(x => x.Description)));
+        db.AuditLogs.Add(new AuditLog { UserId = userId, Action = "PasswordChanged", EntityName = "Account", EntityId = userId, Details = "Ο κωδικός πρόσβασης άλλαξε επιτυχώς." });
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<string> ExportAccountStatisticsCsvAsync(string userId, CancellationToken ct = default)
+    {
+        var profile = await GetAccountProfileAsync(userId, ct);
+        var csv = new StringBuilder();
+        csv.AppendLine("Metric,Value");
+        csv.AppendLine($"{Csv("Λογαριασμός")},{Csv(profile.FullNameOrCompany)}");
+        csv.AppendLine($"{Csv("Email")},{Csv(profile.Email)}");
+        csv.AppendLine($"{Csv("Ρόλος")},{Csv(profile.Role)}");
+        csv.AppendLine($"{Csv("Περιοχή")},{Csv(profile.Region)}");
+        foreach (var statistic in profile.Statistics) csv.AppendLine($"{Csv(statistic.Label)},{Csv(statistic.Value)}");
+        db.AuditLogs.Add(new AuditLog { UserId = userId, Action = "StatisticsExported", EntityName = "Account", EntityId = userId, Details = "Έγινε εξαγωγή των προσωπικών στατιστικών σε CSV." });
+        await db.SaveChangesAsync(ct);
+        return csv.ToString();
+    }
+
     public async Task<ApprovalResult> ApproveApplicationAsync(Guid id, string adminUserId, CancellationToken ct = default)
     {
         var application = await db.InterestApplications.SingleOrDefaultAsync(x => x.Id == id, ct) ?? throw new KeyNotFoundException("Η αίτηση δεν βρέθηκε.");

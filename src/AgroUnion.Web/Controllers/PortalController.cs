@@ -5,14 +5,16 @@ using AgroUnion.Application.Services;
 using AgroUnion.Domain.Entities;
 using AgroUnion.Web.ViewModels;
 using AgroUnion.Web.Services;
+using AgroUnion.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 
 namespace AgroUnion.Web.Controllers;
 
 [Authorize, Route("portal")]
-public sealed class PortalController(IAgroUnionService service, IEmailAdministrationService emailAdministration, PartnerFileStore fileStore, ILogger<PortalController> logger) : Controller
+public sealed class PortalController(IAgroUnionService service, IEmailAdministrationService emailAdministration, PartnerFileStore fileStore, UserManager<ApplicationUser> users, SignInManager<ApplicationUser> signIn, ILogger<PortalController> logger) : Controller
 {
     private static readonly HashSet<string> ProducerPages = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -23,6 +25,8 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     [HttpGet("")]
     public async Task<IActionResult> Index(string? producerId, CancellationToken ct)
     {
+        ViewData["CompactDashboard"] = (await service.GetAccountPreferencesAsync(UserId, ct)).CompactDashboard;
+        ViewData["AccountDisplayName"] = await service.GetAccountDisplayNameAsync(UserId, ct);
         if (User.IsInRole(RoleNames.Admin)) return View("Dashboard", await service.GetAdminDashboardAsync(producerId, ct));
         if (User.IsInRole(RoleNames.Producer))
         {
@@ -34,10 +38,59 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
         return Forbid();
     }
 
+    [HttpGet("profile")]
+    public async Task<IActionResult> Profile(CancellationToken ct)
+    {
+        ViewData["PortalPage"] = "profile";
+        var profile = await service.GetAccountProfileAsync(UserId, ct);
+        ViewData["CompactDashboard"] = profile.Preferences.CompactDashboard;
+        return View("Dashboard", profile);
+    }
+
+    [HttpPost("profile/details")]
+    public async Task<IActionResult> UpdateProfile(AccountProfileForm form, CancellationToken ct)
+    {
+        try { await service.UpdateAccountProfileAsync(UserId, form.ToRequest(), ct); TempData["Success"] = "Τα προσωπικά στοιχεία ενημερώθηκαν."; }
+        catch (Exception ex) when (ex is ValidationException or InvalidOperationException or KeyNotFoundException) { logger.LogWarning(ex, "Account profile update failed"); TempData["Error"] = ex.Message; }
+        return RedirectToAction(nameof(Profile));
+    }
+
+    [HttpPost("profile/preferences")]
+    public async Task<IActionResult> UpdateProfilePreferences(AccountPreferenceForm form, CancellationToken ct)
+    {
+        try { await service.UpdateAccountPreferencesAsync(UserId, form.ToRequest(), ct); TempData["Success"] = "Οι ρυθμίσεις λογαριασμού αποθηκεύτηκαν."; }
+        catch (Exception ex) when (ex is ValidationException or InvalidOperationException or KeyNotFoundException) { logger.LogWarning(ex, "Account preferences update failed"); TempData["Error"] = ex.Message; }
+        return RedirectToAction(nameof(Profile));
+    }
+
+    [HttpPost("profile/password")]
+    public async Task<IActionResult> ChangeProfilePassword(ProfilePasswordForm form, CancellationToken ct)
+    {
+        try
+        {
+            if (form.NewPassword != form.ConfirmPassword) throw new ValidationException("Οι νέοι κωδικοί δεν ταιριάζουν.");
+            await service.ChangeOwnPasswordAsync(UserId, form.CurrentPassword, form.NewPassword, ct);
+            var user = await users.FindByIdAsync(UserId) ?? throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
+            await signIn.RefreshSignInAsync(user);
+            TempData["Success"] = "Ο κωδικός πρόσβασης άλλαξε επιτυχώς.";
+        }
+        catch (Exception ex) when (ex is ValidationException or InvalidOperationException or KeyNotFoundException) { logger.LogWarning(ex, "Account password change failed"); TempData["Error"] = ex.Message; }
+        return RedirectToAction(nameof(Profile));
+    }
+
+    [HttpGet("profile/statistics.csv")]
+    public async Task<IActionResult> ProfileStatisticsCsv(CancellationToken ct)
+    {
+        var csv = await service.ExportAccountStatisticsCsvAsync(UserId, ct);
+        return File(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv)).ToArray(), "text/csv", $"agro-union-profile-{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
     [Authorize(Policy = "AdminOnly"), HttpGet("email")]
     public async Task<IActionResult> EmailAdministration(CancellationToken ct)
     {
         ViewData["AdminPage"] = "email";
+        ViewData["CompactDashboard"] = (await service.GetAccountPreferencesAsync(UserId, ct)).CompactDashboard;
+        ViewData["AccountDisplayName"] = await service.GetAccountDisplayNameAsync(UserId, ct);
         return View("Dashboard", await emailAdministration.GetDashboardAsync(ct));
     }
 
@@ -130,6 +183,8 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     {
         if (!ProducerPages.Contains(page)) return NotFound();
         ViewData["ProducerPage"] = page.ToLowerInvariant();
+        ViewData["CompactDashboard"] = (await service.GetAccountPreferencesAsync(UserId, ct)).CompactDashboard;
+        ViewData["AccountDisplayName"] = await service.GetAccountDisplayNameAsync(UserId, ct);
         return View("Dashboard", await service.GetProducerDashboardAsync(UserId, ct));
     }
 

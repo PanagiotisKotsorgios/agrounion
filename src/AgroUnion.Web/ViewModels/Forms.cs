@@ -72,6 +72,30 @@ public sealed class ChangePasswordForm
     public string ConfirmPassword { get; set; } = "";
 }
 
+public sealed class AccountProfileForm
+{
+    public string FullNameOrCompany { get; set; } = "";
+    public string Region { get; set; } = "";
+    public string? PhoneNumber { get; set; }
+    public AccountProfileUpdateRequest ToRequest() => new(FullNameOrCompany, Region, PhoneNumber);
+}
+
+public sealed class AccountPreferenceForm
+{
+    public bool EmailNotifications { get; set; }
+    public bool DeliveryNotifications { get; set; }
+    public bool CompactDashboard { get; set; }
+    public string DateFormat { get; set; } = "dd/MM/yyyy";
+    public AccountPreferenceUpdateRequest ToRequest() => new(EmailNotifications, DeliveryNotifications, CompactDashboard, DateFormat);
+}
+
+public sealed class ProfilePasswordForm
+{
+    public string CurrentPassword { get; set; } = "";
+    public string NewPassword { get; set; } = "";
+    public string ConfirmPassword { get; set; } = "";
+}
+
 public sealed class ProductionForm
 {
     public Guid? Id { get; set; }

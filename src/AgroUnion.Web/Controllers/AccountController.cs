@@ -1,5 +1,6 @@
 using AgroUnion.Application.Services;
 using AgroUnion.Infrastructure.Persistence;
+using AgroUnion.Domain.Entities;
 using AgroUnion.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,7 +12,7 @@ using System.Net.Mail;
 namespace AgroUnion.Web.Controllers;
 
 [Route("account")]
-public sealed class AccountController(SignInManager<ApplicationUser> signIn, UserManager<ApplicationUser> users, IEmailSender emailSender, ILogger<AccountController> logger) : Controller
+public sealed class AccountController(SignInManager<ApplicationUser> signIn, UserManager<ApplicationUser> users, AgroUnionDbContext db, IEmailSender emailSender, ILogger<AccountController> logger) : Controller
 {
     [AllowAnonymous, HttpGet("login")]
     public IActionResult Login(string? returnUrl = null) => View(new LoginForm { ReturnUrl = returnUrl });
@@ -31,6 +32,8 @@ public sealed class AccountController(SignInManager<ApplicationUser> signIn, Use
             ModelState.AddModelError("", result.IsLockedOut ? "Ο λογαριασμός κλειδώθηκε προσωρινά." : "Το email ή ο κωδικός δεν είναι σωστός.");
             return View(form);
         }
+        db.AuditLogs.Add(new AuditLog { UserId = user.Id, Action = "Login", EntityName = "Account", EntityId = user.Id, Details = "Επιτυχής σύνδεση στο Portal." });
+        await db.SaveChangesAsync();
         return LocalRedirect(Url.IsLocalUrl(form.ReturnUrl) ? form.ReturnUrl! : "/portal");
     }
 
@@ -103,10 +106,20 @@ public sealed class AccountController(SignInManager<ApplicationUser> signIn, Use
     }
 
     [Authorize, HttpPost("logout")]
-    public async Task<IActionResult> Logout() { await signIn.SignOutAsync(); return RedirectToAction("Index", "Home"); }
+    public async Task<IActionResult> Logout()
+    {
+        var user = await users.GetUserAsync(User);
+        if (user is not null)
+        {
+            db.AuditLogs.Add(new AuditLog { UserId = user.Id, Action = "Logout", EntityName = "Account", EntityId = user.Id, Details = "Αποσύνδεση από το Portal." });
+            await db.SaveChangesAsync();
+        }
+        await signIn.SignOutAsync();
+        return RedirectToAction("Index", "Home");
+    }
 
     [Authorize, HttpGet("change-password")]
-    public IActionResult ChangePassword() => View(new ChangePasswordForm());
+    public IActionResult ChangePassword() => RedirectToAction("Profile", "Portal");
 
     [Authorize, HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword(ChangePasswordForm form)
@@ -117,6 +130,8 @@ public sealed class AccountController(SignInManager<ApplicationUser> signIn, Use
         if (user is null) return Challenge();
         var result = await users.ChangePasswordAsync(user, form.CurrentPassword, form.NewPassword);
         if (!result.Succeeded) { foreach (var error in result.Errors) ModelState.AddModelError("", error.Description); return View(form); }
+        db.AuditLogs.Add(new AuditLog { UserId = user.Id, Action = "PasswordChanged", EntityName = "Account", EntityId = user.Id, Details = "Ο κωδικός πρόσβασης άλλαξε επιτυχώς." });
+        await db.SaveChangesAsync();
         await signIn.RefreshSignInAsync(user); TempData["Success"] = "Ο κωδικός σας άλλαξε."; return RedirectToAction(nameof(ChangePassword));
     }
 

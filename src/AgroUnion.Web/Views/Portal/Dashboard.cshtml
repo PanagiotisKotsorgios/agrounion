@@ -8,6 +8,8 @@
     var portalPage = (ViewData["PortalPage"] as string ?? "overview").ToLowerInvariant();
     var isMarketplace = portalPage == "marketplace";
     var isProfile = portalPage == "profile";
+    var marketplaceEnabled = ViewData["MarketplaceEnabled"] as bool? ?? false;
+    var maintenanceNotice = ViewData["MaintenanceNotice"] as string;
     var pageTitle = producerPage switch
     {
         "collaboration" => "Η συνεργασία μου",
@@ -118,7 +120,7 @@
                 <a class="@(producerPage == "logistics" ? "active" : "")" asp-action="ProducerPage" asp-route-page="logistics"><i class="fa-solid fa-truck-fast"></i> Δρομολόγια</a>
                 <a class="@(producerPage == "invoices" ? "active" : "")" asp-action="ProducerPage" asp-route-page="invoices"><i class="fa-solid fa-file-invoice-dollar"></i> Τιμολόγια</a>
                 <a class="@(producerPage == "offers" ? "active" : "")" asp-action="ProducerPage" asp-route-page="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
-                <button class="portal-nav-action" type="button" data-dashboard-modal-open="marketplace-coming-soon"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου <small>Σύντομα</small></button>
+                @if(marketplaceEnabled){<a class="@(isMarketplace ? "active" : "")" asp-controller="Portal" asp-action="Marketplace"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου</a>}else{<button class="portal-nav-action" type="button" data-dashboard-modal-open="marketplace-coming-soon"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου <small>Σύντομα</small></button>}
                 <a class="@(producerPage == "documents" ? "active" : "")" asp-action="ProducerPage" asp-route-page="documents"><i class="fa-solid fa-folder-open"></i> Έγγραφα</a>
             }
             else if (User.IsInRole(RoleNames.Admin))
@@ -130,10 +132,12 @@
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="users"><i class="fa-solid fa-users-gear"></i> Συνεργάτες</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="producer-workspace"><i class="fa-solid fa-folder-open"></i> Φάκελος παραγωγού</a>
                 <div class="portal-nav-section">Εμπορικά</div>
-                <button class="portal-nav-action" type="button" data-dashboard-modal-open="marketplace-coming-soon"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου <small>Σύντομα</small></button>
+                @if(marketplaceEnabled){<a class="@(isMarketplace ? "active" : "")" asp-controller="Portal" asp-action="Marketplace"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου</a>}else{<button class="portal-nav-action" type="button" data-dashboard-modal-open="marketplace-coming-soon"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου <small>Σύντομα</small></button>}
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="deals"><i class="fa-solid fa-handshake"></i> Συμφωνίες</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="messages"><i class="fa-solid fa-envelope"></i> Μηνύματα</a>
                 <div class="portal-nav-section">Πλατφόρμα</div>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="audit"><i class="fa-solid fa-shield-halved"></i> Audit log</a>
+                <a asp-controller="Portal" asp-action="Index" asp-fragment="settings"><i class="fa-solid fa-sliders"></i> Ρυθμίσεις</a>
                 <a class="@(adminPage == "email" ? "active" : "")" asp-controller="Portal" asp-action="EmailAdministration"><i class="fa-solid fa-paper-plane"></i> Email & Newsletter</a>
                 <a asp-controller="Versions" asp-action="Index"><i class="fa-solid fa-box-archive"></i> Εκδόσεις</a>
             }
@@ -142,7 +146,7 @@
                 <div class="portal-nav-section">Επισκόπηση</div>
                 <a class="active" asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-house"></i> Αρχική</a>
                 <div class="portal-nav-section">Αγορές</div>
-                <button class="portal-nav-action" type="button" data-dashboard-modal-open="marketplace-coming-soon"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου <small>Σύντομα</small></button>
+                @if(marketplaceEnabled){<a class="@(isMarketplace ? "active" : "")" asp-controller="Portal" asp-action="Marketplace"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου</a>}else{<button class="portal-nav-action" type="button" data-dashboard-modal-open="marketplace-coming-soon"><i class="fa-solid fa-people-arrows"></i> Αγορά Δικτύου <small>Σύντομα</small></button>}
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="offers"><i class="fa-solid fa-tag"></i> Προσφορές</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="pickups"><i class="fa-solid fa-truck-fast"></i> Παραλαβές</a>
                 <a asp-controller="Portal" asp-action="Index" asp-fragment="contracts"><i class="fa-solid fa-file-signature"></i> Σύμβαση</a>
@@ -170,6 +174,11 @@
                 </a>
             </div>
         </div>
+
+        @if (!string.IsNullOrWhiteSpace(maintenanceNotice))
+        {
+            <div class="portal-maintenance-notice"><i class="fa-solid fa-screwdriver-wrench"></i><div><strong>Ενημέρωση πλατφόρμας</strong><span>@maintenanceNotice</span></div></div>
+        }
 
         <header class="exec-header" id="overview">
             <div class="exec-copy">

@@ -303,10 +303,34 @@ public sealed class AuditLog : Entity
 {
     public string? UserId { get; set; }
     [MaxLength(120)] public string Action { get; set; } = string.Empty;
+    [MaxLength(80)] public string Category { get; set; } = "Platform";
+    [MaxLength(30)] public string Severity { get; set; } = "Info";
     [MaxLength(120)] public string EntityName { get; set; } = string.Empty;
     [MaxLength(80)] public string EntityId { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     [MaxLength(3000)] public string Details { get; set; } = string.Empty;
+    [MaxLength(80)] public string? IpAddress { get; set; }
+    [MaxLength(500)] public string? UserAgent { get; set; }
+    [MaxLength(100)] public string? CorrelationId { get; set; }
+    public bool Succeeded { get; set; } = true;
+}
+
+public sealed class PlatformConfiguration : Entity
+{
+    public bool AcceptingApplications { get; set; } = true;
+    [MaxLength(500)] public string ApplicationPauseMessage { get; set; } = "Οι νέες αιτήσεις συνεργασίας έχουν τεθεί προσωρινά σε παύση.";
+    public bool AllowProfileEditing { get; set; } = true;
+    public bool RequireConfirmedEmail { get; set; } = true;
+    public bool EmailNotificationsEnabled { get; set; } = true;
+    public bool MarketplaceEnabled { get; set; }
+    [MaxLength(180)] public string SupportEmail { get; set; } = "info@agro-union.gr";
+    [MaxLength(40)] public string SupportPhone { get; set; } = "2631028971";
+    [MaxLength(180)] public string DefaultAccountManager { get; set; } = "ΠΑΝΑΓΙΩΤΗΣ ΚΟΤΣΟΡΓΙΟΣ";
+    [MaxLength(500)] public string DefaultPaymentTerms { get; set; } = "Εξόφληση εντός 30 ημερών από την έκδοση τιμολογίου.";
+    [MaxLength(500)] public string? MaintenanceNotice { get; set; }
+    public int AuditRetentionDays { get; set; } = 3650;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    [MaxLength(450)] public string UpdatedByUserId { get; set; } = string.Empty;
 }
 
 public sealed class Notification : Entity

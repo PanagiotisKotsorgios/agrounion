@@ -24,6 +24,11 @@ public sealed class AgroUnionService(
 {
     public async Task<Guid> SubmitInterestAsync(InterestApplicationRequest request, CancellationToken ct = default)
     {
+        var platform = await GetPlatformConfigurationAsync(ct);
+        if (!platform.AcceptingApplications)
+            throw new ValidationException(string.IsNullOrWhiteSpace(platform.ApplicationPauseMessage)
+                ? "Οι νέες αιτήσεις συνεργασίας έχουν τεθεί προσωρινά σε παύση."
+                : platform.ApplicationPauseMessage);
         await interestValidator.ValidateAndThrowAsync(request, ct);
         var item = new InterestApplication
         {
@@ -44,7 +49,9 @@ public sealed class AgroUnionService(
         var item = new ContactMessage { FullName = request.FullName.Trim(), Email = request.Email.Trim().ToLowerInvariant(), Message = request.Message.Trim() };
         db.ContactMessages.Add(item);
         await db.SaveChangesAsync(ct);
-        await emailSender.SendAsync(configuration["Notifications:AdminEmail"] ?? "info@agro-union.gr", "Νέο μήνυμα επικοινωνίας", $"Μήνυμα από <strong>{item.FullName}</strong> ({item.Email}).", ct);
+        var platform = await GetPlatformConfigurationAsync(ct);
+        if (platform.EmailNotificationsEnabled)
+            await emailSender.SendAsync(configuration["Notifications:AdminEmail"] ?? platform.SupportEmail, "Νέο μήνυμα επικοινωνίας", $"Μήνυμα από <strong>{item.FullName}</strong> ({item.Email}).", ct);
         return item.Id;
     }
 
@@ -73,6 +80,33 @@ public sealed class AgroUnionService(
         var producerWorkspace = selectedProducer is null
             ? EmptyProducerWorkspace(producerSummaries)
             : await BuildProducerWorkspaceAsync(selectedProducer, producerSummaries, true, ct);
+
+        var producerProfiles = await db.ProducerCollaborationProfiles.AsNoTracking().ToDictionaryAsync(x => x.ProducerUserId, ct);
+        var declarationCounts = (await db.ProductionDeclarations.AsNoTracking().Select(x => x.ProducerUserId).ToListAsync(ct)).GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
+        var activeContractCounts = (await db.Contracts.AsNoTracking().Where(x => x.Status == ContractStatus.Active).Select(x => x.UserId).ToListAsync(ct)).GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
+        var documentCounts = (await db.PartnerDocuments.AsNoTracking().Select(x => x.UserId).ToListAsync(ct)).GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
+        var invoiceCounts = (await db.PartnerInvoices.AsNoTracking().Select(x => x.UserId).ToListAsync(ct)).GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
+        var auditCounts = (await db.AuditLogs.AsNoTracking().Where(x => x.UserId != null).Select(x => x.UserId!).ToListAsync(ct)).GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
+        var adminUsers = summaries.Select(summary =>
+        {
+            var row = userRows.Single(x => x.Id == summary.Id);
+            return new AdminUserDto(row.Id, row.FullNameOrCompany, row.Email ?? string.Empty, row.PhoneNumber, summary.Role, row.Region,
+                row.IsActive, row.EmailConfirmed, row.MembershipCode, row.AdminNotes, row.CreatedAt, row.UpdatedAt, row.LastLoginAt,
+                producerProfiles.GetValueOrDefault(row.Id)?.Category,
+                declarationCounts.GetValueOrDefault(row.Id), activeContractCounts.GetValueOrDefault(row.Id), documentCounts.GetValueOrDefault(row.Id),
+                invoiceCounts.GetValueOrDefault(row.Id), auditCounts.GetValueOrDefault(row.Id));
+        }).ToList();
+
+        var auditRows = await db.AuditLogs.AsNoTracking().OrderByDescending(x => x.Timestamp).Take(1000).ToListAsync(ct);
+        var auditDtos = auditRows.Select(x => new AdminAuditDto(x.Id, x.UserId,
+            x.UserId is not null ? userNames.GetValueOrDefault(x.UserId, "Άγνωστος χρήστης") : "Σύστημα",
+            x.UserId is not null ? userRows.FirstOrDefault(u => u.Id == x.UserId)?.Email ?? "—" : "—",
+            x.Action, x.Category, x.Severity, x.EntityName, x.EntityId, x.Details, x.Timestamp, x.IpAddress, x.UserAgent, x.CorrelationId, x.Succeeded)).ToList();
+        var platform = await GetPlatformConfigurationAsync(ct);
+        var platformDto = new PlatformConfigurationDto(platform.Id, platform.AcceptingApplications, platform.ApplicationPauseMessage,
+            platform.AllowProfileEditing, platform.RequireConfirmedEmail, platform.EmailNotificationsEnabled, platform.MarketplaceEnabled,
+            platform.SupportEmail, platform.SupportPhone, platform.DefaultAccountManager, platform.DefaultPaymentTerms, platform.MaintenanceNotice,
+            platform.AuditRetentionDays, platform.UpdatedAt, userNames.GetValueOrDefault(platform.UpdatedByUserId, "Σύστημα"));
         return new AdminDashboardDto(
             userRows.Count(x => x.IsActive) - 1,
             await db.InterestApplications.CountAsync(x => x.Status == ApplicationStatus.New || x.Status == ApplicationStatus.InReview, ct),
@@ -83,7 +117,7 @@ public sealed class AgroUnionService(
             dealDtos, summaries,
             await db.ContactMessages.OrderByDescending(x => x.CreatedAt).Take(20).ToListAsync(ct),
             await VisiblePriceItems(RoleNames.Admin, ct),
-            await SupplyOrdersFor(null, ct), productionDtos, offerDtos, contractDtos, producerWorkspace);
+            await SupplyOrdersFor(null, ct), productionDtos, offerDtos, contractDtos, producerWorkspace, adminUsers, auditDtos, platformDto);
     }
 
     public async Task<ProducerDashboardDto> GetProducerDashboardAsync(string userId, CancellationToken ct = default)
@@ -156,6 +190,8 @@ public sealed class AgroUnionService(
 
     public async Task UpdateAccountProfileAsync(string userId, AccountProfileUpdateRequest request, CancellationToken ct = default)
     {
+        if (!(await GetPlatformConfigurationAsync(ct)).AllowProfileEditing)
+            throw new InvalidOperationException("Η επεξεργασία στοιχείων λογαριασμού έχει τεθεί προσωρινά σε παύση από τη διαχείριση.");
         var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
         var fullName = request.FullNameOrCompany?.Trim() ?? string.Empty;
         var region = request.Region?.Trim() ?? string.Empty;
@@ -179,6 +215,8 @@ public sealed class AgroUnionService(
 
     public async Task UpdateAccountPreferencesAsync(string userId, AccountPreferenceUpdateRequest request, CancellationToken ct = default)
     {
+        if (!(await GetPlatformConfigurationAsync(ct)).AllowProfileEditing)
+            throw new InvalidOperationException("Η επεξεργασία ρυθμίσεων λογαριασμού έχει τεθεί προσωρινά σε παύση από τη διαχείριση.");
         if (!await users.Users.AnyAsync(x => x.Id == userId, ct)) throw new KeyNotFoundException("Ο λογαριασμός δεν βρέθηκε.");
         if (request.DateFormat is not ("dd/MM/yyyy" or "yyyy-MM-dd")) throw new ValidationException("Η μορφή ημερομηνίας δεν είναι έγκυρη.");
         var preference = await db.UserPortalPreferences.SingleOrDefaultAsync(x => x.UserId == userId, ct);
@@ -243,7 +281,8 @@ public sealed class AgroUnionService(
         application.Status = ApplicationStatus.Approved; application.HandledByUserId = adminUserId; application.HandledAt = DateTime.UtcNow;
         db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "Approve", EntityName = nameof(InterestApplication), EntityId = id.ToString(), Details = $"Δημιουργήθηκε χρήστης {user.Email} και σύμβαση {contract.ContractNumber}." });
         await db.SaveChangesAsync(ct);
-        await emailSender.SendAsync(user.Email!, "Πρόσκληση στο Portal της AGRO UNION", $"Ο λογαριασμός σας ενεργοποιήθηκε. Προσωρινός κωδικός: <strong>{password}</strong>. Συνδεθείτε και αλλάξτε τον άμεσα.", ct);
+        if ((await GetPlatformConfigurationAsync(ct)).EmailNotificationsEnabled)
+            await emailSender.SendAsync(user.Email!, "Πρόσκληση στο Portal της AGRO UNION", $"Ο λογαριασμός σας ενεργοποιήθηκε. Προσωρινός κωδικός: <strong>{password}</strong>. Συνδεθείτε και αλλάξτε τον άμεσα.", ct);
         return new ApprovalResult(user.Id, user.Email!, password, contract.Id);
     }
 
@@ -348,24 +387,36 @@ public sealed class AgroUnionService(
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<string> ResetPasswordAsync(string userId, CancellationToken ct = default)
+    public async Task<string> ResetPasswordAsync(string userId, string adminUserId, CancellationToken ct = default)
     {
+        if (userId == adminUserId) throw new ValidationException("Για τον δικό σας λογαριασμό χρησιμοποιήστε την αλλαγή κωδικού στο Προφίλ.");
         var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο χρήστης δεν βρέθηκε.");
         var password = $"Au!{Guid.NewGuid():N}"[..14];
         var token = await users.GeneratePasswordResetTokenAsync(user);
         var result = await users.ResetPasswordAsync(user, token, password);
         if (!result.Succeeded) throw new InvalidOperationException(string.Join(" ", result.Errors.Select(x => x.Description)));
-        await emailSender.SendAsync(user.Email!, "Νέος προσωρινός κωδικός", $"Ο νέος προσωρινός κωδικός σας είναι <strong>{password}</strong>.", ct);
+        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "PasswordReset", Category = "Security", Severity = "Warning", EntityName = nameof(ApplicationUser), EntityId = user.Id, Details = $"Εκδόθηκε προσωρινός κωδικός για {user.Email}." });
+        await db.SaveChangesAsync(ct);
+        if ((await GetPlatformConfigurationAsync(ct)).EmailNotificationsEnabled)
+            await emailSender.SendAsync(user.Email!, "Νέος προσωρινός κωδικός", $"Ο νέος προσωρινός κωδικός σας είναι <strong>{password}</strong>.", ct);
         return password;
     }
 
-    public async Task ChangeUserRoleAsync(string userId, string role, CancellationToken ct = default)
+    public async Task ChangeUserRoleAsync(string userId, string role, string adminUserId, CancellationToken ct = default)
     {
         if (!new[] { RoleNames.Producer, RoleNames.Trader, RoleNames.Company }.Contains(role)) throw new ValidationException("Μη έγκυρος ρόλος συνεργάτη.");
         var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο χρήστης δεν βρέθηκε.");
         var current = await users.GetRolesAsync(user);
-        await users.RemoveFromRolesAsync(user, current.Where(x => x != RoleNames.Admin));
-        await users.AddToRoleAsync(user, role);
+        if (current.Contains(RoleNames.Admin)) throw new ValidationException("Ο κύριος διαχειριστής δεν μπορεί να μετατραπεί σε λογαριασμό συνεργάτη.");
+        var previous = current.FirstOrDefault() ?? "—";
+        var removeResult = await users.RemoveFromRolesAsync(user, current.Where(x => x != RoleNames.Admin));
+        if (!removeResult.Succeeded) throw new InvalidOperationException(string.Join(" ", removeResult.Errors.Select(x => x.Description)));
+        var roleResult = await users.AddToRoleAsync(user, role);
+        if (!roleResult.Succeeded) throw new InvalidOperationException(string.Join(" ", roleResult.Errors.Select(x => x.Description)));
+        user.UpdatedAt = DateTime.UtcNow;
+        await users.UpdateAsync(user);
+        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "RoleChanged", Category = "Access", Severity = "Warning", EntityName = nameof(ApplicationUser), EntityId = user.Id, Details = $"Ο ρόλος του {user.Email} άλλαξε από {previous} σε {role}." });
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task DeletePriceItemAsync(string requesterUserId, bool isAdmin, Guid id, CancellationToken ct = default)
@@ -390,20 +441,152 @@ public sealed class AgroUnionService(
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task SetUserActiveAsync(string userId, bool active, CancellationToken ct = default)
+    public async Task SetUserActiveAsync(string userId, bool active, string adminUserId, CancellationToken ct = default)
     {
+        if (userId == adminUserId) throw new ValidationException("Δεν μπορείτε να θέσετε σε παύση τον λογαριασμό με τον οποίο είστε συνδεδεμένοι.");
         var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο χρήστης δεν βρέθηκε.");
-        user.IsActive = active; user.LockoutEnd = active ? null : DateTimeOffset.MaxValue; await users.UpdateAsync(user);
+        if (await users.IsInRoleAsync(user, RoleNames.Admin)) throw new ValidationException("Δεν επιτρέπεται παύση λογαριασμού διαχειριστή από αυτή την ενέργεια.");
+        user.IsActive = active; user.LockoutEnd = active ? null : DateTimeOffset.MaxValue; user.UpdatedAt = DateTime.UtcNow;
+        var result = await users.UpdateAsync(user);
+        if (!result.Succeeded) throw new InvalidOperationException(string.Join(" ", result.Errors.Select(x => x.Description)));
+        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = active ? "UserActivated" : "UserPaused", Category = "Access", Severity = active ? "Info" : "Warning", EntityName = nameof(ApplicationUser), EntityId = user.Id, Details = $"Ο λογαριασμός {user.Email} {(active ? "ενεργοποιήθηκε" : "τέθηκε σε παύση")}." });
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task DeletePersonalDataAsync(string userId, CancellationToken ct = default)
+    public async Task UpdateAdminUserAsync(AdminUserUpdateRequest request, string adminUserId, CancellationToken ct = default)
     {
-        var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο χρήστης δεν βρέθηκε.");
-        var oldEmail = user.Email;
-        user.FullNameOrCompany = "Διαγραμμένος χρήστης"; user.Region = "—"; user.PhoneNumber = null; user.Email = $"deleted-{Guid.NewGuid():N}@invalid.local"; user.UserName = user.Email; user.IsActive = false;
-        await users.UpdateAsync(user);
-        var messages = await db.ContactMessages.Where(x => x.Email == oldEmail).ToListAsync(ct); db.ContactMessages.RemoveRange(messages);
+        if (string.IsNullOrWhiteSpace(request.FullNameOrCompany) || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Region))
+            throw new ValidationException("Ονοματεπώνυμο/επωνυμία, email και περιοχή είναι υποχρεωτικά.");
+        if (!System.Net.Mail.MailAddress.TryCreate(request.Email.Trim(), out var address)) throw new ValidationException("Το email δεν είναι έγκυρο.");
+
+        var user = await users.FindByIdAsync(request.UserId) ?? throw new KeyNotFoundException("Ο χρήστης δεν βρέθηκε.");
+        var roles = await users.GetRolesAsync(user);
+        var isAdmin = roles.Contains(RoleNames.Admin);
+        if (!isAdmin && !new[] { RoleNames.Producer, RoleNames.Trader, RoleNames.Company }.Contains(request.Role))
+            throw new ValidationException("Ο επιλεγμένος ρόλος δεν είναι έγκυρος.");
+        if (isAdmin && (!request.IsActive || request.Role != RoleNames.Admin))
+            throw new ValidationException("Ο κύριος διαχειριστής πρέπει να παραμένει ενεργός με ρόλο Admin.");
+
+        var duplicate = await users.FindByEmailAsync(address.Address);
+        if (duplicate is not null && duplicate.Id != user.Id) throw new ValidationException("Υπάρχει ήδη λογαριασμός με αυτό το email.");
+
+        var before = $"{user.FullNameOrCompany} | {user.Email} | {roles.FirstOrDefault()} | {user.Region} | ενεργός={user.IsActive}";
+        user.FullNameOrCompany = request.FullNameOrCompany.Trim();
+        user.Region = request.Region.Trim();
+        user.PhoneNumber = CleanOptional(request.PhoneNumber);
+        user.MembershipCode = CleanOptional(request.MembershipCode);
+        user.AdminNotes = CleanOptional(request.AdminNotes);
+        user.EmailConfirmed = request.EmailConfirmed;
+        user.IsActive = isAdmin || request.IsActive;
+        user.LockoutEnd = user.IsActive ? null : DateTimeOffset.MaxValue;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        if (!string.Equals(user.Email, address.Address, StringComparison.OrdinalIgnoreCase))
+        {
+            var emailResult = await users.SetEmailAsync(user, address.Address);
+            if (!emailResult.Succeeded) throw new InvalidOperationException(string.Join(" ", emailResult.Errors.Select(x => x.Description)));
+            var nameResult = await users.SetUserNameAsync(user, address.Address);
+            if (!nameResult.Succeeded) throw new InvalidOperationException(string.Join(" ", nameResult.Errors.Select(x => x.Description)));
+        }
+        user.EmailConfirmed = request.EmailConfirmed;
+        var updateResult = await users.UpdateAsync(user);
+        if (!updateResult.Succeeded) throw new InvalidOperationException(string.Join(" ", updateResult.Errors.Select(x => x.Description)));
+
+        if (!isAdmin)
+        {
+            var removeRoles = await users.RemoveFromRolesAsync(user, roles.Where(x => x != RoleNames.Admin));
+            if (!removeRoles.Succeeded) throw new InvalidOperationException(string.Join(" ", removeRoles.Errors.Select(x => x.Description)));
+            var addRole = await users.AddToRoleAsync(user, request.Role);
+            if (!addRole.Succeeded) throw new InvalidOperationException(string.Join(" ", addRole.Errors.Select(x => x.Description)));
+        }
+
+        if (request.Role == RoleNames.Producer)
+        {
+            var platform = await GetPlatformConfigurationAsync(ct);
+            var profile = await db.ProducerCollaborationProfiles.SingleOrDefaultAsync(x => x.ProducerUserId == user.Id, ct);
+            if (profile is null)
+            {
+                profile = new ProducerCollaborationProfile
+                {
+                    ProducerUserId = user.Id,
+                    RelationshipStartDate = DateOnly.FromDateTime(DateTime.Today),
+                    AccountManager = platform.DefaultAccountManager,
+                    PaymentTerms = platform.DefaultPaymentTerms,
+                    UpdatedByUserId = adminUserId
+                };
+                db.ProducerCollaborationProfiles.Add(profile);
+            }
+            if (request.Category is { } category)
+            {
+                profile.Category = category;
+                profile.NextCategory = NextProducerCategory(category);
+                profile.UpgradeRequirements = CategoryUpgradeText(category);
+            }
+            profile.UpdatedAt = DateTime.UtcNow;
+            profile.UpdatedByUserId = adminUserId;
+        }
+
+        var after = $"{user.FullNameOrCompany} | {address.Address} | {(isAdmin ? RoleNames.Admin : request.Role)} | {user.Region} | ενεργός={user.IsActive} | κατηγορία={request.Category?.ToString() ?? "—"}";
+        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "UserUpdated", Category = "UserManagement", EntityName = nameof(ApplicationUser), EntityId = user.Id, Details = $"Πριν: {before}. Μετά: {after}." });
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task DeletePersonalDataAsync(string userId, string adminUserId, CancellationToken ct = default)
+    {
+        if (userId == adminUserId) throw new ValidationException("Δεν μπορείτε να διαγράψετε τον λογαριασμό με τον οποίο είστε συνδεδεμένοι.");
+        var user = await users.FindByIdAsync(userId) ?? throw new KeyNotFoundException("Ο χρήστης δεν βρέθηκε.");
+        if (await users.IsInRoleAsync(user, RoleNames.Admin)) throw new ValidationException("Δεν επιτρέπεται διαγραφή λογαριασμού διαχειριστή.");
+        var oldEmail = user.Email;
+        var erasedEmail = $"deleted-{Guid.NewGuid():N}@invalid.local";
+        var emailResult = await users.SetEmailAsync(user, erasedEmail);
+        if (!emailResult.Succeeded) throw new InvalidOperationException(string.Join(" ", emailResult.Errors.Select(x => x.Description)));
+        var nameResult = await users.SetUserNameAsync(user, erasedEmail);
+        if (!nameResult.Succeeded) throw new InvalidOperationException(string.Join(" ", nameResult.Errors.Select(x => x.Description)));
+        user.FullNameOrCompany = "Διαγραμμένος χρήστης"; user.Region = "—"; user.PhoneNumber = null; user.MembershipCode = null; user.AdminNotes = null; user.EmailConfirmed = false; user.IsActive = false; user.LockoutEnd = DateTimeOffset.MaxValue; user.UpdatedAt = DateTime.UtcNow;
+        var eraseResult = await users.UpdateAsync(user);
+        if (!eraseResult.Succeeded) throw new InvalidOperationException(string.Join(" ", eraseResult.Errors.Select(x => x.Description)));
+        var messages = await db.ContactMessages.Where(x => x.Email == oldEmail).ToListAsync(ct); db.ContactMessages.RemoveRange(messages);
+        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "PersonalDataErased", Category = "Privacy", Severity = "Critical", EntityName = nameof(ApplicationUser), EntityId = user.Id, Details = $"Τα προσωπικά δεδομένα του λογαριασμού {oldEmail} ανωνυμοποιήθηκαν. Τα εμπορικά αρχεία διατηρήθηκαν για ακεραιότητα και νόμιμη τεκμηρίωση." });
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task SavePlatformConfigurationAsync(PlatformConfigurationRequest request, string adminUserId, CancellationToken ct = default)
+    {
+        if (request.AuditRetentionDays is < 30 or > 3650) throw new ValidationException("Η διατήρηση audit log πρέπει να είναι από 30 έως 3650 ημέρες.");
+        if (!System.Net.Mail.MailAddress.TryCreate(request.SupportEmail?.Trim(), out var supportEmail)) throw new ValidationException("Το email υποστήριξης δεν είναι έγκυρο.");
+        if (string.IsNullOrWhiteSpace(request.SupportPhone) || string.IsNullOrWhiteSpace(request.DefaultAccountManager) || string.IsNullOrWhiteSpace(request.DefaultPaymentTerms))
+            throw new ValidationException("Τηλέφωνο, προεπιλεγμένος υπεύθυνος και όροι πληρωμής είναι υποχρεωτικά.");
+
+        var item = await GetPlatformConfigurationAsync(ct);
+        item.AcceptingApplications = request.AcceptingApplications;
+        item.ApplicationPauseMessage = request.ApplicationPauseMessage?.Trim() ?? string.Empty;
+        item.AllowProfileEditing = request.AllowProfileEditing;
+        item.RequireConfirmedEmail = request.RequireConfirmedEmail;
+        item.EmailNotificationsEnabled = request.EmailNotificationsEnabled;
+        item.MarketplaceEnabled = request.MarketplaceEnabled;
+        item.SupportEmail = supportEmail.Address;
+        item.SupportPhone = request.SupportPhone.Trim();
+        item.DefaultAccountManager = request.DefaultAccountManager.Trim();
+        item.DefaultPaymentTerms = request.DefaultPaymentTerms.Trim();
+        item.MaintenanceNotice = CleanOptional(request.MaintenanceNotice);
+        item.AuditRetentionDays = request.AuditRetentionDays;
+        item.UpdatedAt = DateTime.UtcNow;
+        item.UpdatedByUserId = adminUserId;
+        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "PlatformSettingsUpdated", Category = "Configuration", Severity = "Warning", EntityName = nameof(PlatformConfiguration), EntityId = item.Id.ToString(), Details = $"Αιτήσεις={(item.AcceptingApplications ? "ενεργές" : "σε παύση")}, προφίλ={(item.AllowProfileEditing ? "επεξεργάσιμο" : "κλειδωμένο")}, email={(item.EmailNotificationsEnabled ? "ενεργό" : "ανενεργό")}, marketplace={(item.MarketplaceEnabled ? "ενεργό" : "ανενεργό")}, audit={item.AuditRetentionDays} ημέρες." });
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<string> ExportAuditLogCsvAsync(CancellationToken ct = default)
+    {
+        var rows = await db.AuditLogs.AsNoTracking().OrderByDescending(x => x.Timestamp).ToListAsync(ct);
+        var userRows = await users.Users.AsNoTracking().ToDictionaryAsync(x => x.Id, ct);
+        var csv = new StringBuilder("Timestamp,Actor,Email,Action,Category,Severity,Entity,EntityId,Succeeded,IP,CorrelationId,Details\r\n");
+        foreach (var row in rows)
+        {
+            var actor = row.UserId is not null ? userRows.GetValueOrDefault(row.UserId) : null;
+            csv.AppendLine(string.Join(',', Csv(row.Timestamp.ToString("O")), Csv(actor?.FullNameOrCompany ?? "System"), Csv(actor?.Email ?? ""), Csv(row.Action), Csv(row.Category), Csv(row.Severity), Csv(row.EntityName), Csv(row.EntityId), row.Succeeded, Csv(row.IpAddress ?? ""), Csv(row.CorrelationId ?? ""), Csv(row.Details)));
+        }
+        return csv.ToString();
     }
 
     public async Task<string> ExportTransactionsCsvAsync(string userId, bool isAdmin, CancellationToken ct = default)
@@ -436,14 +619,7 @@ public sealed class AgroUnionService(
             db.ProducerCollaborationProfiles.Add(profile);
         }
         profile.Category = request.Category;
-        profile.NextCategory = request.Category switch
-        {
-            ProducerCategory.Developing => ProducerCategory.Standard,
-            ProducerCategory.Standard => ProducerCategory.Advanced,
-            ProducerCategory.Advanced => ProducerCategory.Premium,
-            ProducerCategory.Premium => ProducerCategory.Strategic,
-            _ => null
-        };
+        profile.NextCategory = NextProducerCategory(request.Category);
         profile.CategoryProgressPercent = request.CategoryProgressPercent;
         profile.UpgradeRequirements = request.UpgradeRequirements.Trim();
         profile.CommissionRate = request.CommissionRate;
@@ -741,6 +917,34 @@ public sealed class AgroUnionService(
             active.Sum(x => x.TransportCost + x.OtherDeductions), active.Sum(x => x.VatAmount), active.Sum(x => x.NetPayableAmount),
             active.Sum(x => x.PaidAmount), active.Sum(x => x.OutstandingAmount));
     }
+
+    private async Task<PlatformConfiguration> GetPlatformConfigurationAsync(CancellationToken ct)
+    {
+        var item = await db.PlatformConfigurations.SingleOrDefaultAsync(ct);
+        if (item is not null) return item;
+        item = new PlatformConfiguration();
+        db.PlatformConfigurations.Add(item);
+        await db.SaveChangesAsync(ct);
+        return item;
+    }
+
+    private static ProducerCategory? NextProducerCategory(ProducerCategory category) => category switch
+    {
+        ProducerCategory.Developing => ProducerCategory.Standard,
+        ProducerCategory.Standard => ProducerCategory.Advanced,
+        ProducerCategory.Advanced => ProducerCategory.Premium,
+        ProducerCategory.Premium => ProducerCategory.Strategic,
+        _ => null
+    };
+
+    private static string CategoryUpgradeText(ProducerCategory category) => category switch
+    {
+        ProducerCategory.Developing => "Παράδοση συνολικά 3.000 kg προς την AGRO UNION μέσα στο έτος για αξιολόγηση στην Κατηγορία Δ.",
+        ProducerCategory.Standard => "Παράδοση συνολικά 10.000 kg προς την AGRO UNION μέσα στο έτος για αξιολόγηση στην Κατηγορία Γ.",
+        ProducerCategory.Advanced => "Παράδοση συνολικά 20.000 kg προς την AGRO UNION μέσα στο έτος για αξιολόγηση στην Κατηγορία Β.",
+        ProducerCategory.Premium => "Παράδοση συνολικά 50.000 kg προς την AGRO UNION μέσα στο έτος για αξιολόγηση στην Κατηγορία Α.",
+        _ => "Ο λογαριασμός βρίσκεται στην ανώτατη Κατηγορία Α."
+    };
 
     private async Task EnsureProducerAsync(string userId)
     {

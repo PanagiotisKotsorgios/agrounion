@@ -10,11 +10,12 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace AgroUnion.Web.Controllers;
 
 [Authorize, Route("portal")]
-public sealed class PortalController(IAgroUnionService service, IEmailAdministrationService emailAdministration, PartnerFileStore fileStore, UserManager<ApplicationUser> users, SignInManager<ApplicationUser> signIn, ILogger<PortalController> logger) : Controller
+public sealed class PortalController(IAgroUnionService service, IEmailAdministrationService emailAdministration, IPartnerMarketplaceService partnerMarketplace, AgroUnionDbContext db, PartnerFileStore fileStore, UserManager<ApplicationUser> users, SignInManager<ApplicationUser> signIn, ILogger<PortalController> logger) : Controller
 {
     private static readonly HashSet<string> ProducerPages = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -25,6 +26,7 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     [HttpGet("")]
     public async Task<IActionResult> Index(string? producerId, CancellationToken ct)
     {
+        await LoadPlatformViewDataAsync(ct);
         ViewData["CompactDashboard"] = (await service.GetAccountPreferencesAsync(UserId, ct)).CompactDashboard;
         ViewData["AccountDisplayName"] = await service.GetAccountDisplayNameAsync(UserId, ct);
         if (User.IsInRole(RoleNames.Admin)) return View("Dashboard", await service.GetAdminDashboardAsync(producerId, ct));
@@ -41,6 +43,7 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     [HttpGet("profile")]
     public async Task<IActionResult> Profile(CancellationToken ct)
     {
+        await LoadPlatformViewDataAsync(ct);
         ViewData["PortalPage"] = "profile";
         var profile = await service.GetAccountProfileAsync(UserId, ct);
         ViewData["CompactDashboard"] = profile.Preferences.CompactDashboard;
@@ -88,6 +91,7 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     [Authorize(Policy = "AdminOnly"), HttpGet("email")]
     public async Task<IActionResult> EmailAdministration(CancellationToken ct)
     {
+        await LoadPlatformViewDataAsync(ct);
         ViewData["AdminPage"] = "email";
         ViewData["CompactDashboard"] = (await service.GetAccountPreferencesAsync(UserId, ct)).CompactDashboard;
         ViewData["AccountDisplayName"] = await service.GetAccountDisplayNameAsync(UserId, ct);
@@ -95,7 +99,15 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     }
 
     [HttpGet("marketplace")]
-    public IActionResult Marketplace() => MarketplaceUnavailable();
+    public async Task<IActionResult> Marketplace(string? role, string? region, string? product, string? search, CancellationToken ct)
+    {
+        if (!await IsMarketplaceEnabledAsync(ct)) return MarketplaceUnavailable();
+        ViewData["PortalPage"] = "marketplace";
+        await LoadPlatformViewDataAsync(ct);
+        ViewData["CompactDashboard"] = (await service.GetAccountPreferencesAsync(UserId, ct)).CompactDashboard;
+        ViewData["AccountDisplayName"] = await service.GetAccountDisplayNameAsync(UserId, ct);
+        return View("Dashboard", await partnerMarketplace.GetMarketplaceAsync(UserId, role, region, product, search, ct));
+    }
 
     [HttpPost("support")]
     public async Task<IActionResult> SubmitDashboardSupport(DashboardSupportForm form, CancellationToken ct)
@@ -132,19 +144,39 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     }
 
     [Authorize(Policy = "FarmerOnly"), HttpPost("marketplace/production")]
-    public IActionResult SaveMarketplaceProduction(PartnerProductionListingForm form) => MarketplaceUnavailable();
+    public async Task<IActionResult> SaveMarketplaceProduction(PartnerProductionListingForm form, CancellationToken ct)
+    {
+        if (!await IsMarketplaceEnabledAsync(ct)) return MarketplaceUnavailable();
+        return await Run(async () => await partnerMarketplace.SaveProductionListingAsync(UserId, form.ToRequest(), ct), "Η ελεύθερη ποσότητα δημοσιεύτηκε στο δίκτυο.");
+    }
 
     [Authorize(Policy = "FarmerOnly"), HttpPost("marketplace/production/{id:guid}/status")]
-    public IActionResult SetMarketplaceProductionStatus(Guid id, bool active) => MarketplaceUnavailable();
+    public async Task<IActionResult> SetMarketplaceProductionStatus(Guid id, bool active, CancellationToken ct)
+    {
+        if (!await IsMarketplaceEnabledAsync(ct)) return MarketplaceUnavailable();
+        return await Run(async () => await partnerMarketplace.SetProductionListingActiveAsync(UserId, id, active, ct), "Η καταχώριση ενημερώθηκε.");
+    }
 
     [Authorize(Policy = "BuyerOnly"), HttpPost("marketplace/demand")]
-    public IActionResult CreateMarketplaceDemand(PartnerBuyingRequestForm form) => MarketplaceUnavailable();
+    public async Task<IActionResult> CreateMarketplaceDemand(PartnerBuyingRequestForm form, CancellationToken ct)
+    {
+        if (!await IsMarketplaceEnabledAsync(ct)) return MarketplaceUnavailable();
+        return await Run(async () => await partnerMarketplace.CreateBuyingRequestAsync(UserId, form.ToRequest(), ct), "Η ζήτηση δημοσιεύτηκε στο δίκτυο.");
+    }
 
     [Authorize(Policy = "BuyerOnly"), HttpPost("marketplace/demand/{id:guid}/status")]
-    public IActionResult SetMarketplaceDemandStatus(Guid id, bool active) => MarketplaceUnavailable();
+    public async Task<IActionResult> SetMarketplaceDemandStatus(Guid id, bool active, CancellationToken ct)
+    {
+        if (!await IsMarketplaceEnabledAsync(ct)) return MarketplaceUnavailable();
+        return await Run(async () => await partnerMarketplace.SetBuyingRequestActiveAsync(UserId, id, active, ct), "Η ζήτηση ενημερώθηκε.");
+    }
 
     [HttpPost("marketplace/inquiries")]
-    public IActionResult SendMarketplaceInquiry(PartnerMarketplaceInquiryForm form) => MarketplaceUnavailable();
+    public async Task<IActionResult> SendMarketplaceInquiry(PartnerMarketplaceInquiryForm form, CancellationToken ct)
+    {
+        if (!await IsMarketplaceEnabledAsync(ct)) return MarketplaceUnavailable();
+        return await Run(async () => await partnerMarketplace.SendInquiryAsync(UserId, form.ToRequest(), ct), "Το ενδιαφέρον καταχωρίστηκε.");
+    }
 
     [Authorize(Policy = "AdminOnly"), HttpPost("email/settings")]
     public async Task<IActionResult> SaveEmailSettings(BrevoSettingsForm form, CancellationToken ct) =>
@@ -183,6 +215,7 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     {
         if (!ProducerPages.Contains(page)) return NotFound();
         ViewData["ProducerPage"] = page.ToLowerInvariant();
+        await LoadPlatformViewDataAsync(ct);
         ViewData["CompactDashboard"] = (await service.GetAccountPreferencesAsync(UserId, ct)).CompactDashboard;
         ViewData["AccountDisplayName"] = await service.GetAccountDisplayNameAsync(UserId, ct);
         return View("Dashboard", await service.GetProducerDashboardAsync(UserId, ct));
@@ -214,21 +247,33 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     public async Task<IActionResult> ApproveApplication(Guid id, CancellationToken ct) => await Run(async () => { var result = await service.ApproveApplicationAsync(id, UserId, ct); TempData["Invite"] = $"Ο λογαριασμός {result.Email} δημιουργήθηκε. Προσωρινός κωδικός: {result.TemporaryPassword}"; }, "Η αίτηση εγκρίθηκε και εστάλη πρόσκληση.");
 
     [Authorize(Policy = "AdminOnly"), HttpPost("users/active")]
-    public async Task<IActionResult> SetUserActive(UserActiveForm form, CancellationToken ct) => await Run(async () => await service.SetUserActiveAsync(form.UserId, form.Active, ct), "Ο λογαριασμός ενημερώθηκε.");
+    public async Task<IActionResult> SetUserActive(UserActiveForm form, CancellationToken ct) => await Run(async () => await service.SetUserActiveAsync(form.UserId, form.Active, UserId, ct), "Ο λογαριασμός ενημερώθηκε.");
 
     [Authorize(Policy = "AdminOnly"), HttpPost("users/role")]
-    public async Task<IActionResult> ChangeUserRole(UserRoleForm form, CancellationToken ct) => await Run(async () => await service.ChangeUserRoleAsync(form.UserId, form.Role, ct), "Ο ρόλος ενημερώθηκε.");
+    public async Task<IActionResult> ChangeUserRole(UserRoleForm form, CancellationToken ct) => await Run(async () => await service.ChangeUserRoleAsync(form.UserId, form.Role, UserId, ct), "Ο ρόλος ενημερώθηκε.");
+
+    [Authorize(Policy = "AdminOnly"), HttpPost("users/update")]
+    public async Task<IActionResult> UpdateAdminUser(AdminUserForm form, CancellationToken ct) =>
+        await Run(async () => await service.UpdateAdminUserAsync(form.ToRequest(), UserId, ct), "Ο φάκελος του χρήστη ενημερώθηκε.");
 
     [Authorize(Policy = "AdminOnly"), HttpPost("users/{userId}/reset-password")]
     public async Task<IActionResult> ResetPassword(string userId, CancellationToken ct)
     {
-        try { var password = await service.ResetPasswordAsync(userId, ct); TempData["Invite"] = $"Δημιουργήθηκε προσωρινός κωδικός: {password}"; }
-        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException) { TempData["Error"] = ex.Message; }
+        try { var password = await service.ResetPasswordAsync(userId, UserId, ct); TempData["Invite"] = $"Δημιουργήθηκε προσωρινός κωδικός: {password}"; }
+        catch (Exception ex) when (ex is ValidationException or InvalidOperationException or KeyNotFoundException) { TempData["Error"] = ex.Message; }
         return RedirectToAction(nameof(Index));
     }
 
     [Authorize(Policy = "AdminOnly"), HttpPost("users/{userId}/delete-personal-data")]
-    public async Task<IActionResult> DeletePersonalData(string userId, CancellationToken ct) => await Run(async () => await service.DeletePersonalDataAsync(userId, ct), "Τα προσωπικά δεδομένα ανωνυμοποιήθηκαν.");
+    public async Task<IActionResult> DeletePersonalData(string userId, CancellationToken ct) => await Run(async () => await service.DeletePersonalDataAsync(userId, UserId, ct), "Τα προσωπικά δεδομένα ανωνυμοποιήθηκαν.");
+
+    [Authorize(Policy = "AdminOnly"), HttpPost("settings/platform")]
+    public async Task<IActionResult> SavePlatformConfiguration(PlatformConfigurationForm form, CancellationToken ct) =>
+        await Run(async () => await service.SavePlatformConfigurationAsync(form.ToRequest(), UserId, ct), "Οι προηγμένες ρυθμίσεις πλατφόρμας αποθηκεύτηκαν.");
+
+    [Authorize(Policy = "AdminOnly"), HttpGet("audit.csv")]
+    public async Task<IActionResult> AuditCsv(CancellationToken ct) =>
+        File(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(await service.ExportAuditLogCsvAsync(ct))).ToArray(), "text/csv", $"agro-union-audit-{DateTime.UtcNow:yyyyMMdd-HHmm}.csv");
 
     [Authorize(Policy = "AdminOnly"), HttpPost("deals/create")]
     public async Task<IActionResult> CreateDeal(DealForm form, CancellationToken ct) => await Run(async () => await service.CreateDealAsync(UserId, new(form.DealType, form.ProductionDeclarationId, form.FarmerUserId, form.BuyPricePerUnit, form.BuyQuantity, form.BuyerUserId, form.SellPricePerUnit, form.SellQuantity), ct), "Η συμφωνία δημιουργήθηκε.");
@@ -416,5 +461,15 @@ public sealed class PortalController(IAgroUnionService service, IEmailAdministra
     {
         TempData["Info"] = "Η Αγορά Δικτύου βρίσκεται σε προετοιμασία και θα είναι σύντομα διαθέσιμη.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<bool> IsMarketplaceEnabledAsync(CancellationToken ct) =>
+        await db.PlatformConfigurations.AsNoTracking().Select(x => x.MarketplaceEnabled).SingleOrDefaultAsync(ct);
+
+    private async Task LoadPlatformViewDataAsync(CancellationToken ct)
+    {
+        var settings = await db.PlatformConfigurations.AsNoTracking().Select(x => new { x.MarketplaceEnabled, x.MaintenanceNotice }).SingleOrDefaultAsync(ct);
+        ViewData["MarketplaceEnabled"] = settings?.MarketplaceEnabled ?? false;
+        ViewData["MaintenanceNotice"] = settings?.MaintenanceNotice;
     }
 }

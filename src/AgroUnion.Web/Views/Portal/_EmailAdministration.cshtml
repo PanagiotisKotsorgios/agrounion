@@ -16,6 +16,8 @@
     };
 }
 
+<a class="admin-console-return" asp-controller="Portal" asp-action="Index"><i class="fa-solid fa-arrow-left"></i><span><strong>Κεντρική διαχείριση</strong><small>Αιτήσεις, χρήστες, ρόλοι, κατηγορίες, audit log και προηγμένες ρυθμίσεις</small></span><i class="fa-solid fa-arrow-right"></i></a>
+
 <div class="email-admin-status @(Model.Settings.IsEnabled && Model.Settings.IsConfigured ? "is-live" : "")">
     <span class="email-provider-mark"><i class="fa-solid fa-paper-plane"></i></span>
     <div>

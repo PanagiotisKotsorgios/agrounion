@@ -269,6 +269,9 @@
       modal.querySelectorAll('[data-record-field]').forEach(field => {
         field.textContent = row.dataset['detail' + field.dataset.recordField.charAt(0).toUpperCase() + field.dataset.recordField.slice(1)] || '—';
       });
+      modal.querySelectorAll('[data-record-value]').forEach(field => {
+        field.value = row.dataset['detail' + field.dataset.recordValue.charAt(0).toUpperCase() + field.dataset.recordValue.slice(1)] || '';
+      });
       const preview = modal.querySelector('[data-record-preview]');
       const download = modal.querySelector('[data-record-download]');
       const fileUrl = row.dataset.detailFile || '';
@@ -289,6 +292,7 @@
     previous?.addEventListener('click', () => { currentPage -= 1; render(); });
     next?.addEventListener('click', () => { currentPage += 1; render(); });
     rows.forEach(row => {
+      row.querySelectorAll('[data-record-open]').forEach(button => button.addEventListener('click', () => showDetails(row)));
       row.addEventListener('click', event => {
         if (event.target.closest('button,a,form,input,select,textarea,label')) return;
         showDetails(row);

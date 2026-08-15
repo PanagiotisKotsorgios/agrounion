@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Net.Mail;
 
@@ -23,16 +24,30 @@ public sealed class AccountController(SignInManager<ApplicationUser> signIn, Use
         var user = await users.FindByEmailAsync(form.Email.Trim());
         if (user is null || !user.IsActive)
         {
+            db.AuditLogs.Add(SecurityAudit(user?.Id, "LoginFailed", user?.Id ?? form.Email.Trim(), "Αποτυχημένη προσπάθεια σύνδεσης: άγνωστος ή ανενεργός λογαριασμός.", false, "Warning"));
+            await db.SaveChangesAsync();
             ModelState.AddModelError("", "Το email ή ο κωδικός δεν είναι σωστός.");
+            return View(form);
+        }
+        var platform = await db.PlatformConfigurations.AsNoTracking().SingleOrDefaultAsync();
+        if (platform?.RequireConfirmedEmail == true && !user.EmailConfirmed)
+        {
+            db.AuditLogs.Add(SecurityAudit(user.Id, "LoginBlockedUnconfirmedEmail", user.Id, "Η σύνδεση απορρίφθηκε επειδή το email δεν είναι επιβεβαιωμένο.", false, "Warning"));
+            await db.SaveChangesAsync();
+            ModelState.AddModelError("", "Το email του λογαριασμού δεν έχει επιβεβαιωθεί. Επικοινωνήστε με τη διαχείριση.");
             return View(form);
         }
         var result = await signIn.PasswordSignInAsync(user, form.Password, form.RememberMe, lockoutOnFailure: true);
         if (!result.Succeeded)
         {
+            db.AuditLogs.Add(SecurityAudit(user.Id, result.IsLockedOut ? "AccountLocked" : "LoginFailed", user.Id, result.IsLockedOut ? "Ο λογαριασμός κλειδώθηκε μετά από αποτυχημένες προσπάθειες." : "Αποτυχημένη προσπάθεια σύνδεσης.", false, result.IsLockedOut ? "Critical" : "Warning"));
+            await db.SaveChangesAsync();
             ModelState.AddModelError("", result.IsLockedOut ? "Ο λογαριασμός κλειδώθηκε προσωρινά." : "Το email ή ο κωδικός δεν είναι σωστός.");
             return View(form);
         }
-        db.AuditLogs.Add(new AuditLog { UserId = user.Id, Action = "Login", EntityName = "Account", EntityId = user.Id, Details = "Επιτυχής σύνδεση στο Portal." });
+        user.LastLoginAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        db.AuditLogs.Add(SecurityAudit(user.Id, "Login", user.Id, "Επιτυχής σύνδεση στο Portal."));
         await db.SaveChangesAsync();
         return LocalRedirect(Url.IsLocalUrl(form.ReturnUrl) ? form.ReturnUrl! : "/portal");
     }
@@ -51,7 +66,8 @@ public sealed class AccountController(SignInManager<ApplicationUser> signIn, Use
         }
 
         var user = await users.FindByEmailAsync(address.Address);
-        if (user is { IsActive: true })
+        var emailEnabled = await db.PlatformConfigurations.AsNoTracking().Select(x => (bool?)x.EmailNotificationsEnabled).SingleOrDefaultAsync(ct) ?? true;
+        if (user is { IsActive: true } && emailEnabled)
         {
             try
             {
@@ -111,7 +127,7 @@ public sealed class AccountController(SignInManager<ApplicationUser> signIn, Use
         var user = await users.GetUserAsync(User);
         if (user is not null)
         {
-            db.AuditLogs.Add(new AuditLog { UserId = user.Id, Action = "Logout", EntityName = "Account", EntityId = user.Id, Details = "Αποσύνδεση από το Portal." });
+            db.AuditLogs.Add(SecurityAudit(user.Id, "Logout", user.Id, "Αποσύνδεση από το Portal."));
             await db.SaveChangesAsync();
         }
         await signIn.SignOutAsync();
@@ -134,6 +150,21 @@ public sealed class AccountController(SignInManager<ApplicationUser> signIn, Use
         await db.SaveChangesAsync();
         await signIn.RefreshSignInAsync(user); TempData["Success"] = "Ο κωδικός σας άλλαξε."; return RedirectToAction(nameof(ChangePassword));
     }
+
+    private AuditLog SecurityAudit(string? userId, string action, string entityId, string details, bool succeeded = true, string severity = "Info") => new()
+    {
+        UserId = userId,
+        Action = action,
+        Category = "Security",
+        Severity = severity,
+        EntityName = "Account",
+        EntityId = entityId.Length > 80 ? entityId[..80] : entityId,
+        Details = details,
+        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+        UserAgent = Request.Headers.UserAgent.ToString() is { Length: > 0 } agent ? (agent.Length > 500 ? agent[..500] : agent) : null,
+        CorrelationId = HttpContext.TraceIdentifier,
+        Succeeded = succeeded
+    };
 
     [AllowAnonymous, HttpGet("access-denied")]
     public IActionResult AccessDenied() => View();

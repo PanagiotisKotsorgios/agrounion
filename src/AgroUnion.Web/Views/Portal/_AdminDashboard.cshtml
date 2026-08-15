@@ -11,6 +11,9 @@
         _ => s.ToString()
     };
     string ContractStatusName(ContractStatus s) => s switch { ContractStatus.Draft => "Προσχέδιο", ContractStatus.Active => "Ενεργή", ContractStatus.Terminated => "Ολοκληρωμένη", _ => s.ToString() };
+    string ApplicationStatusName(ApplicationStatus s) => s switch { ApplicationStatus.New => "Νέα", ApplicationStatus.InReview => "Σε αξιολόγηση", ApplicationStatus.Approved => "Εγκεκριμένη", ApplicationStatus.Rejected => "Απορρίφθηκε", _ => s.ToString() };
+    string PartnerRoleName(PartnerRole r) => r switch { PartnerRole.Producer => "Παραγωγός", PartnerRole.Trader => "Έμπορος", PartnerRole.Company => "Επιχείρηση", _ => "Άλλο" };
+    string UserRoleName(string r) => r switch { RoleNames.Admin => "Διαχειριστής", RoleNames.Producer => "Παραγωγός", RoleNames.Trader => "Έμπορος", RoleNames.Company => "Επιχείρηση", _ => r };
 
     var totalDealValue = Model.Deals.Sum(x => x.BuyPricePerUnit * x.Quantity);
     var completedDeals = Model.Deals.Count(x => x.Status == DealStatus.Completed);
@@ -92,26 +95,57 @@
     <div class="rule"></div>
     @if (newApps > 0){<span class="pill-metric warning"><strong>@newApps</strong> νέες</span>}
 </div>
-<div class="table-wrap">
-    <table class="data-table pro">
-        <thead><tr><th>Αιτών</th><th>Ρόλος</th><th>Περιοχή</th><th>Επικοινωνία</th><th>Ενέργεια</th></tr></thead>
-        <tbody>
-            @foreach (var item in Model.Applications.OrderByDescending(x => x.CreatedAt))
-            {
-                <tr>
-                    <td><strong>@item.FullNameOrCompany</strong><br /><small style="color:var(--ink-500)">@item.ProductInterest · @item.CreatedAt.ToString("dd/MM/yyyy")</small></td>
-                    <td>@item.Role</td>
-                    <td>@item.Region</td>
-                    <td><small>@item.Email<br />@item.Phone</small></td>
-                    <td>@if (item.Status != ApplicationStatus.Approved && item.Role != PartnerRole.Other){<form asp-action="ApproveApplication" asp-route-id="@item.Id" method="post" style="margin:0"><button class="btn btn-sm btn-brass" data-confirm="Έγκριση και δημιουργία λογαριασμού;"><i class="fa-solid fa-check"></i> Έγκριση</button></form>}else{<span class="status-pill @item.Status.ToString().ToLowerInvariant()">@item.Status</span>}</td>
-                </tr>
-            }
-            @if (Model.Applications.Count == 0)
-            {
-                <tr><td colspan="5"><div class="portal-empty compact"><i class="fa-solid fa-inbox"></i><span>Καμία αίτηση.</span></div></td></tr>
-            }
-        </tbody>
-    </table>
+<section class="admin-record-panel" data-record-browser data-page-size="8">
+    <div class="record-filter-bar">
+        <label class="record-search"><span>Αναζήτηση αιτήσεων</span><i class="fa-solid fa-magnifying-glass"></i><input data-record-search placeholder="Επωνυμία, email, προϊόν ή περιοχή" /></label>
+        <label><span>Κατάσταση</span><select data-record-filter="status"><option value="all">Όλες</option><option value="new">Νέα</option><option value="inreview">Σε αξιολόγηση</option><option value="approved">Εγκεκριμένη</option><option value="rejected">Απορρίφθηκε</option></select></label>
+        <label><span>Ρόλος</span><select data-record-filter="role"><option value="all">Όλοι</option><option value="producer">Παραγωγός</option><option value="trader">Έμπορος</option><option value="company">Επιχείρηση</option><option value="other">Άλλο</option></select></label>
+        <strong class="record-count" data-record-count></strong>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table pro admin-application-table">
+            <thead><tr><th>Αιτών</th><th>Ρόλος</th><th>Περιοχή</th><th>Επικοινωνία</th><th>Κατάσταση</th><th>Ενέργειες</th></tr></thead>
+            <tbody>
+                @foreach (var item in Model.Applications.OrderByDescending(x => x.CreatedAt))
+                {
+                    var statusKey = item.Status.ToString().ToLowerInvariant();
+                    var roleKey = item.Role.ToString().ToLowerInvariant();
+                    <tr data-record-row data-search="@(item.FullNameOrCompany.ToLowerInvariant()) @(item.Email.ToLowerInvariant()) @(item.ProductInterest.ToLowerInvariant()) @(item.Region.ToLowerInvariant())" data-status="@statusKey" data-role="@roleKey" data-detail-modal="application-detail-modal" data-detail-id="@item.Id" data-detail-name="@item.FullNameOrCompany" data-detail-role="@PartnerRoleName(item.Role)" data-detail-region="@item.Region" data-detail-contact="@item.Email · @item.Phone" data-detail-product="@item.ProductInterest" data-detail-message="@item.Message" data-detail-notes="@item.InternalNotes" data-detail-status="@ApplicationStatusName(item.Status)" data-detail-status-value="@item.Status" data-detail-created="@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")" tabindex="0">
+                        <td><strong>@item.FullNameOrCompany</strong><small>@item.ProductInterest · @item.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                        <td>@PartnerRoleName(item.Role)</td>
+                        <td>@item.Region</td>
+                        <td><small>@item.Email<br />@item.Phone</small></td>
+                        <td><span class="status-pill @statusKey">@ApplicationStatusName(item.Status)</span></td>
+                        <td>
+                            <div class="admin-inline-actions">
+                                <button class="btn btn-sm btn-ghost" type="button" data-record-open><i class="fa-regular fa-eye"></i></button>
+                                @if (item.Status != ApplicationStatus.Approved && item.Role != PartnerRole.Other)
+                                {
+                                    <form asp-action="ApproveApplication" asp-route-id="@item.Id" method="post"><button class="btn btn-sm btn-brass" data-confirm="Έγκριση και δημιουργία λογαριασμού;"><i class="fa-solid fa-check"></i> Έγκριση</button></form>
+                                }
+                                @if (item.Status is ApplicationStatus.New or ApplicationStatus.InReview)
+                                {
+                                    @if(item.Status == ApplicationStatus.New){<form asp-action="UpdateApplication" method="post"><input type="hidden" name="Id" value="@item.Id" /><input type="hidden" name="Status" value="InReview" /><button class="btn btn-sm btn-ghost" title="Σε αξιολόγηση"><i class="fa-solid fa-hourglass-half"></i></button></form>}
+                                    <form asp-action="UpdateApplication" method="post"><input type="hidden" name="Id" value="@item.Id" /><input type="hidden" name="Status" value="Rejected" /><button class="btn btn-sm btn-danger-soft" data-confirm="Να απορριφθεί η αίτηση;"><i class="fa-solid fa-xmark"></i></button></form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="admin-filter-empty" data-record-empty hidden><i class="fa-solid fa-filter-circle-xmark"></i> Δεν βρέθηκαν αιτήσεις με αυτά τα φίλτρα.</div>
+    <div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page></span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+</section>
+
+<div class="dashboard-modal" id="application-detail-modal" data-dashboard-modal hidden aria-hidden="true">
+    <button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"></button>
+    <section class="dashboard-modal-dialog admin-detail-dialog" role="dialog" aria-modal="true" tabindex="-1">
+        <header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-user-check"></i></span><div><small>ΦΑΚΕΛΟΣ ΑΙΤΗΣΗΣ</small><h2 data-record-field="name"></h2><p>Πλήρης αξιολόγηση πριν τη δημιουργία λογαριασμού.</p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header>
+        <div class="admin-detail-grid"><div><small>Ρόλος</small><strong data-record-field="role"></strong></div><div><small>Κατάσταση</small><strong data-record-field="status"></strong></div><div><small>Περιοχή</small><strong data-record-field="region"></strong></div><div><small>Επικοινωνία</small><strong data-record-field="contact"></strong></div><div><small>Προϊόν / αντικείμενο</small><strong data-record-field="product"></strong></div><div><small>Υποβλήθηκε</small><strong data-record-field="created"></strong></div><div class="wide"><small>Μήνυμα αιτούντος</small><p data-record-field="message"></p></div></div>
+        <form class="dashboard-support-form application-review-form" asp-action="UpdateApplication" method="post"><input type="hidden" name="Id" data-record-value="id" /><label><span>Κατάσταση αξιολόγησης</span><select name="Status" data-record-value="statusValue"><option value="New">Νέα</option><option value="InReview">Σε αξιολόγηση</option><option value="Rejected">Απόρριψη</option></select></label><label><span>Εσωτερικές σημειώσεις</span><textarea name="Notes" rows="4" maxlength="3000" data-record-value="notes"></textarea></label><div class="dashboard-modal-actions"><span><i class="fa-solid fa-lock"></i> Οι σημειώσεις είναι ορατές μόνο στη διαχείριση.</span><button type="submit">Αποθήκευση αξιολόγησης</button></div></form>
+    </section>
 </div>
 
 @* Producer workspace *@
@@ -184,60 +218,78 @@
 
 @* Users *@
 <div class="section-title" id="users">
-    <h2>Λογαριασμοί συνεργατών</h2>
+    <h2>Χρήστες, ρόλοι & πρόσβαση</h2>
     <div class="rule"></div>
-    <span class="pill-metric"><strong>@Model.Users.Count</strong></span>
+    <span class="pill-metric"><strong>@Model.AdminUsers.Count</strong> λογαριασμοί</span>
 </div>
-<div class="table-wrap">
-    <table class="data-table pro">
-        <thead><tr><th>Συνεργάτης</th><th>Ρόλος</th><th>Περιοχή</th><th>Κατάσταση</th><th>Διαχείριση</th></tr></thead>
-        <tbody>
-            @foreach (var user in Model.Users)
+<section class="admin-record-panel" data-record-browser data-page-size="8">
+    <div class="record-filter-bar">
+        <label class="record-search"><span>Αναζήτηση χρηστών</span><i class="fa-solid fa-magnifying-glass"></i><input data-record-search placeholder="Όνομα, email, κωδικός μέλους ή περιοχή" /></label>
+        <label><span>Ρόλος</span><select data-record-filter="role"><option value="all">Όλοι</option><option value="admin">Admin</option><option value="producer">Παραγωγοί</option><option value="trader">Έμποροι</option><option value="company">Επιχειρήσεις</option></select></label>
+        <label><span>Κατάσταση</span><select data-record-filter="status"><option value="all">Όλες</option><option value="active">Ενεργοί</option><option value="paused">Σε παύση</option></select></label>
+        <label><span>Κατηγορία</span><select data-record-filter="category"><option value="all">Όλες</option><option value="strategic">Α</option><option value="premium">Β</option><option value="advanced">Γ</option><option value="standard">Δ</option><option value="developing">Ε</option><option value="none">Χωρίς κατηγορία</option></select></label>
+        <strong class="record-count" data-record-count></strong>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table pro admin-users-table">
+            <thead><tr><th>Λογαριασμός</th><th>Ρόλος / κατηγορία</th><th>Περιοχή</th><th>Τελευταία σύνδεση</th><th>Κατάσταση</th><th>Διαχείριση</th></tr></thead>
+            <tbody>
+                @foreach (var user in Model.AdminUsers.OrderBy(x => x.Name))
+                {
+                    var categoryKey = user.Category?.ToString().ToLowerInvariant() ?? "none";
+                    var categoryName = user.Category switch { ProducerCategory.Strategic => "Κατηγορία Α", ProducerCategory.Premium => "Κατηγορία Β", ProducerCategory.Advanced => "Κατηγορία Γ", ProducerCategory.Standard => "Κατηγορία Δ", ProducerCategory.Developing => "Κατηγορία Ε", _ => "—" };
+                    <tr data-record-row data-search="@(user.Name.ToLowerInvariant()) @(user.Email.ToLowerInvariant()) @(user.Region.ToLowerInvariant()) @(user.MembershipCode?.ToLowerInvariant())" data-role="@user.Role.ToLowerInvariant()" data-status="@(user.IsActive ? "active" : "paused")" data-category="@categoryKey">
+                        <td><div class="cell-avatar"><div class="av">@(string.IsNullOrEmpty(user.Name) ? "?" : user.Name[..1].ToUpperInvariant())</div><div class="info"><strong>@user.Name</strong><small>@user.Email</small><small>@(user.MembershipCode ?? "Χωρίς κωδικό μέλους")</small></div></div></td>
+                        <td><strong>@UserRoleName(user.Role)</strong><small>@categoryName</small></td>
+                        <td>@user.Region</td>
+                        <td>@(user.LastLoginAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Δεν έχει συνδεθεί")</td>
+                        <td><span class="status-pill @(user.IsActive ? "active" : "closed")">@(user.IsActive ? "Ενεργός" : "Σε παύση")</span><small>@(user.EmailConfirmed ? "Email επιβεβαιωμένο" : "Email μη επιβεβαιωμένο")</small></td>
+                        <td><button class="btn btn-sm btn-ghost" type="button" data-dashboard-modal-open="admin-user-@user.Id"><i class="fa-solid fa-user-gear"></i> Διαχείριση</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="admin-filter-empty" data-record-empty hidden><i class="fa-solid fa-users-slash"></i> Δεν βρέθηκαν λογαριασμοί με αυτά τα φίλτρα.</div>
+    <div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page></span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+</section>
+
+@foreach (var user in Model.AdminUsers)
+{
+    var isAdminAccount = user.Role == RoleNames.Admin;
+    <div class="dashboard-modal" id="admin-user-@user.Id" data-dashboard-modal hidden aria-hidden="true">
+        <button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close aria-label="Κλείσιμο"></button>
+        <section class="dashboard-modal-dialog admin-user-dialog" role="dialog" aria-modal="true" tabindex="-1">
+            <header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-user-gear"></i></span><div><small>ΔΙΑΧΕΙΡΙΣΗ ΛΟΓΑΡΙΑΣΜΟΥ</small><h2>@user.Name</h2><p>@user.Email · δημιουργήθηκε @user.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header>
+            <form class="admin-user-form" asp-action="UpdateAdminUser" method="post">
+                <input type="hidden" name="UserId" value="@user.Id" />
+                <div class="admin-user-stats"><span><strong>@user.ProductionDeclarations</strong> δηλώσεις</span><span><strong>@user.ActiveContracts</strong> ενεργές συμβάσεις</span><span><strong>@user.Documents</strong> έγγραφα</span><span><strong>@user.Invoices</strong> παραστατικά</span><span><strong>@user.AuditEvents</strong> audit events</span></div>
+                <div class="workspace-form admin-user-grid">
+                    <div class="field"><label>Ονοματεπώνυμο / επωνυμία</label><input name="FullNameOrCompany" value="@user.Name" required /></div>
+                    <div class="field"><label>Email σύνδεσης</label><input name="Email" type="email" value="@user.Email" required /></div>
+                    <div class="field"><label>Τηλέφωνο</label><input name="PhoneNumber" value="@user.PhoneNumber" /></div>
+                    <div class="field"><label>Περιοχή</label><input name="Region" value="@user.Region" required /></div>
+                    <div class="field"><label>Κωδικός μέλους</label><input name="MembershipCode" value="@user.MembershipCode" placeholder="π.χ. AU-P-0101" /></div>
+                    <div class="field"><label>Ρόλος πρόσβασης</label>@if(isAdminAccount){<input type="hidden" name="Role" value="Admin" /><input value="Admin" disabled />}else{<select name="Role"><option value="Producer" selected="@(user.Role==RoleNames.Producer)">Παραγωγός</option><option value="Trader" selected="@(user.Role==RoleNames.Trader)">Έμπορος</option><option value="Company" selected="@(user.Role==RoleNames.Company)">Επιχείρηση</option></select>}</div>
+                    <div class="field"><label>Κατηγορία παραγωγού</label><select name="Category"><option value="">Χωρίς κατηγορία</option><option value="Strategic" selected="@(user.Category==ProducerCategory.Strategic)">Α · 50 τόνοι και πάνω</option><option value="Premium" selected="@(user.Category==ProducerCategory.Premium)">Β · 20–49,99 τόνοι</option><option value="Advanced" selected="@(user.Category==ProducerCategory.Advanced)">Γ · 10–19,99 τόνοι</option><option value="Standard" selected="@(user.Category==ProducerCategory.Standard)">Δ · 3–9,99 τόνοι</option><option value="Developing" selected="@(user.Category==ProducerCategory.Developing)">Ε · 0–2,99 τόνοι</option></select></div>
+                    <div class="field toggle-field">@if(isAdminAccount){<label><input type="checkbox" checked disabled /> Ενεργός λογαριασμός</label><input type="hidden" name="IsActive" value="true" />}else{<label><input type="checkbox" name="IsActive" value="true" checked="@(user.IsActive ? "checked" : null)" /> Ενεργός λογαριασμός</label><input type="hidden" name="IsActive" value="false" />}</div>
+                    <div class="field toggle-field"><label><input type="checkbox" name="EmailConfirmed" value="true" checked="@(user.EmailConfirmed ? "checked" : null)" /> Επιβεβαιωμένο email</label><input type="hidden" name="EmailConfirmed" value="false" /></div>
+                    <div class="field full"><label>Εσωτερικές σημειώσεις διαχείρισης</label><textarea name="AdminNotes" rows="4" maxlength="3000">@user.AdminNotes</textarea><small>Δεν εμφανίζονται στον συνεργάτη.</small></div>
+                    <button class="workspace-save" type="submit"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση πλήρους φακέλου</button>
+                </div>
+            </form>
+            @if (!isAdminAccount)
             {
-                <tr>
-                    <td>
-                        <div class="cell-avatar">
-                            <div class="av">@(string.IsNullOrEmpty(user.Name) ? "?" : user.Name.Substring(0, 1).ToUpperInvariant())</div>
-                            <div class="info"><strong>@user.Name</strong><small>@user.Email</small></div>
-                        </div>
-                    </td>
-                    <td>
-                        @if (user.Role != RoleNames.Admin)
-                        {
-                            <form class="mini-form" asp-action="ChangeUserRole" method="post" style="margin:0">
-                                <input type="hidden" name="UserId" value="@user.Id" />
-                                <select name="Role">
-                                    <option selected="@(user.Role == RoleNames.Producer)" value="Producer">Producer</option>
-                                    <option selected="@(user.Role == RoleNames.Trader)" value="Trader">Trader</option>
-                                    <option selected="@(user.Role == RoleNames.Company)" value="Company">Company</option>
-                                </select>
-                                <button title="Αλλαγή ρόλου"><i class="fa-solid fa-check"></i></button>
-                            </form>
-                        }
-                        else
-                        {
-                            <span class="status-pill">@user.Role</span>
-                        }
-                    </td>
-                    <td>@user.Region</td>
-                    <td><span class="status-pill @(user.IsActive ? "active" : "closed")">@(user.IsActive ? "Ενεργός" : "Ανενεργός")</span></td>
-                    <td>
-                        <div class="mini-form" style="margin:0">
-                            <form asp-action="SetUserActive" method="post" style="margin:0">
-                                <input type="hidden" name="UserId" value="@user.Id" />
-                                <input type="hidden" name="Active" value="@(!user.IsActive)" />
-                                <button class="btn btn-sm btn-ghost" title="@(user.IsActive ? "Παύση" : "Ενεργοποίηση")"><i class="fa-solid @(user.IsActive ? "fa-pause" : "fa-play")"></i></button>
-                            </form>
-                            <form asp-action="ResetPassword" asp-route-userId="@user.Id" method="post" style="margin:0">
-                                <button class="btn btn-sm btn-ghost" title="Reset κωδικού"><i class="fa-solid fa-key"></i></button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
+                <div class="admin-danger-zone">
+                    <div><strong>Ενέργειες πρόσβασης</strong><small>Οι ενέργειες καταγράφονται στο audit log.</small></div>
+                    <form asp-action="SetUserActive" method="post"><input type="hidden" name="UserId" value="@user.Id" /><input type="hidden" name="Active" value="@(!user.IsActive)" /><button class="btn btn-sm btn-ghost" data-confirm="@(user.IsActive ? "Να τεθεί ο λογαριασμός σε παύση;" : "Να ενεργοποιηθεί ξανά ο λογαριασμός;")"><i class="fa-solid @(user.IsActive ? "fa-pause" : "fa-play")"></i> @(user.IsActive ? "Παύση" : "Ενεργοποίηση")</button></form>
+                    <form asp-action="ResetPassword" asp-route-userId="@user.Id" method="post"><button class="btn btn-sm btn-ghost" data-confirm="Να εκδοθεί νέος προσωρινός κωδικός;"><i class="fa-solid fa-key"></i> Reset κωδικού</button></form>
+                    <form asp-action="DeletePersonalData" asp-route-userId="@user.Id" method="post"><button class="btn btn-sm btn-danger-soft" data-confirm="Οριστική ανωνυμοποίηση προσωπικών δεδομένων; Η ενέργεια δεν αναιρείται."><i class="fa-solid fa-user-slash"></i> Ανωνυμοποίηση</button></form>
+                </div>
             }
-        </tbody>
-    </table>
-</div>
+        </section>
+    </div>
+}
 
 @* Contracts *@
 <div class="section-title" id="contracts">
@@ -347,6 +399,67 @@
         </tbody>
     </table>
 </div>
+
+@* Advanced platform settings *@
+<div class="section-title" id="settings">
+    <h2>Προηγμένες ρυθμίσεις πλατφόρμας</h2>
+    <div class="rule"></div>
+    <span class="pill-metric"><i class="fa-solid fa-shield-halved"></i> Admin only</span>
+</div>
+<section class="platform-settings-card">
+    <header><div><small>ΚΕΝΤΡΙΚΗ ΠΟΛΙΤΙΚΗ ΛΕΙΤΟΥΡΓΙΑΣ</small><h3>Έλεγχος πρόσβασης, αιτήσεων και προεπιλογών</h3><p>Οι αλλαγές εφαρμόζονται σε επίπεδο πλατφόρμας και καταγράφονται αυτόματα στο audit log.</p></div><span>Τελευταία ενημέρωση<br /><strong>@Model.PlatformConfiguration.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong><br />@Model.PlatformConfiguration.UpdatedBy</span></header>
+    <form asp-action="SavePlatformConfiguration" method="post" class="platform-settings-form">
+        <div class="settings-switch-grid">
+            <label class="settings-switch"><span><strong>Νέες αιτήσεις συνεργασίας</strong><small>Αποδοχή νέων αιτήσεων από τις δημόσιες φόρμες.</small></span><input type="checkbox" name="AcceptingApplications" value="true" checked="@(Model.PlatformConfiguration.AcceptingApplications ? "checked" : null)" /><input type="hidden" name="AcceptingApplications" value="false" /><i></i></label>
+            <label class="settings-switch"><span><strong>Επεξεργασία προφίλ</strong><small>Οι συνεργάτες μπορούν να αλλάζουν τα προσωπικά στοιχεία τους.</small></span><input type="checkbox" name="AllowProfileEditing" value="true" checked="@(Model.PlatformConfiguration.AllowProfileEditing ? "checked" : null)" /><input type="hidden" name="AllowProfileEditing" value="false" /><i></i></label>
+            <label class="settings-switch"><span><strong>Επιβεβαιωμένο email</strong><small>Απαίτηση επιβεβαιωμένου email για είσοδο στο portal.</small></span><input type="checkbox" name="RequireConfirmedEmail" value="true" checked="@(Model.PlatformConfiguration.RequireConfirmedEmail ? "checked" : null)" /><input type="hidden" name="RequireConfirmedEmail" value="false" /><i></i></label>
+            <label class="settings-switch"><span><strong>Ειδοποιήσεις email</strong><small>Κεντρικός διακόπτης λειτουργικών email.</small></span><input type="checkbox" name="EmailNotificationsEnabled" value="true" checked="@(Model.PlatformConfiguration.EmailNotificationsEnabled ? "checked" : null)" /><input type="hidden" name="EmailNotificationsEnabled" value="false" /><i></i></label>
+            <label class="settings-switch"><span><strong>Αγορά Δικτύου</strong><small>Feature flag. Παραμένει κλειστή μέχρι την επίσημη ενεργοποίηση.</small></span><input type="checkbox" name="MarketplaceEnabled" value="true" checked="@(Model.PlatformConfiguration.MarketplaceEnabled ? "checked" : null)" /><input type="hidden" name="MarketplaceEnabled" value="false" /><i></i></label>
+        </div>
+        <div class="workspace-form platform-settings-fields">
+            <div class="field"><label>Email υποστήριξης</label><input name="SupportEmail" type="email" value="@Model.PlatformConfiguration.SupportEmail" required /></div>
+            <div class="field"><label>Τηλέφωνο υποστήριξης</label><input name="SupportPhone" value="@Model.PlatformConfiguration.SupportPhone" required /></div>
+            <div class="field"><label>Προεπιλεγμένος υπεύθυνος λογαριασμού</label><input name="DefaultAccountManager" value="@Model.PlatformConfiguration.DefaultAccountManager" required /></div>
+            <div class="field"><label>Διατήρηση audit log (ημέρες)</label><input name="AuditRetentionDays" type="number" min="30" max="3650" value="@Model.PlatformConfiguration.AuditRetentionDays" required /></div>
+            <div class="field full"><label>Προεπιλεγμένοι όροι πληρωμής νέων παραγωγών</label><textarea name="DefaultPaymentTerms" rows="3" required>@Model.PlatformConfiguration.DefaultPaymentTerms</textarea></div>
+            <div class="field full"><label>Μήνυμα όταν οι αιτήσεις είναι σε παύση</label><textarea name="ApplicationPauseMessage" rows="2" required>@Model.PlatformConfiguration.ApplicationPauseMessage</textarea></div>
+            <div class="field full"><label>Εσωτερική ανακοίνωση συντήρησης</label><textarea name="MaintenanceNotice" rows="2" placeholder="Προαιρετικό μήνυμα προς τους χρήστες του portal">@Model.PlatformConfiguration.MaintenanceNotice</textarea></div>
+            <button class="workspace-save" type="submit"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση ρυθμίσεων</button>
+        </div>
+    </form>
+</section>
+
+@* Full audit log *@
+<div class="section-title" id="audit">
+    <h2>Audit log πλατφόρμας</h2>
+    <div class="rule"></div>
+    <a class="more" asp-action="AuditCsv"><i class="fa-solid fa-file-csv"></i> Εξαγωγή CSV</a>
+</div>
+<section class="admin-record-panel audit-panel" data-record-browser data-page-size="12">
+    <div class="audit-summary-strip"><span><strong>@Model.AuditLog.Count</strong> τελευταία συμβάντα</span><span><strong>@Model.AuditLog.Count(x => x.Category == "Security")</strong> ασφάλειας</span><span><strong>@Model.AuditLog.Count(x => !x.Succeeded)</strong> αποτυχημένα</span><span><strong>@Model.AuditLog.Count(x => x.Severity is "Critical" or "Warning")</strong> αυξημένης προσοχής</span></div>
+    <div class="record-filter-bar">
+        <label class="record-search"><span>Αναζήτηση audit</span><i class="fa-solid fa-magnifying-glass"></i><input data-record-search placeholder="Χρήστης, ενέργεια, entity, ID ή λεπτομέρειες" /></label>
+        <label><span>Κατηγορία</span><select data-record-filter="category"><option value="all">Όλες</option>@foreach(var category in Model.AuditLog.Select(x => x.Category).Distinct().OrderBy(x => x)){<option value="@category.ToLowerInvariant()">@category</option>}</select></label>
+        <label><span>Severity</span><select data-record-filter="severity"><option value="all">Όλα</option><option value="info">Info</option><option value="warning">Warning</option><option value="critical">Critical</option></select></label>
+        <label><span>Περίοδος</span><select data-record-period><option value="all">Όλο το ιστορικό</option><option value="1">24 ώρες</option><option value="7">7 ημέρες</option><option value="30">30 ημέρες</option><option value="90">90 ημέρες</option></select></label>
+        <strong class="record-count" data-record-count></strong>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table dense audit-table"><thead><tr><th>Χρόνος</th><th>Χρήστης</th><th>Ενέργεια</th><th>Κατηγορία</th><th>Entity</th><th>Αποτέλεσμα</th><th>Λεπτομέρειες</th></tr></thead><tbody>
+        @foreach(var entry in Model.AuditLog)
+        {
+            var severityClass = entry.Severity.ToLowerInvariant();
+            <tr data-record-row data-search="@(entry.ActorName.ToLowerInvariant()) @(entry.ActorEmail.ToLowerInvariant()) @(entry.Action.ToLowerInvariant()) @(entry.EntityName.ToLowerInvariant()) @(entry.EntityId.ToLowerInvariant()) @(entry.Details.ToLowerInvariant())" data-category="@entry.Category.ToLowerInvariant()" data-severity="@severityClass" data-date="@entry.Timestamp.ToString("yyyy-MM-dd")" data-detail-modal="audit-detail-modal" data-detail-time="@entry.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")" data-detail-actor="@entry.ActorName · @entry.ActorEmail" data-detail-action="@entry.Action" data-detail-category="@entry.Category · @entry.Severity" data-detail-entity="@entry.EntityName · @entry.EntityId" data-detail-result="@(entry.Succeeded ? "Επιτυχία" : "Αποτυχία")" data-detail-ip="@entry.IpAddress" data-detail-correlation="@entry.CorrelationId" data-detail-agent="@entry.UserAgent" data-detail-details="@entry.Details" tabindex="0">
+                <td>@entry.Timestamp.ToLocalTime().ToString("dd/MM/yy HH:mm:ss")</td><td><strong>@entry.ActorName</strong><small>@entry.ActorEmail</small></td><td><strong>@entry.Action</strong></td><td><span class="audit-severity @severityClass">@entry.Category · @entry.Severity</span></td><td>@entry.EntityName<small>@entry.EntityId</small></td><td><span class="status-pill @(entry.Succeeded ? "active" : "closed")">@(entry.Succeeded ? "OK" : "FAILED")</span></td><td class="audit-details-cell">@entry.Details</td>
+            </tr>
+        }
+        </tbody></table>
+    </div>
+    <div class="admin-filter-empty" data-record-empty hidden><i class="fa-solid fa-shield"></i> Δεν βρέθηκαν συμβάντα με αυτά τα φίλτρα.</div>
+    <div class="record-pagination"><button type="button" data-record-prev><i class="fa-solid fa-chevron-left"></i></button><span data-record-page></span><button type="button" data-record-next><i class="fa-solid fa-chevron-right"></i></button></div>
+</section>
+
+<div class="dashboard-modal" id="audit-detail-modal" data-dashboard-modal hidden aria-hidden="true"><button class="dashboard-modal-backdrop" type="button" data-dashboard-modal-close></button><section class="dashboard-modal-dialog admin-detail-dialog" role="dialog" aria-modal="true" tabindex="-1"><header class="dashboard-modal-head"><span class="dashboard-modal-icon"><i class="fa-solid fa-shield-halved"></i></span><div><small>AUDIT EVENT</small><h2 data-record-field="action"></h2><p data-record-field="time"></p></div><button class="dashboard-modal-close" type="button" data-dashboard-modal-close><i class="fa-solid fa-xmark"></i></button></header><div class="admin-detail-grid"><div><small>Χρήστης</small><strong data-record-field="actor"></strong></div><div><small>Κατηγορία / severity</small><strong data-record-field="category"></strong></div><div><small>Entity</small><strong data-record-field="entity"></strong></div><div><small>Αποτέλεσμα</small><strong data-record-field="result"></strong></div><div><small>IP</small><strong data-record-field="ip"></strong></div><div><small>Correlation ID</small><strong data-record-field="correlation"></strong></div><div class="wide"><small>User agent</small><p data-record-field="agent"></p></div><div class="wide"><small>Πλήρεις λεπτομέρειες</small><p data-record-field="details"></p></div></div></section></div>
 
 @* Versions link at bottom *@
 <a class="alert-tile info" asp-controller="Versions" asp-action="Index" style="margin-top:36px">

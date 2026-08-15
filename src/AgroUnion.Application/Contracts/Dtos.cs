@@ -3,6 +3,58 @@ using AgroUnion.Domain.Entities;
 namespace AgroUnion.Application.Contracts;
 
 public sealed record UserSummary(string Id, string Name, string Email, string Role, string Region, bool IsActive);
+public sealed record AdminUserDto(
+    string Id,
+    string Name,
+    string Email,
+    string? PhoneNumber,
+    string Role,
+    string Region,
+    bool IsActive,
+    bool EmailConfirmed,
+    string? MembershipCode,
+    string? AdminNotes,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    DateTime? LastLoginAt,
+    ProducerCategory? Category,
+    int ProductionDeclarations,
+    int ActiveContracts,
+    int Documents,
+    int Invoices,
+    int AuditEvents);
+public sealed record AdminAuditDto(
+    Guid Id,
+    string? ActorUserId,
+    string ActorName,
+    string ActorEmail,
+    string Action,
+    string Category,
+    string Severity,
+    string EntityName,
+    string EntityId,
+    string Details,
+    DateTime Timestamp,
+    string? IpAddress,
+    string? UserAgent,
+    string? CorrelationId,
+    bool Succeeded);
+public sealed record PlatformConfigurationDto(
+    Guid Id,
+    bool AcceptingApplications,
+    string ApplicationPauseMessage,
+    bool AllowProfileEditing,
+    bool RequireConfirmedEmail,
+    bool EmailNotificationsEnabled,
+    bool MarketplaceEnabled,
+    string SupportEmail,
+    string SupportPhone,
+    string DefaultAccountManager,
+    string DefaultPaymentTerms,
+    string? MaintenanceNotice,
+    int AuditRetentionDays,
+    DateTime UpdatedAt,
+    string UpdatedBy);
 public sealed record ProductionSummary(Guid Id, string Product, decimal Quantity, string Unit, string QualityGrade, string Region, DateOnly AvailableFrom, DateOnly AvailableTo, ProductionStatus Status);
 public sealed record VolumeSummary(string Product, string Region, decimal Quantity, string Unit);
 public sealed record PurchaseOfferDto(Guid Id, string Product, decimal BuyPricePerUnit, decimal TargetQuantity, string Region, DateTime ValidUntil, OfferStatus Status);
@@ -163,7 +215,10 @@ public sealed record AdminDashboardDto(
     IReadOnlyList<AdminProductionDto> Production,
     IReadOnlyList<AdminOfferDto> Offers,
     IReadOnlyList<AdminContractDto> Contracts,
-    ProducerAdminWorkspaceDto ProducerWorkspace);
+    ProducerAdminWorkspaceDto ProducerWorkspace,
+    IReadOnlyList<AdminUserDto> AdminUsers,
+    IReadOnlyList<AdminAuditDto> AuditLog,
+    PlatformConfigurationDto PlatformConfiguration);
 
 public sealed record ProducerDashboardDto(
     IReadOnlyList<ProductionSummary> Declarations,

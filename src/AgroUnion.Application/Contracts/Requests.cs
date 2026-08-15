@@ -35,6 +35,31 @@ public sealed record PartnerDocumentRequest(PartnerDocumentType Type, string Tit
 public sealed record PartnerInvoiceRequest(PartnerInvoiceDirection Direction, string InvoiceNumber, DateOnly IssueDate, DateOnly? DueDate, decimal NetAmount, decimal VatAmount, decimal PaidAmount, PartnerInvoiceStatus Status, string Description, string? FileUrl);
 public sealed record AccountProfileUpdateRequest(string FullNameOrCompany, string Region, string? PhoneNumber);
 public sealed record AccountPreferenceUpdateRequest(bool EmailNotifications, bool DeliveryNotifications, bool CompactDashboard, string DateFormat);
+public sealed record AdminUserUpdateRequest(
+    string UserId,
+    string FullNameOrCompany,
+    string Email,
+    string? PhoneNumber,
+    string Region,
+    string Role,
+    bool IsActive,
+    bool EmailConfirmed,
+    string? MembershipCode,
+    string? AdminNotes,
+    ProducerCategory? Category);
+public sealed record PlatformConfigurationRequest(
+    bool AcceptingApplications,
+    string ApplicationPauseMessage,
+    bool AllowProfileEditing,
+    bool RequireConfirmedEmail,
+    bool EmailNotificationsEnabled,
+    bool MarketplaceEnabled,
+    string SupportEmail,
+    string SupportPhone,
+    string DefaultAccountManager,
+    string DefaultPaymentTerms,
+    string? MaintenanceNotice,
+    int AuditRetentionDays);
 public sealed record PartnerFinancialEntryRequest(DateOnly EntryDate, FinancialEntryType Type, FinancialEntryCategory Category, decimal Amount, string Description, string? ReferenceNumber, Guid? PartnerInvoiceId);
 public sealed record ProducerDeliveryRequest(
     Guid? ProductionDeclarationId,

@@ -30,8 +30,13 @@ builder.Services.AddScoped<IValidator<ContactRequest>, ContactRequestValidator>(
 builder.Services.AddScoped<IValidator<ProductionRequest>, ProductionRequestValidator>();
 builder.Services.AddScoped<IValidator<CounterOfferRequest>, CounterOfferValidator>();
 builder.Services.AddSingleton<PartnerFileStore>();
+builder.Services.AddScoped<PlatformAuditActionFilter>();
 
-builder.Services.AddControllersWithViews(options => options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute()));
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+    options.Filters.AddService<PlatformAuditActionFilter>();
+});
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = 262_144_000);
 builder.Services.AddAuthentication().AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {

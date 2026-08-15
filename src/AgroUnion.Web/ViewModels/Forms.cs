@@ -114,6 +114,37 @@ public sealed class SupplyParticipationForm { public Guid OrderId { get; set; } 
 public sealed class ApplicationUpdateForm { public Guid Id { get; set; } public ApplicationStatus Status { get; set; } public string? Notes { get; set; } }
 public sealed class UserActiveForm { public string UserId { get; set; } = ""; public bool Active { get; set; } }
 public sealed class UserRoleForm { public string UserId { get; set; } = ""; public string Role { get; set; } = ""; }
+public sealed class AdminUserForm
+{
+    public string UserId { get; set; } = "";
+    public string FullNameOrCompany { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string? PhoneNumber { get; set; }
+    public string Region { get; set; } = "";
+    public string Role { get; set; } = "";
+    public bool IsActive { get; set; }
+    public bool EmailConfirmed { get; set; }
+    public string? MembershipCode { get; set; }
+    public string? AdminNotes { get; set; }
+    public ProducerCategory? Category { get; set; }
+    public AdminUserUpdateRequest ToRequest() => new(UserId, FullNameOrCompany, Email, PhoneNumber, Region, Role, IsActive, EmailConfirmed, MembershipCode, AdminNotes, Category);
+}
+public sealed class PlatformConfigurationForm
+{
+    public bool AcceptingApplications { get; set; }
+    public string ApplicationPauseMessage { get; set; } = "";
+    public bool AllowProfileEditing { get; set; }
+    public bool RequireConfirmedEmail { get; set; }
+    public bool EmailNotificationsEnabled { get; set; }
+    public bool MarketplaceEnabled { get; set; }
+    public string SupportEmail { get; set; } = "";
+    public string SupportPhone { get; set; } = "";
+    public string DefaultAccountManager { get; set; } = "";
+    public string DefaultPaymentTerms { get; set; } = "";
+    public string? MaintenanceNotice { get; set; }
+    public int AuditRetentionDays { get; set; }
+    public PlatformConfigurationRequest ToRequest() => new(AcceptingApplications, ApplicationPauseMessage, AllowProfileEditing, RequireConfirmedEmail, EmailNotificationsEnabled, MarketplaceEnabled, SupportEmail, SupportPhone, DefaultAccountManager, DefaultPaymentTerms, MaintenanceNotice, AuditRetentionDays);
+}
 public sealed class PriceItemForm
 {
     public PriceCategory Category { get; set; }

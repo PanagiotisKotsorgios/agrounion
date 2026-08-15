@@ -153,6 +153,21 @@ public sealed class HomeController(IAgroUnionService service, IEmailAdministrati
     [HttpGet("/privacy")]
     public IActionResult Privacy() => View();
 
+    [HttpGet("/legal")]
+    public IActionResult Legal() => View();
+
+    [HttpGet("/terms")]
+    public IActionResult Terms() => View();
+
+    [HttpGet("/cookies")]
+    public IActionResult Cookies() => View();
+
+    [HttpGet("/partner-terms")]
+    public IActionResult PartnerTerms() => View();
+
+    [HttpGet("/accessibility")]
+    public IActionResult Accessibility() => View();
+
     [HttpGet("/payments")]
     public IActionResult Payments() => View();
 

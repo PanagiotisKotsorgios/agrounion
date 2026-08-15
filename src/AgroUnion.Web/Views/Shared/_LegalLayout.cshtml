@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index,follow" />
+    <title>@ViewData["Title"] · AGRO UNION</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="legal-layout-shell">
+    <a class="skip-link" href="#main-content">Μετάβαση στο περιεχόμενο</a>
+    <header class="legal-site-header">
+        <div class="legal-document">
+            <a class="legal-site-brand" asp-controller="Home" asp-action="Index" aria-label="AGRO UNION — Αρχική">
+                <img src="~/images/agro-union-logo.png" alt="" />
+                <span><strong>AGRO UNION</strong><small>Δίκτυο συνεργασίας</small></span>
+            </a>
+            <a class="legal-back-link" asp-controller="Home" asp-action="Index">Επιστροφή στον ιστότοπο</a>
+        </div>
+    </header>
+    <main id="main-content">@RenderBody()</main>
+    <footer class="legal-site-footer">
+        <div class="legal-document">
+            <span>© @DateTime.Now.Year AGRO UNION Ι.Κ.Ε.</span>
+            <div><a href="mailto:info@agro-union.gr">info@agro-union.gr</a><a href="tel:+302631028971">26310 28971</a><span>Μεσολόγγι, Αιτωλοακαρνανία</span></div>
+        </div>
+    </footer>
+</body>
+</html>

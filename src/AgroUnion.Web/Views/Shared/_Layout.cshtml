@@ -204,14 +204,19 @@
                         <input id="newsletter-email" name="newsletterEmail" type="email" autocomplete="email" placeholder="Το email σας" required />
                         <button type="submit">Εγγραφή <i class="fa-solid fa-arrow-right"></i></button>
                     </div>
-                    <small>Με την εγγραφή αποδέχεστε την <a asp-controller="Home" asp-action="Privacy">πολιτική απορρήτου</a>. Μπορείτε να διαγραφείτε οποιαδήποτε στιγμή.</small>
+                    <small>Με την εγγραφή ζητάτε να λαμβάνετε ενημερώσεις. Δείτε την <a asp-controller="Home" asp-action="Privacy">πολιτική απορρήτου</a>. Μπορείτε να διαγραφείτε οποιαδήποτε στιγμή.</small>
                 </form>
             </div>
 
             <div class="container footer-bottom">
                 <span>© @DateTime.Now.Year AGRO UNION. Όλα τα δικαιώματα διατηρούνται.</span>
                 <div>
+                    <a asp-controller="Home" asp-action="Legal">Νομικές πληροφορίες</a>
+                    <a asp-controller="Home" asp-action="Terms">Όροι χρήσης</a>
                     <a asp-controller="Home" asp-action="Privacy">Πολιτική απορρήτου</a>
+                    <a asp-controller="Home" asp-action="Cookies">Cookies</a>
+                    <a asp-controller="Home" asp-action="PartnerTerms">Όροι portal</a>
+                    <a asp-controller="Home" asp-action="Accessibility">Προσβασιμότητα</a>
                     <span><i class="fa-solid fa-location-dot"></i> Μεσολόγγι, Αιτωλοακαρνανία</span>
                     <span>Με υπευθυνότητα στον τόπο μας.</span>
                 </div>

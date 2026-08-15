@@ -111,7 +111,7 @@ var publicWebsitePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
     "/", "/about", "/history", "/team", "/vision", "/network", "/products", "/sustainability",
     "/faq", "/services", "/how-it-works", "/partners", "/contracts", "/apply", "/account/register",
-    "/contact", "/privacy", "/payments", "/account/login", "/account/forgot-password", "/account/reset-password",
+    "/contact", "/privacy", "/legal", "/terms", "/cookies", "/partner-terms", "/accessibility", "/payments", "/account/login", "/account/forgot-password", "/account/reset-password",
     "/account/access-denied"
 };
 app.Use(async (context, next) =>

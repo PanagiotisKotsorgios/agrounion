@@ -32,9 +32,9 @@ services:
       Jwt__Key: ${SERVICE_HEX_64_JWT}
       Jwt__Issuer: AgroUnion
       Jwt__Audience: AgroUnion.ApiClients
-      SeedData__AdminPassword: "Admin1!${SERVICE_HEX_64_ADMIN}"
+      SeedData__AdminPassword: ${ADMIN_PASSWORD}
       SeedData__DemoPassword: "Demo1!${SERVICE_HEX_64_DEMO}"
-      SeedData__PasswordVersion: coolify-2026-08-14-v1
+      SeedData__PasswordVersion: coolify-2026-08-16-v2
       Notifications__AdminEmail: ${ADMIN_EMAIL:-info@agro-union.gr}
       Smtp__Enabled: ${SMTP_ENABLED:-false}
       Smtp__Host: ${SMTP_HOST:-smtp.example.com}

@@ -59,6 +59,9 @@ public sealed record PlatformConfigurationRequest(
     string DefaultAccountManager,
     string DefaultPaymentTerms,
     string? MaintenanceNotice,
+    bool MaintenanceMode,
+    string MaintenanceTitle,
+    string MaintenanceMessage,
     int AuditRetentionDays);
 public sealed record PartnerFinancialEntryRequest(DateOnly EntryDate, FinancialEntryType Type, FinancialEntryCategory Category, decimal Amount, string Description, string? ReferenceNumber, Guid? PartnerInvoiceId);
 public sealed record ProducerDeliveryRequest(

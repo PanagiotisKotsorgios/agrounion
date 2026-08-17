@@ -52,6 +52,9 @@ public sealed record PlatformConfigurationDto(
     string DefaultAccountManager,
     string DefaultPaymentTerms,
     string? MaintenanceNotice,
+    bool MaintenanceMode,
+    string MaintenanceTitle,
+    string MaintenanceMessage,
     int AuditRetentionDays,
     DateTime UpdatedAt,
     string UpdatedBy);

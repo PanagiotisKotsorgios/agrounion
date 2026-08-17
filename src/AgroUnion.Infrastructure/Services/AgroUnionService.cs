@@ -106,6 +106,7 @@ public sealed class AgroUnionService(
         var platformDto = new PlatformConfigurationDto(platform.Id, platform.AcceptingApplications, platform.ApplicationPauseMessage,
             platform.AllowProfileEditing, platform.RequireConfirmedEmail, platform.EmailNotificationsEnabled, platform.MarketplaceEnabled,
             platform.SupportEmail, platform.SupportPhone, platform.DefaultAccountManager, platform.DefaultPaymentTerms, platform.MaintenanceNotice,
+            platform.MaintenanceMode, platform.MaintenanceTitle, platform.MaintenanceMessage,
             platform.AuditRetentionDays, platform.UpdatedAt, userNames.GetValueOrDefault(platform.UpdatedByUserId, "Σύστημα"));
         return new AdminDashboardDto(
             userRows.Count(x => x.IsActive) - 1,
@@ -569,10 +570,15 @@ public sealed class AgroUnionService(
         item.DefaultAccountManager = request.DefaultAccountManager.Trim();
         item.DefaultPaymentTerms = request.DefaultPaymentTerms.Trim();
         item.MaintenanceNotice = CleanOptional(request.MaintenanceNotice);
+        item.MaintenanceMode = request.MaintenanceMode;
+        var trimmedTitle = request.MaintenanceTitle?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedTitle)) item.MaintenanceTitle = trimmedTitle;
+        var trimmedMsg = request.MaintenanceMessage?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedMsg)) item.MaintenanceMessage = trimmedMsg;
         item.AuditRetentionDays = request.AuditRetentionDays;
         item.UpdatedAt = DateTime.UtcNow;
         item.UpdatedByUserId = adminUserId;
-        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "PlatformSettingsUpdated", Category = "Configuration", Severity = "Warning", EntityName = nameof(PlatformConfiguration), EntityId = item.Id.ToString(), Details = $"Αιτήσεις={(item.AcceptingApplications ? "ενεργές" : "σε παύση")}, προφίλ={(item.AllowProfileEditing ? "επεξεργάσιμο" : "κλειδωμένο")}, email={(item.EmailNotificationsEnabled ? "ενεργό" : "ανενεργό")}, marketplace={(item.MarketplaceEnabled ? "ενεργό" : "ανενεργό")}, audit={item.AuditRetentionDays} ημέρες." });
+        db.AuditLogs.Add(new AuditLog { UserId = adminUserId, Action = "PlatformSettingsUpdated", Category = "Configuration", Severity = "Warning", EntityName = nameof(PlatformConfiguration), EntityId = item.Id.ToString(), Details = $"Αιτήσεις={(item.AcceptingApplications ? "ενεργές" : "σε παύση")}, προφίλ={(item.AllowProfileEditing ? "επεξεργάσιμο" : "κλειδωμένο")}, email={(item.EmailNotificationsEnabled ? "ενεργό" : "ανενεργό")}, marketplace={(item.MarketplaceEnabled ? "ενεργό" : "ανενεργό")}, maintenance={(item.MaintenanceMode ? "ΕΝΕΡΓΗ" : "ανενεργή")}, audit={item.AuditRetentionDays} ημέρες." });
         await db.SaveChangesAsync(ct);
     }
 

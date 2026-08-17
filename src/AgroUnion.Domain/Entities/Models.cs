@@ -328,6 +328,9 @@ public sealed class PlatformConfiguration : Entity
     [MaxLength(180)] public string DefaultAccountManager { get; set; } = "ΠΑΝΑΓΙΩΤΗΣ ΚΟΤΣΟΡΓΙΟΣ";
     [MaxLength(500)] public string DefaultPaymentTerms { get; set; } = "Εξόφληση εντός 30 ημερών από την έκδοση τιμολογίου.";
     [MaxLength(500)] public string? MaintenanceNotice { get; set; }
+    public bool MaintenanceMode { get; set; }
+    [MaxLength(180)] public string MaintenanceTitle { get; set; } = "Ο ιστότοπος βρίσκεται υπό αναβάθμιση";
+    [MaxLength(1000)] public string MaintenanceMessage { get; set; } = "Πραγματοποιούμε προγραμματισμένες εργασίες συντήρησης για να βελτιώσουμε την πλατφόρμα της AGRO UNION. Θα επιστρέψουμε πολύ σύντομα. Ευχαριστούμε για την υπομονή σας.";
     public int AuditRetentionDays { get; set; } = 3650;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     [MaxLength(450)] public string UpdatedByUserId { get; set; } = string.Empty;

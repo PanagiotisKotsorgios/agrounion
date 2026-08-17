@@ -141,6 +141,7 @@ app.Use(async (context, next) =>
     await next();
 });
 app.UseAuthorization();
+app.UseMaintenanceMode();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();

@@ -142,8 +142,11 @@ public sealed class PlatformConfigurationForm
     public string DefaultAccountManager { get; set; } = "";
     public string DefaultPaymentTerms { get; set; } = "";
     public string? MaintenanceNotice { get; set; }
+    public bool MaintenanceMode { get; set; }
+    public string MaintenanceTitle { get; set; } = "";
+    public string MaintenanceMessage { get; set; } = "";
     public int AuditRetentionDays { get; set; }
-    public PlatformConfigurationRequest ToRequest() => new(AcceptingApplications, ApplicationPauseMessage, AllowProfileEditing, RequireConfirmedEmail, EmailNotificationsEnabled, MarketplaceEnabled, SupportEmail, SupportPhone, DefaultAccountManager, DefaultPaymentTerms, MaintenanceNotice, AuditRetentionDays);
+    public PlatformConfigurationRequest ToRequest() => new(AcceptingApplications, ApplicationPauseMessage, AllowProfileEditing, RequireConfirmedEmail, EmailNotificationsEnabled, MarketplaceEnabled, SupportEmail, SupportPhone, DefaultAccountManager, DefaultPaymentTerms, MaintenanceNotice, MaintenanceMode, MaintenanceTitle, MaintenanceMessage, AuditRetentionDays);
 }
 public sealed class PriceItemForm
 {

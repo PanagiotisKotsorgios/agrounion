@@ -409,6 +409,24 @@
 <section class="platform-settings-card">
     <header><div><small>ΚΕΝΤΡΙΚΗ ΠΟΛΙΤΙΚΗ ΛΕΙΤΟΥΡΓΙΑΣ</small><h3>Έλεγχος πρόσβασης, αιτήσεων και προεπιλογών</h3><p>Οι αλλαγές εφαρμόζονται σε επίπεδο πλατφόρμας και καταγράφονται αυτόματα στο audit log.</p></div><span>Τελευταία ενημέρωση<br /><strong>@Model.PlatformConfiguration.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong><br />@Model.PlatformConfiguration.UpdatedBy</span></header>
     <form asp-action="SavePlatformConfiguration" method="post" class="platform-settings-form">
+        <div class="maintenance-toggle-card @(Model.PlatformConfiguration.MaintenanceMode ? "is-active" : "")">
+            <div class="maintenance-toggle-head">
+                <span class="maintenance-toggle-ic"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+                <div>
+                    <strong>Λειτουργία υπό συντήρηση</strong>
+                    <small>Όταν είναι ενεργή, όλες οι σελίδες του ιστότοπου (πλην των admin σελίδων &amp; login) αντικαθίστανται από πλήρη σελίδα «Υπό ανάπτυξη». Οι διαχειριστές διατηρούν πρόσβαση σε όλα.</small>
+                </div>
+                <label class="maintenance-switch">
+                    <input type="checkbox" name="MaintenanceMode" value="true" checked="@(Model.PlatformConfiguration.MaintenanceMode ? "checked" : null)" />
+                    <input type="hidden" name="MaintenanceMode" value="false" />
+                    <span class="track"><span class="thumb"></span></span>
+                </label>
+            </div>
+            <div class="maintenance-toggle-fields">
+                <div class="field"><label>Τίτλος σελίδας συντήρησης</label><input name="MaintenanceTitle" value="@Model.PlatformConfiguration.MaintenanceTitle" maxlength="180" placeholder="Ο ιστότοπος βρίσκεται υπό αναβάθμιση" /></div>
+                <div class="field full"><label>Μήνυμα για επισκέπτες</label><textarea name="MaintenanceMessage" rows="3" maxlength="1000" placeholder="Θα επιστρέψουμε πολύ σύντομα.">@Model.PlatformConfiguration.MaintenanceMessage</textarea></div>
+            </div>
+        </div>
         <div class="settings-switch-grid">
             <label class="settings-switch"><span><strong>Νέες αιτήσεις συνεργασίας</strong><small>Αποδοχή νέων αιτήσεων από τις δημόσιες φόρμες.</small></span><input type="checkbox" name="AcceptingApplications" value="true" checked="@(Model.PlatformConfiguration.AcceptingApplications ? "checked" : null)" /><input type="hidden" name="AcceptingApplications" value="false" /><i></i></label>
             <label class="settings-switch"><span><strong>Επεξεργασία προφίλ</strong><small>Οι συνεργάτες μπορούν να αλλάζουν τα προσωπικά στοιχεία τους.</small></span><input type="checkbox" name="AllowProfileEditing" value="true" checked="@(Model.PlatformConfiguration.AllowProfileEditing ? "checked" : null)" /><input type="hidden" name="AllowProfileEditing" value="false" /><i></i></label>

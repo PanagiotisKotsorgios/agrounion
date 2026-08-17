@@ -2563,13 +2563,14 @@ body.dashboard-modal-open{overflow:hidden}
 .maintenance-toggle-head>div{flex:1;min-width:0}
 .maintenance-toggle-head strong{display:block;font-size:16px;font-weight:700;color:#0F1712;letter-spacing:-.005em}
 .maintenance-toggle-head small{display:block;margin-top:5px;font-size:12px;color:#54594C;line-height:1.5}
-.maintenance-switch{position:relative;display:inline-block;flex:none;cursor:pointer}
-.maintenance-switch input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
-.maintenance-switch .track{display:inline-block;width:58px;height:32px;background:#d0ccc0;border-radius:32px;position:relative;transition:background .2s ease;vertical-align:middle}
+.maintenance-switch{position:relative;display:inline-flex;align-items:center;flex:none;cursor:pointer;min-width:58px;min-height:32px}
+.maintenance-switch input[type="checkbox"]{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:2}
+.maintenance-switch input[type="hidden"]{display:none}
+.maintenance-switch .track{display:inline-block;width:58px;height:32px;background:#d0ccc0;border-radius:32px;position:relative;transition:background .2s ease;pointer-events:none}
 .maintenance-switch .thumb{position:absolute;top:3px;left:3px;width:26px;height:26px;background:#fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:transform .2s ease}
-.maintenance-switch input:checked+.track{background:#b8811a}
-.maintenance-switch input:checked+.track .thumb{transform:translateX(26px)}
-.maintenance-switch input:focus-visible+.track{outline:2px solid #1F4D33;outline-offset:3px}
+.maintenance-switch input[type="checkbox"]:checked ~ .track{background:#b8811a}
+.maintenance-switch input[type="checkbox"]:checked ~ .track .thumb{transform:translateX(26px)}
+.maintenance-switch input[type="checkbox"]:focus-visible ~ .track{outline:2px solid #1F4D33;outline-offset:3px}
 .maintenance-toggle-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 24px 22px}
 .maintenance-toggle-fields .field.full{grid-column:1/-1}
 .maintenance-toggle-fields label{display:block;font-size:11px;font-weight:600;color:#54594C;letter-spacing:.02em;margin-bottom:6px}
